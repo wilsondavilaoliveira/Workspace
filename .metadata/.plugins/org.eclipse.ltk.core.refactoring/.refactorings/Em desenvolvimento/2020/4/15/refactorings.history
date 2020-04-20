@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Mover &quot;AXFORMDEV.PRW&quot; a &quot;FORMULARIO DEVOLUCAO&quot;" description="Mover &quot;AXFORMDEV.PRW&quot; a &quot;FORMULARIO DEVOLUCAO&quot;" destination="FORMULARIO DEVOLUCAO" element1="PROSPECTS/AXFORMDEV.PRW" flags="7" id="org.eclipse.ltk.core.refactoring.move.resources" resources="1" stamp="1586627613614" updateReferences="true"/>
+</session>

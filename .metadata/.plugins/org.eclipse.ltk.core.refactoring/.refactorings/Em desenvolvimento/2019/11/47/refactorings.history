@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Renomear recurso &quot;Em desenvolvimento/QUAA060A.PRW&quot; a &quot;QUAA60AW.PRW&quot;" description="Renomear recurso &quot;QUAA060A.PRW&quot;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="QUAA060A.PRW" name="QUAA60AW.PRW" stamp="1574533285600" updateReferences="true"/>
+</session>

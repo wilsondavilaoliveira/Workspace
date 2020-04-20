@@ -1,0 +1,4 @@
+ALLOW_MULTITHREAD_DEBUG=false
+SERVER_ID_TIMEOUT=10
+VARIABLES_VIEW_ORGANIZATION=organizeByCreationOrder
+eclipse.preferences.version=1

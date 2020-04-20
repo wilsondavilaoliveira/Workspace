@@ -1,0 +1,99 @@
+#Include "TOTVS.ch"
+#Include "FWMVCDEF.ch"
+
+/*/{Protheus.doc} QUAA015A()
+Criterios de Bonificacao Qualidade Leite
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+/*/
+
+///////////////////////FUNCAO PRINCIPAL
+User Function QUAA015A()
+
+    Local oBrowse := FwLoadBrw("QUAA015A")
+    oBrowse:Activate()
+
+Return (NIL)
+
+
+// BROWSEDEF() SERA UTIL PARA FUTURAS HERANCAS: FWLOADBRW()
+Static Function BrowseDef()
+    Local oBrowse := FwMBrowse():New()
+
+    oBrowse:SetAlias("LJX")
+    oBrowse:SetDescription("Cabecalho Bonificacoes")
+
+   // DEFINE DE ONDE SERÁ RETIRADO O MENUDEF
+   oBrowse:SetMenuDef("QUAA015A")
+Return (oBrowse)
+
+// OPERACOES DA ROTINA
+Static Function MenuDef()
+    // FUNCAO PARA CRIAR MENUDEF
+    Local aRotina := FwMVCMenu("QUAA015A")
+Return (aRotina)
+
+// REGRAS DE NEGOCIO
+Static Function ModelDef()
+    // INSTANCIA O MODELO
+    Local oModel := MPFormModel():New("QAA015AM")
+
+    // INSTANCIA OS SUBMODELOS
+    Local oStruLJX := FwFormStruct(1, "LJX")
+    Local oStruLJY := FwFormStruct(1, "LJY")
+
+    // DEFINE SE OS SUBMODELOS SERAO FIELD OU GRID
+    oModel:AddFields("LJXMASTER", NIL, oStruLJX)
+    oModel:AddGrid("LJYDETAIL", "LJXMASTER", oStruLJY)
+
+    // DEFINE A RELACAO ENTRE OS SUBMODELOS
+    oModel:SetRelation("LJYDETAIL", {{"LJY_FILIAL", "FwXFilial('LJY')"}, {"LJY_CODQUA", "LJX_CODBON"}}, LJY->(IndexKey( 1 )))
+    
+    // Chave Primaria
+    oModel:SetPrimaryKey( { 'LJX_FILIAL' }, {'LJX_CODBON'} )
+    
+    // DESCRICAO DO MODELO
+    oModel:SetDescription("Criterios de Qualidade Leite" )
+
+    // DESCRICAO DOS SUBMODELOS
+    oModel:GetModel("LJXMASTER"):SetDescription("Cabecalho Bonificacoes")
+    oModel:GetModel("LJYDETAIL"):SetDescription("Itens Classificacao")
+Return (oModel)
+
+// INTERFACE GRAFICA
+Static Function ViewDef()
+    // INSTANCIA A VIEW
+    Local oView := FwFormView():New()
+
+    // INSTANCIA AS SUBVIEWS
+    Local oStruLJX := FwFormStruct(2, "LJX")
+    Local oStruLJY := FwFormStruct(2, "LJY")
+
+    // RECEBE O MODELO DE DADOS
+    Local oModel := FwLoadModel("QUAA015A")
+
+    // INDICA O MODELO DA VIEW
+    oView:SetModel(oModel)
+
+    // CRIA ESTRUTURA VISUAL DE CAMPOS
+    oView:AddField("VIEW_LJX", oStruLJX, "LJXMASTER")
+    oView:AddGrid("VIEW_LJY", oStruLJY, "LJYDETAIL")
+
+    // CRIA BOXES HORIZONTAIS
+    oView:CreateHorizontalBox("SUPERIOR", 25)
+    oView:CreateHorizontalBox("INFERIOR", 75)
+
+    // RELACIONA OS BOXES COM AS ESTRUTURAS VISUAIS
+    oView:SetOwnerView("VIEW_LJX", "SUPERIOR")
+    oView:SetOwnerView("VIEW_LJY", "INFERIOR")
+    
+    oStruLJY:RemoveField( 'LJY_CODQUA' )
+    
+    // DEFINE AUTO-INCREMENTO AO CAMPO
+    oView:AddIncrementField("VIEW_LJY", "LJY_ITEM")
+
+    // DEFINE OS TITULOS DAS SUBVIEWS
+    oView:EnableTitleView("VIEW_LJY","ITENS")
+Return (oView)

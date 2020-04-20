@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<syncparticipants>
+<participant displayName="Git (master/Projeto - Quata - Versão 12)" id="org.eclipse.egit.ui.modelCompareParticipant" secondary_id="1584048189613">
+<data forceFetch="false" root="false">
+<org.eclipse.team.ui.MODEL_PARTICIPANT_SETTINGS org.eclipse.team.ui.MODEL_PARTICIPANT_DESCRIPTION="master/Projeto - Quata - Versão 12" startupAction="none">&#x0A;<org.eclipse.team.ui.MODEL_PARTICIPANT_REFRESH_SCHEDULE org.eclipse.team.ui.CTX_REFRESHSCHEDULE_ENABLED="false" org.eclipse.team.ui.CTX_REFRESHSCHEDULE_INTERVAL="3600" org.eclipse.team.ui.CTX_REFRESHSCHEDULE_RUNONCE="false"/>
+<org.eclipse.team.ui.MODEL_PARTICIPANT_MAPPINGS modelProviderId="org.eclipse.core.resources.modelProvider">&#x0A;<mappings>&#x0A;<resources resourcePath="/master/Projeto - Quata - Versão 12" resourceType="2"/>
+</mappings>
+</org.eclipse.team.ui.MODEL_PARTICIPANT_MAPPINGS>
+</org.eclipse.team.ui.MODEL_PARTICIPANT_SETTINGS>
+<gitSynchronizeData container="C:/HD/Arq Trabalho/NOVAMIX/git/master" dstRev="refs/remotes/origin/master" inludeLocal="true" srcRev="HEAD">&#x0A;<includedPaths>&#x0A;<path path="C:/HD/Arq Trabalho/NOVAMIX/git/master/Projeto - Quata - Versão 12"/>
+</includedPaths>
+</gitSynchronizeData>
+</data>
+</participant>
+</syncparticipants>

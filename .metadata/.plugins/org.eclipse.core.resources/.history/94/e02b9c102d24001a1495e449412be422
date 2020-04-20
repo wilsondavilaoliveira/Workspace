@@ -1,0 +1,868 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "FWMVCDEF.CH"
+#INCLUDE "TOPCONN.CH" 
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³NOVO2     ºAutor  ³Microsiga           º Data ³  08/05/12   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³                                                            º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+
+User Function CADDESC()
+
+AXCADASTRO("ZXH")
+	RETURN
+
+If Pergunte("CADDESC",.T.)
+
+	If MV_PAR01				
+		BrwDesc()	
+	Else
+		BrwDesc()
+	End If
+
+End If
+
+Return
+
+Static Function BrwDesc()
+
+Private cCadastro := OemtoAnsi( "Cadastro de Descontos" )
+Private cFiltro		:= ""
+Private bFiltraBrw	:= {|| }
+Private aIndexSX5	:= {}
+Private cAlias		:= "ZXY"
+//Private aCpos		:= {'X5_DESCRI','X5_DESCSPA','X5_DESCENG'}
+
+Private aRotina := {	{"Pesquisar"		,"AxPesqui",0,1},;
+						{"Inclui"			,"AxInclui",0,3},;
+						{"Altera"		 	,"AxAltera",0,4},;
+						{"Exclui"			,"AxDeleta",0,5}}  
+
+aCores := {	{ ".T.", "BR_VERDE"}}
+
+
+mBrowse(6,1,22,75,cAlias,,,,,,aCores,,,,,,.F.)
+
+Return
+
+
+#INCLUDE "QUAA015.CH"
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH" 
+#INCLUDE 'COLORS.CH' 
+#INCLUDE "TOPCONN.CH"  
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FWMVCDEF.CH"
+#Include "TbiConn.ch"
+#INCLUDE "APWIZARD.CH"
+#INCLUDE "FILEIO.CH"
+#INCLUDE "RPTDEF.CH"                                      
+#INCLUDE "FWPrintSetup.ch"
+#INCLUDE "TOTVS.CH"
+#INCLUDE "PARMTYPE.CH"
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡ao    ³ QUAA015  ³ Autor ³ Ricardo Berti         ³ Data ³ 04.11.05 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Manutencao Tab.Criterios para Valorizacao da Qualidade      ³±±
+±±³          ³Sao 4 tabelas basicas(em vigor): GORDURA,PROTEINA,CBT,CCS   ³±±
+±±³          ³Obs.: chave exclusiva = LJY_CODQUA + LJY_TIPOL			  ³±±
+±±³          ³      ou seja, podemos ter o mesmo codigo em 2 tabelas:	  ³±±
+±±³          ³      uma para cada tipo de leite.                          ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ QUAA015()                                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³         ATUALIZACOES SOFRIDAS DESDE A CONSTRU€AO INICIAL.             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³  Motivo da Alteracao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³            ³        ³      ³                                          ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function CADDESC()
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Array contendo os campos do arquivo que sempre deverao³
+//³ aparecer no browse. (funcao mBrowse)                         ³
+//³ ----------- Elementos contidos por dimensao ---------------- ³
+//³ 1. Titulo do campo (Este nao pode ter mais de 12 caracteres) ³
+//³ 2. Nome do campo a ser editado                               ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//ZXH_FILIAL	ZXH_TIPDES	ZXH_DTINI	ZXH_DTFIM	ZXH_SCANAL	ZXH_LINPRO	ZXH_CODPRO	ZXH_REDE	ZXH_CODCLI	ZXH_LOJA	D_E_L_E_T_	R_E_C_N_O_	R_E_C_D_E_L_
+LOCAL aFixe := { 	{ OemToAnsi("Tipo de Desconto")	,"ZXY_TIPDES" },;		 //"Código"
+					{ OemToAnsi("Data Inicio")		,"ZXY_DTINI"  },;		 //"Leite"
+					{ OemToAnsi("Data Final")		,"ZXY_DTFIM"  },;		 //"De"
+					{ OemToAnsi("Rede")				,"ZXY_WFLOW"   },;		 //"De"
+					{ OemToAnsi("Sub-Canal")		,"ZXY_SCANAL" },;		 //"Até"
+					{ OemToAnsi("Linha Produto")	,"ZXY_LINPRO" },;		 //"R$/Litro"
+					{ OemToAnsi("Cod.Produto")		,"ZXY_CODPRO" },;		 //"Ult.Atualiz."
+					{ OemToAnsi("Cod.Cliente")		,"ZXY_CODCLI" },;		 //"Até"
+					{ OemToAnsi("Loja")				,"ZXY_LOJA"   }}		 //"Descricao Tab."
+
+//{ OemToAnsi("Rede")				,"ZXY_REDE"   },;		 //"De"
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Define Array contendo as Rotinas a executar do programa      ³
+//³ ----------- Elementos contidos por dimensao ------------     ³
+//³ 1. Nome a aparecer no cabecalho                              ³
+//³ 2. Nome da Rotina associada                                  ³
+//³ 3. Usado pela rotina                                         ³
+//³ 4. Tipo de Transa‡„o a ser efetuada                          ³
+//³    1 - Pesquisa e Posiciona em um Banco de Dados             ³
+//³    2 - Simplesmente Mostra os Campos                         ³
+//³    3 - Inclui registros no Bancos de Dados                   ³
+//³    4 - Altera o registro corrente                            ³
+//³    5 - Remove o registro corrente do Banco de Dados          ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+Private cCadastro := OemtoAnsi("DESCONTOS PRICE")	 //"Critérios para Valorização da Qualidade do Leite"
+
+Private aRotina := {{OemToAnsi('Pesquisar'),'AxPesqui' ,0,1},; //'Pesquisar'
+ 					{OemToAnsi('Visualizar'),'u_CAD15Man',0,2},; //'Visualizar'
+					{OemToAnsi('Incluir'),'u_CAD15Man',0,3},; //'Incluir'
+					{OemToAnsi('Alterar'),'u_CAD15Man',0,4},; //'Alterar'
+					{OemToAnsi('Excluir'),'u_CAD15Man',0,5} } //'Excluir'
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Endereca a funcao de BROWSE                                  ³
+//³ Obs.: O parametro aFixe nao e' obrigatorio e pode ser omitido³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+mBrowse( 6, 1,22,75,"ZXY",aFixe,NIL,NIL,NIL,NIL,NIL) // aCores
+
+dbSelectArea("ZXY")
+dbSetOrder(1)
+dbClearFilter()
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Quaa15Man ³ Autor ³Ricardo Berti          ³ Data ³04.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Manutencao da tabela de Criterio de Valoriz.p/Qualidade     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpC1: Alias do arquivo                                     ³±±
+±±³          ³ExpN2: Registro do Arquivo                                  ³±±
+±±³          ³ExpN3: Opcao da MBrowse                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ Template Leite - COL_LEI                                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ DATA     ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+User Function CAD15Man(cAlias,nRecno,nOpc)
+
+Local aArea     := GetArea()
+Local aSizeAut	:= {}
+Local aRegLJY   := {}
+Local aObjects	:= {}
+Local aInfo 	:= {}
+Local aPosGet	:= {}
+Local aPosObj	:= {}
+
+Local nOpcA    	:= 0
+Local nCntFor  	:= 0
+Local nPItem    := 0
+Local nUsado   	:= 0
+
+Local oDlg
+Local oGetD
+Local nI
+
+Private aHeader := {}
+Private aCols   := {}
+Private oSay1
+Private oSay2
+Private lScanal := .F.
+Private lLinPro	:= .F.
+Private lQtde	:= .F.
+Private lVol	:= .F.
+Private lCodCli	:= .F.
+Private lRede	:= .F.
+Private lTabela	:= .F.
+Private lCodPro	:= .F.
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Montagem do aHeader.                                 ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SX3")
+dbSetOrder(1)
+dbSeek("ZXY")
+
+While !Eof() .And. SX3->X3_ARQUIVO == "ZXY"
+	If X3Uso(SX3->X3_USADO) .And. SX3->X3_CAMPO != "ZXY_FILIAL" .And.;
+		SX3->X3_CAMPO != "ZXY_QTEMIN" .And.;
+		SX3->X3_CAMPO != "ZXY_VOLMIN" .And.;
+		SX3->X3_CAMPO != "ZXY_PERDES" .And.;
+		cNivel >= SX3->X3_NIVEL
+		
+		nUsado++
+		Aadd(aHeader,{ AllTrim(X3Titulo()),;
+			SX3->X3_CAMPO,;
+			SX3->X3_PICTURE,;
+			SX3->X3_TAMANHO,;
+			SX3->X3_DECIMAL,;
+			SX3->X3_VALID,;
+			SX3->X3_USADO,;
+			SX3->X3_TIPO,;
+			SX3->X3_ARQUIVO,;
+			SX3->X3_CONTEXT } )
+		//If AllTrim(SX3->X3_CAMPO)=="LJY_ITEM"
+		//	nPItem := nUsado
+		//EndIf
+	EndIf
+
+	dbSelectArea("SX3")
+	dbSkip()
+EndDo
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Montagem do aCols.                                   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+If ( nOpc == 3 )
+
+	M->ZXY_TIPDES 	:= CriaVar("ZXY_TIPDES")
+	M->ZXY_DTINI 	:= CriaVar("ZXY_DTINI")
+	M->ZXY_DTFIM  	:= CriaVar("ZXY_DTFIM")
+	M->ZXY_SCANAL  	:= CriaVar("ZXY_SCANAL")
+	M->ZXY_LINPRO  	:= CriaVar("ZXY_LINPRO")
+	M->ZXY_CODPRO  	:= CriaVar("ZXY_CODPRO")
+	M->ZXY_REDE  	:= CriaVar("ZXY_REDE")
+	M->ZXY_TABELA  	:= CriaVar("ZXY_TABELA")
+	M->ZXY_CODCLI  	:= CriaVar("ZXY_CODCLI")
+	M->ZXY_LOJA  	:= CriaVar("ZXY_LOJA")
+	cProduto		:= Space(300)
+	cRede			:= Space(50)
+	cTabela			:= Space(50)
+	cNomeCli		:= Space(300)
+	
+	Aadd(aCols, Array(nUsado + 1))
+
+	For nCntFor	:= 1 To Len( aHeader )
+		aCols[1][nCntFor] := CriaVar( aHeader[nCntFor][2] )
+	Next nCntFor
+	
+	aCols[1][nUsado + 1]:= .F.
+ //	aCols[1][nPItem] := 1
+Else
+	
+	M->ZXY_TIPDES 	:= ZXY->ZXY_TIPDES
+	M->ZXY_DTINI 	:= ZXY->ZXY_DTINI
+	M->ZXY_DTFIM  	:= ZXY->ZXY_DTFIM
+	M->ZXY_SCANAL  	:= ZXY->ZXY_SCANAL
+	M->ZXY_LINPRO  	:= ZXY->ZXY_LINPRO
+	M->ZXY_REDE  	:= ZXY->ZXY_REDE
+	M->ZXY_TABELA  	:= ZXY->ZXY_TABELA
+	M->ZXY_CODPRO  	:= ZXY->ZXY_CODPRO
+	M->ZXY_CODCLI  	:= ZXY->ZXY_CODCLI
+	M->ZXY_LOJA  	:= ZXY->ZXY_LOJA
+	cProduto		:= AllTrim(Posicione("SB1",1,xFilial("SB1")+ZXY->ZXY_CODPRO,"B1_DESC"))
+	cRede			:= AllTrim(Posicione("SX5",1,xFilial("SX5")+"BA"+ZXY->ZXY_REDE,"X5_DESCRI"))
+	cTabela			:= AllTrim(Posicione("DA0",1,xFilial("DA0")+ZXY->ZXY_TABELA,"DA0_DESCRI"))
+	cNomeCli		:= AllTrim(Posicione("SA1",1,xFilial("SA1")+ZXY->ZXY_CODCLI+ZXY->ZXY_LOJA,"A1_NOME"))
+	
+
+
+	dbSelectArea("ZXY")
+	dbSetOrder(1)
+	dbSeek( xFilial("ZXY")  + M->ZXY_SCANAL + M->ZXY_TIPDES )
+	
+	LJY->LJY_ITEM := ++nI
+	
+	nI := 0
+	While !Eof()  ;
+	  .And. M->ZXY_TIPDES == ZXY->ZXY_TIPDES .And. M->ZXY_SCANAL == ZXY->ZXY_SCANAL
+		RecLock("ZXY",.F.)
+		ZXY->(MsUnLock())
+		Aadd(aCols, Array(nUsado + 1))
+		For nCntFor	:= 1 To nUsado
+			aCols[Len(aCols)][nCntFor] := FieldGet( FieldPos( aHeader[nCntFor][2] ))
+		Next nCntFor
+		aCols[Len( aCols )][nUsado + 1] := .F.
+
+        aadd(aRegLJY,ZXY->(RecNo()))
+				
+		dbSelectArea("ZXY")
+		dbSkip()
+	EndDo
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ativa a Dialog.                                      ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+aSizeAut := MsAdvSize(,.F.,300) // 400
+
+//aadd(aObjects,{100,030,.T.,.F.})  
+aadd(aObjects,{100,030,.T.,.F.})  
+aadd(aObjects,{100,100,.T.,.T.}) 
+
+aOrdCmb1 := {} 
+AADD(aOrdCmb1,"")
+AADD(aOrdCmb1,"V=VOLUME")
+AADD(aOrdCmb1,"P=PORTIFOLIO")
+AADD(aOrdCmb1,"N=NOVO CLIENTE")
+AADD(aOrdCmb1,"T=TATICO")
+
+aOrdCmb2 := xSativ5()             
+
+aOrdCmb3 := U_xLinPro()
+
+aInfo   := {aSizeAut[1],aSizeAut[2],aSizeAut[3],aSizeAut[4],3,3}
+aPosObj := MsObjSize(aInfo,aObjects) 
+
+aPosGet := MsObjGetPos(aSizeAut[3]-aSizeAut[1],305,{{004,031,062,083,120,146}})
+                                                              
+DEFINE MSDIALOG oDlg FROM aSizeAut[7],0 TO aSizeAut[6],aSizeAut[5] TITLE cCadastro OF oMainWnd PIXEL
+
+//TIPO DO DESCONTO
+@ aPosObj[01,01]+2   ,aPosGet[1,1] SAY	RetTitle("ZXY_TIPDES") SIZE 031,009	OF oDlg PIXEL
+@ aPosObj[01,01]   ,aPosGet[1,1]+33 COMBOBOX oCBX1 VAR M->ZXY_TIPDES ITEMS aOrdCmb1 SIZE 075,009 ;
+ON CHANGE LibCampos();
+PIXEL OF oDlg WHEN INCLUI 
+
+//SUB-CANAL
+@ aPosObj[01,01]+2   ,aPosGet[1,1]+80+35 SAY	RetTitle("ZXY_SCANAL") SIZE 030,009	OF oDlg PIXEL
+@ aPosObj[01,01]   ,aPosGet[1,1]+80+30+35 COMBOBOX oCBX2 VAR M->ZXY_SCANAL ITEMS aOrdCmb2 SIZE 125,009 ;
+WHEN (INCLUI.AND.lScanal) PIXEL OF oDlg  
+
+//LINHA PRODUTO
+@ aPosObj[01,01]+2   ,aPosGet[1,1]+80+35+35+80+50 SAY	RetTitle("ZXY_LINPRO") SIZE 030,009	OF oDlg PIXEL
+@ aPosObj[01,01]   ,aPosGet[1,1]+80+30+35+80+35+50 COMBOBOX oCBX3 VAR M->ZXY_LINPRO ITEMS aOrdCmb3 SIZE 077,009 ;
+ON CHANGE IIF(M->ZXY_LINPRO<>'',lCodPro := .F.,lCodPro := .T.) PIXEL OF oDlg WHEN (INCLUI.AND.lLinPro) 
+
+//PRODUTO
+@ aPosObj[01,01]+2,aPosGet[1,1]+80+35+35+80+35+50+80 SAY RetTitle("ZXY_CODPRO") SIZE 030,009 OF oDlg PIXEL
+@ aPosObj[01,01],aPosGet[1,1]+80+32+35+80+35+50+80+35 MSGET M->ZXY_CODPRO SIZE 030,007 F3 "SB1ZZN"  ;
+VALID If(!Vazio(),ExistCpo("SB1",M->ZXY_CODPRO),.T.) ;
+ON CHANGE (IIF(M->ZXY_CODPRO<>'',lLinPro := .F.,lLinPro := .T.)).AND.IIF(M->ZXY_CODPRO<>'',;
+cProduto := AllTrim(Posicione("SB1",1,xFilial("SB1")+M->ZXY_CODPRO,"B1_DESC"),cProduto := Space(200)));
+WHEN (INCLUI.AND.lCodPro) OF oDlg  PIXEL 
+
+//NOME PRODUTO
+@ aPosObj[01,01],aPosGet[1,1]+80+35+35+80+35+50+80+35+30 MSGET cProduto SIZE 130,007 WHEN .F. OF oDlg PIXEL // ;
+
+
+//--SEGUNDA LINHA
+
+//REDE
+@ aPosObj[01,01]+18,aPosGet[1,1] SAY RetTitle("ZXY_REDE") SIZE 025,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16,aPosGet[1,1]+15 MSGET M->ZXY_REDE SIZE 030,007 F3 "BA";
+  VALID If(!Vazio(),ExistCpo("SX5","BA"+M->ZXY_REDE),.T.) ;
+  ON CHANGE cRede := AllTrim(Posicione("SX5",1,xFilial("SX5")+"BA"+M->ZXY_REDE,"X5_DESCRI"));
+  WHEN (INCLUI.AND.lRede) OF oDlg PIXEL 
+
+//NOME REDE
+@ aPosObj[01,01]+16,aPosGet[1,1]+48 MSGET cRede SIZE 130,007 WHEN .F. OF oDlg PIXEL // ;
+
+//TABELA
+@ aPosObj[01,01]+18,aPosGet[1,1]+15+60+85+25 SAY RetTitle("ZXY_TABELA") SIZE 025,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16,aPosGet[1,1]+15+60+85+30+20 MSGET M->ZXY_TABELA SIZE 030,007 F3 "DA0"  ;
+VALID If(!Vazio(),ExistCpo("DA0",M->ZXY_TABELA),.T.) ;
+ON CHANGE cTabela := AllTrim(Posicione("DA0",1,xFilial("DA0")+M->ZXY_TABELA,"DA0_DESCRI"));
+WHEN (INCLUI.AND.lTabela) OF oDlg PIXEL 
+
+//NOME TABELA
+@ aPosObj[01,01]+16,aPosGet[1,1]+15+60+25+85+55 MSGET cTabela SIZE 130,007 WHEN .F. OF oDlg PIXEL 
+
+//CODCLI
+@ aPosObj[01,01]+18,aPosGet[1,1]+15+60+25+85+57+132 SAY RetTitle("ZXY_CODCLI") SIZE 030,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16,aPosGet[1,1]+15+60+25+85+57+130+31 MSGET M->ZXY_CODCLI SIZE 030,007 F3 "SA1" ;
+VALID If(!Vazio(),ExistCpo("SA1",M->ZXY_CODCLI),.T.) ;
+ON CHANGE cNomeCli := AllTrim(Posicione("SA1",1,xFilial("SA1")+M->ZXY_CODCLI,"A1_NOME")); 
+WHEN (INCLUI.AND.lCodCli) OF oDlg PIXEL // ;
+
+//LOJA
+@ aPosObj[01,01]+18,aPosGet[1,1]+15+60+25+85+57+135+35+27 SAY RetTitle("ZXY_LOJA") SIZE 025,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16,aPosGet[1,1]+15+60+25+85+45+135+35+35+17 MSGET M->ZXY_LOJA SIZE 030,007 ;
+VALID If(!Vazio(),ExistCpo("SA1",M->ZXY_LOJA),.T.) ;
+ON CHANGE cNomeCli := AllTrim(Posicione("SA1",1,xFilial("SA1")+M->ZXY_CODCLI+M->ZXY_LOJA,"A1_NOME"));
+WHEN (INCLUI.AND.lCodCli) OF oDlg PIXEL 
+
+//NOME CLIENTE
+@ aPosObj[01,01]+16,aPosGet[1,1]+15+60+25+85+44+135+35+35+30+18 MSGET cNomeCli SIZE 130,007 WHEN .F. OF oDlg PIXEL // ;
+
+//--TERCEIRA LINHA
+
+//DATA INICIAL
+@ aPosObj[01,01]+18+17,aPosGet[1,1] SAY RetTitle("ZXY_DTINI") SIZE 030,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16+16,aPosGet[1,1]+33 MSGET M->ZXY_DTINI SIZE 045,007 VALID !Vazio() WHEN INCLUI OF oDlg PIXEL 
+
+//DATA FINAL
+@ aPosObj[01,01]+18+17,aPosGet[1,1]+33+50 SAY RetTitle("ZXY_DTFIM") SIZE 030,009 OF oDlg PIXEL
+@ aPosObj[01,01]+16+16,aPosGet[1,1]+33+50+30 MSGET M->ZXY_DTFIM SIZE 045,007 VALID !Vazio() WHEN INCLUI OF oDlg PIXEL 
+
+
+//oGetd := MsGetDados():New(aPosObj[2,1],aPosObj[2,2],aPosObj[2,3],aPosObj[2,4],nOpc,"Qua15LinOK","Qua15TudOk","+ACW_ITEM",.T.)
+//oGetd := MsGetDados():New(aPosObj[2,1]+15,aPosObj[2,2],aPosObj[2,3],aPosObj[2,4],nOpc,"u_Qua15LinOK","u_Qua15TudOk",,.T.)
+oGetd := MsGetDados():New(aPosObj[2,1]+15,aPosObj[2,2],aPosObj[2,3],aPosObj[2,4],nOpc,/*"u_Qua15LinOK"*/,/*"u_Qua15TudOk"*/,,.T.)
+ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{||IIf(oGetD:TudoOk(),(nOpcA:= 1,oDlg:End()),.T.)},{||oDlg:End()})
+If nOpc > 2 .And. nOpcA == 1
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Funcao responsavel pela atualizacao do arquivo ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//	Begin Transaction
+		If Qua15Grv(nOpc-2,aRegLJY)
+			If __lSx8
+				ConfirmSx8()
+			EndIf
+			EvalTrigger()
+		Else
+			RollBackSx8()
+		EndIf
+	//End Transaction
+Else
+	RollBackSx8()
+EndIf
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Restaura a Integridade da Tela de Entrada.                             ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+RestArea(aArea)
+Return(.T.)
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Qua15Grv  ³ Autor ³Ricardo Berti          ³ Data ³07.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Rotina de gravacao da Tab.de Criterios Valoriz. p/ Qualidade³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ExpL1: Indica se houve atualizacao dos dados                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpC1: Codigo de gravacao                                   ³±±
+±±³          ³       [1] Inclusao                                         ³±±
+±±³          ³       [2] Alteracao                                        ³±±
+±±³          ³       [3] Exclusao                                         ³±±
+±±³          ³ExpA2: Registros da tabela                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Qua15Grv( nOpcao , aRegLJY )
+
+Local aArea  := GetArea()
+Local lTravou:= .F.
+Local lGravou:= .F.
+Local nX     := 0
+Local nY     := 0
+Local nUsado := Len(aHeader)
+
+DEFAULT aRegLJY := {}
+
+If nOpcao <> 3
+	For nX := 1 To Len(aCols)
+		lTravou := .F.
+		If nX <= Len(aRegLJY)
+			LJY->(dbGoto(aRegLJY[nX]))
+			RecLock("LJY")
+			lTravou := .T.
+		Else
+			If !aCols[nX][nUsado+1]
+				RecLock("LJY",.T.)
+				lTravou := .T.
+			Else
+				lTravou := .F.
+			EndIf
+		EndIf
+		If !aCols[nX][nUsado+1]
+			lGravou := .T.
+			For nY := 1 To nUsado
+				If aHeader[nY][10]<>"V"
+					LJY->(FieldPut( FieldPos( aHeader[nY][2] ), aCols[nX][nY] ))
+				EndIf
+			Next nY
+			LJY->LJY_FILIAL := xFilial("LJY")
+			LJY->LJY_CODQUA := M->LJY_CODQUA
+			LJY->LJY_DESQUA := M->LJY_DESQUA
+			LJY->LJY_TIPOL	:= M->LJY_TIPOL
+			LJY->LJY_DTATU  := dDataBase
+			MsUnLock()
+		Else
+			If lTravou
+				LJY->(dbDelete())
+			EndIf
+		EndIf
+	Next nX
+Else
+	For nX := 1 To Len(aRegLJY)
+		LJY->(dbGoto(aRegLJY[nX]))
+		RecLock("LJY")
+		LJY->(dbDelete())
+		lGravou := .T.
+	Next nX
+EndIf
+
+RestArea(aArea)
+Return(lGravou)
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Qua15LinOk³ Autor ³Eduardo Riera          ³ Data ³07.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Validacao da LinhaOk                                        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ExpL1: Indica que as informacoes sao validas                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Qua15LinOk()
+ 
+Local nUsado     := Len(aHeader)
+Local lRetorno   := .T.
+
+Local nVInic     := GdFieldPos('LJY_VInic'  )
+Local nVFinal    := GdFieldPos('LJY_VFinal' )
+
+If !aCols[n][nUsado + 1]
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Validacao dos campos obrigatorios.                                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Do Case
+		Case aCols[n,nVInic] == 0 .And. aCols[n,nVFinal] == 0
+			Help(" ", 1, "OBRIGAT",,RetTitle("LJY_VFINAL"))
+			lRetorno := .F.
+	EndCase
+
+	If lRetorno 
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Validacao dos horarios digitados                                      ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		If ( aCols[ n, nVInic ] > aCols[ n, nVFinal ] ) 
+		   	MsgAlert('Conteúdo em "'+Trim(RetTitle("LJY_VFINAL"))+'" deve ser maior que "'+Trim(RetTitle("LJY_VINIC"))+'"') 
+		   	lRetorno := .F.
+	    EndIf 
+	
+	EndIf 	         
+	
+	If lRetorno 
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Validacao de duplicidade (Coluna "De" )                               ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		lRetorno := GDCheckKey( { "LJY_VINIC" }, 4 ) 		
+	EndIf 
+
+	If lRetorno 
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Validacao de duplicidade (Coluna "Ate" )                               ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		lRetorno := GDCheckKey( { "LJY_VFINAL" }, 4 ) 		
+	EndIf 
+
+	If lRetorno 
+		//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+		//³ Validacao de duplicidade (Coluna "R$/Litro" )                               ³
+		//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+		lRetorno := GDCheckKey( { "LJY_VRESUL" }, 4 ) 		
+	EndIf 
+
+	
+EndIf                                
+
+Return ( lretorno )
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Qua15TudOk³ Autor ³Ricardo Berti          ³ Data ³07.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Validacao da TudoOk                                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ExpL1: Indica que as informacoes sao validas                ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³Nenhum                                                      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Qua15TudOk()
+
+Local lRetorno := .T.
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Validacao do cabecalho                                                ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ	
+If Empty( M->LJY_DESQUA)  .Or.  Empty( M->LJY_TIPOL ) 
+	Help( " ", 1, "OBRIGAT" ) 
+	lRetorno := .F. 
+EndIf
+
+Return ( lRetorno )
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Qua15Vld  ³ Autor ³Ricardo Berti          ³ Data ³07.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Validacao do cabecalho  Tab.Criterio de Valoriz.da Qualidade³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ExpL1: Indica se os dados preenchidos estao validos         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpC1: Alias do arquivo                                     ³±±
+±±³          ³ExpN2: Registro do Arquivo                                  ³±±
+±±³          ³ExpN3: Opcao da MBrowse                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function Qua15Vld()
+
+Local aArea    := GetArea()
+
+Local cCampo   := ReadVar()  
+Local cConteudo:= &( ReadVar() ) 
+
+Local lRetorno := .T.
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Verifica se cabecalho foi preenchido corretamente                     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+If "LJY_TIPOL" $ cCampo
+	
+	If ExistChav("LJY",M->LJY_TIPOL+M->LJY_CODQUA,1) .And. Inclui
+	   	MsgAlert("Tabela já existente!")
+	   	lRetorno := .F.
+	ElseIf ! Inclui
+	   	MsgAlert("Tabela não encontrada!")
+		//oSay2:SetText(Posicione("SA1",1,xFilial("SA1")+M->LJY_TIPOL+M->LJY_DTATU,"A1_NOME"))
+		//M->LJY_DESQUA := CriaVar( "LJY_TIPOL", .T. ) 		
+	   	lRetorno := .F.
+	EndIf
+	
+EndIf 
+
+RestArea(aArea)
+Return(lRetorno)
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³VldCodQua ³ Autor ³Ricardo Berti          ³ Data ³18.11.2005³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Validacao do campo LJY_CODQUA (COD.CRITERIO QUALIDADE)      ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+/*/
+Static Function VldCodQua()
+
+Local aArea    	 := {}
+Local cVarAtu 	 := ReadVar()
+Local lRet   	 := .T.
+Local cLista	 := ""
+Local cValorCrit
+Local cCriterio
+Local i
+
+If AllTrim(cVarAtu) == "M->LJY_CODQUA"
+
+	For i := 1 to 7
+		Do Case
+		Case i = 1
+			cCriterio := "MV_CTABGOR"
+		Case i = 2
+			cCriterio := "MV_CTABPRO"
+		Case i = 3
+			cCriterio := "MV_CTABCCS"
+		Case i = 4
+			cCriterio := "MV_CTABCBT"
+		Case i = 5
+			cCriterio := "MV_CTABVOL"
+		Case i = 6
+			cCriterio := "MV_CTABDIS"
+		Case i = 7
+			cCriterio := "MV_CTABTMP"
+		EndCase
+
+		cValorCrit := SuperGetMv(cCriterio,,"")
+		
+		If ! Empty( cValorCrit )
+			cLista += Trim(cValorCrit)+","
+		EndIf
+	Next
+
+	If Empty( cLista )
+	  	MsgAlert("Parâmetros da Qualidade do Leite nao configurados. Verifique!")
+		lRet := .F.
+	ElseIf ! Trim(M->LJY_CODQUA) $ cLista // so' pode digitar um codigo dos 4 parametros
+	   	MsgAlert("Cod.da Tabela diferente de "+Left(cLista,Len(cLista)-1),"Verifique os PARÂMETROS da Qualidade do Leite!")
+		lRet := .F.
+	ElseIf Inclui
+
+		aArea	:= GetArea()
+		dbSelectArea("LJY")
+		dbSetOrder(1)
+		If dbSeek( xFilial("LJY") + M->LJY_CODQUA )
+			M->LJY_DESQUA := LJY->LJY_DESQUA
+		Endif
+		RestArea(aArea)	
+	EndIf
+
+ElseIf AllTrim(cVarAtu) == "M->LJY_TIPOL" .And. Inclui
+
+		aArea	:= GetArea()
+		dbSelectArea("LJY")
+		dbSetOrder(1)
+		If dbSeek( xFilial("LJY") + M->LJY_CODQUA + M->LJY_TIPOL)
+		   	MsgAlert("Tabela já existente!")
+			lRet := .F.
+		Endif
+		RestArea(aArea)
+EndIf
+
+Return(lRet)
+
+
+Static Function CODQUALY()
+
+Local cRet := ''
+
+
+cRet := Alltrim(GetMv("MV_CTABGOR"))+";"
+cRet += Alltrim(GetMv("MV_CTABPRO"))+";"
+cRet += Alltrim(GetMv("MV_CTABCCS"))+";"
+cRet += Alltrim(GetMv("MV_CTABCBT"))+";"
+cRet += Alltrim(GetMv("MV_CTABVOL"))+";"
+cRet += Alltrim(GetMv("MV_CTABDIS"))+";"
+cRet += Alltrim(GetMv("MV_CTABTMP"))
+
+
+Return cRet
+
+Static Function xSativ5() //SUB-CANAL
+
+	Local aRet := {}
+
+
+	dbSelectArea("ZZW")
+	dbSetOrder(1)
+	dbGotop()
+	AADD(aRet,"")
+	While !Eof() //SX5->X5_TABELA == "WB"
+		
+		AADD(aRet,ZZW->ZZW_SCANAL+"="+ZZW->ZZW_DESCRI)
+		dbskip()
+
+	EndDo
+
+Return aRet
+
+
+User Function xLinPro() //SUB-CANAL
+
+	Local aRet := {}
+
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+	dbGotop()
+	AADD(aRet,"")
+	If dbSeek(xFilial("SX5")+'U3')
+		While !Eof() .AND. SX5->X5_TABELA == "U3" .AND. SX5->X5_CHAVE<>'999999'
+			
+			AADD(aRet,SX5->X5_CHAVE+"="+AllTrim(SX5->X5_DESCRI))
+			dbskip()
+	
+		EndDo
+	End If
+
+Return aRet
+
+Static Function LibCampos()
+
+If 		M->ZXY_TIPDES=='N'
+
+	lScanal := .T.
+	lLinPro	:= .T.
+	lQtde	:= .T.
+	lVol	:= .F.
+	lCodPro	:= .F.
+	lCodCli	:= .F.
+	lRede	:= .F.
+	lTabela	:= .F.
+
+ElseIf 	M->ZXY_TIPDES=='V'
+
+	lScanal := .T.
+	lLinPro	:= .T.
+	lQtde	:= .F.
+	lVol	:= .T.
+	lCodPro	:= .F.
+	lCodCli	:= .F.
+	lRede	:= .F.
+	lTabela	:= .F.
+
+ElseIf 	M->ZXY_TIPDES=='P'
+
+	lScanal := .T.
+	lLinPro	:= .T.
+	lQtde	:= .T.
+	lVol	:= .T.
+	lCodPro	:= .F.
+	lCodCli	:= .F.
+	lRede	:= .F.
+	lTabela	:= .F.
+
+ElseIf 	M->ZXY_TIPDES=='T'
+
+	lScanal := .F.
+	lLinPro	:= .T.
+	lQtde	:= .F.
+	lVol	:= .F.
+	lCodPro	:= .T.
+	lCodCli	:= .T.
+	lRede	:= .T.
+	lTabela	:= .T.
+	M->ZXY_SCANAL := ''
+	M->ZXY_LINPRO := ''
+EndIf
+
+Return

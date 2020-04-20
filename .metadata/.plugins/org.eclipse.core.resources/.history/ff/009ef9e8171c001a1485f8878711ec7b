@@ -1,0 +1,995 @@
+#Include 'Totvs.ch'
+#INCLUDE "TOPCONN.CH" 
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH"
+#INCLUDE 'COLORS.CH'
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FONT.CH"
+#include "TBICONN.CH"
+#include 'fileio.ch'
+
+/*/{Protheus.doc} JOBFATM02
+Job para leitura de arquivos Txt Neogrid e Conversao para pedidos de vendas WEBEDI
+
+@author Wilson Davila Oliveira
+@since 05/12/19
+@version 1.0
+/*/
+
+User Function JOBFTM2()
+
+Local aFiles  	:= {}
+Local aFolder 	:= {}
+Local cDirTXT 	:= ''
+Local xCGC		:= ''
+
+Private cBandeira 	:= ''
+Private cNomeRede 	:= ''
+Private aEan 		:= {}
+
+RpcSetType(3)
+RpcSetEnv('01','01',,,'FAT')
+
+CONOUT("[ INICIO JOB WEBEDI ]["+cValToChar(Date())+"]["+ Time()+"]")
+
+//Para EDI CBD com copia manual para diretorio do servidor local, copia os aquivos do servidor local====================================
+//para o pasta protheus_data do servidor protheus, apos renomeia os arquivos para extensao com final
+//data+hora da copia
+
+cDirTXT := "\\192.168.0.177\rede\TI\CBD\" //Alltrim(GetMv("MV_XDIRCBD"))
+
+aFiles := Directory(cDirTXT+"*.SCP")
+  
+For nX := 1 to Len( aFiles )
+	
+	cArqEDI := MemoRead(cDirTXT+AllTrim(aFiles[nX,1]))
+	
+	MemoWrite("\NEOGRID\CBD\"+SubStr(AllTrim(aFiles[nX,1]),1,Len(AllTrim(aFiles[nX,1]))-3)+"TXT",cArqEDI)
+	
+	FreNamEex(cDirTXT+AllTrim(aFiles[nX,1]) ,;
+	cDirTXT+"CONVERTIDOS\"+SubStr(AllTrim(aFiles[nX,1]),1,Len(AllTrim(aFiles[nX,1]))-3);
+	+"-"+substr(cValToChar(date()),1,2)+substr(cValToChar(date()),4,2)+substr(cValToChar(date()),7,2);
+	+"-"+SubStr(Time(),1,2)+SubStr(Time(),4,2)+SubStr(Time(),7,2))
+
+Next nX
+
+//=====================================================================================================================================
+
+//Verifica quantas pastas tem dentro do diretior NeoGrid 
+aFolder := Directory("\NEOGRID\*.*", "D")
+
+For nX := 1 to Len( aFolder )
+      
+		If AllTrim(aFolder[nX,1]) == "CBD"
+			cBandeira := '000001'
+			cNomeRede := "CBD"
+		ElseIf AllTrim(aFolder[nX,1]) == "CARREFOUR" 
+			cBandeira := '000004' 
+			cNomeRede := "CARREFOUR"
+		ElseIf AllTrim(aFolder[nX,1]) ==  "WALMART"
+			cBandeira := '000002' 
+			cNomeRede := "WALMART"
+		ElseIf AllTrim(aFolder[nX,1]) == "DAVO"  
+			cBandeira := '000008' 
+			cNomeRede := "DAVO"
+		ElseIf AllTrim(aFolder[nX,1]) == "COOP" 
+			cBandeira := '000007' 
+			cNomeRede := "COOP"
+		ElseIf AllTrim(aFolder[nX,1]) == "LOPES"
+			cBandeira := '000035' 
+			cNomeRede := "LOPES"
+		ElseIf AllTrim(aFolder[nX,1]) == "WMS"
+			cBandeira := '000030' 
+			cNomeRede := "WMS"
+		ElseIf AllTrim(aFolder[nX,1]) == "ANGELONI"
+			cBandeira := '000077' 
+			cNomeRede := "ANGELONI"
+		ElseIf AllTrim(aFolder[nX,1]) == "SONDA"
+			cBandeira := '000005' 
+			cNomeRede := "SONDA"
+		ElseIf AllTrim(aFolder[nX,1]) == "COMPER"
+			cBandeira := '000056' 
+			cNomeRede := "COMPER"
+		ElseIf AllTrim(aFolder[nX,1]) == "MAKRO"
+			cBandeira := '000003' 
+			cNomeRede := "MAKRO"
+		ElseIf AllTrim(aFolder[nX,1]) == "DB"
+			cBandeira := '000042' 
+			cNomeRede := "DB"
+		ElseIf AllTrim(aFolder[nX,1]) == "CENCOSUD"
+			cBandeira := '002491' 
+			cNomeRede := "CENCOSUD"
+		ElseIf AllTrim(aFolder[nX,1]) == "ZARAGOSA"
+			cBandeira := '000085' 
+			cNomeRede := "ZARAGOSA"
+		ElseIf AllTrim(aFolder[nX,1]) == "STMARCHE"
+			cBandeira := '000109' 
+			cNomeRede := "STMARCHE"
+		ElseIf AllTrim(aFolder[nX,1]) == "ASSAI"
+			cBandeira := '000039' 
+			cNomeRede := "ASSAI"
+		ElseIf AllTrim(aFolder[nX,1]) == "DIA"
+			cBandeira := '000420' 
+			cNomeRede := "DIA"
+		ElseIf AllTrim(aFolder[nX,1]) == "RICOY"
+			cBandeira := '000011' 
+			cNomeRede := "RICOY"
+		ElseIf AllTrim(aFolder[nX,1]) == "BARBOSA"
+			cBandeira := '000012' 
+			cNomeRede := "BARBOSA"
+		ElseIf AllTrim(aFolder[nX,1]) == "BOMPRECO"
+			cBandeira := '000013' 
+			cNomeRede := "BOMPRECO"
+		ElseIf AllTrim(aFolder[nX,1]) == "ROLDAO"
+			cBandeira := '000070' 
+			cNomeRede := "ROLDAO"
+		ElseIf AllTrim(aFolder[nX,1]) == "MULFATTO"
+			cBandeira := '001217' 
+			cNomeRede := "MULFATTO"
+		ElseIf AllTrim(aFolder[nX,1]) == "NAGUMO"
+			cBandeira := '000018' 
+			cNomeRede := "NAGUMO"
+		ElseIf AllTrim(aFolder[nX,1]) ==  "AKKI"
+			cBandeira := '000749' 
+			cNomeRede := "AKKI"
+		ElseIf AllTrim(aFolder[nX,1]) == "COMPREBEM"
+			cBandeira := '002395' 
+			cNomeRede := "COMPREBEM"
+		EndIf
+		CONOUT("[BANDEIRA] ["+cNomeRede+"]")
+		If cBandeira <> ''
+			
+			aFiles := Directory("\NEOGRID\"+AllTrim(aFolder[nX,1])+"\*.TXT")
+			
+			For nY := 1 To Len(aFiles)
+				cArqEDI := "\NEOGRID\"+AllTrim(aFolder[nX,1])+"\"+AllTrim(aFiles[nY,1])
+								
+				PVEDI_CBD(cArqEDI)
+
+				FreNamEex("\NEOGRID\"+AllTrim(aFolder[nX,1])+"\"+AllTrim(aFiles[nY,1]) ,"\NEOGRID\"+AllTrim(aFolder[nX,1])+"\"+SubStr(AllTrim(aFiles[nY,1]),1,Len(AllTrim(aFiles[nY,1]))-3)+"OLD")
+												
+			Next
+		End If
+Next nX
+
+ConOut("[I N I C I O      E X E C A U T O]["+cValToChar(Date())+"]["+ Time()+"]")
+
+GeraPedido()
+
+ConOut("[PROCESSO DE CONVERSAO JOB WEBEDI ENCERRADO]["+cValToChar(Date())+"]["+ Time()+"]")
+
+RpcClearEnv()
+
+
+Return
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡„o    ³PVEDI_CBD ³ Autor ³Marcio Costa           ³ Data ³ 14/07/06 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡„o ³Importa Arquivo EDI CBD                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³Quata                                                       ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function PVEDI_CBD(cArqEDI)
+
+Local aDbStru:={},aAreaSB1,aAreaSA1
+Local cDirTXT := ""
+Local nOptions:= GETF_OVERWRITEPROMPT+GETF_LOCALHARD+GETF_NETWORKDRIVE
+Local cExtArq := ""
+Local aRet := {}
+Local n1 := 0
+Local lGrava := .T.
+Local cNomeRede := ""
+Private cObsPed := ''
+Private cMensagem := "Os pedido abaixo ja estão na base a não serão baixados, verifique !"  + CRLF
+Private cStatus := ""
+Private lDupl := .F.
+Private lAchou := .T.
+Private cTipoPed
+Private cBandTemp := ''
+Private cUnidade
+Private cBandDup
+//CONOUT("LINHA>>>>>>>181")
+aAreaSB1:=SB1->(GetArea())
+aAreaSA1:=SA1->(GetArea())
+
+If Empty(cArqEDI)
+	Return
+Endif
+
+
+
+nHandle := FT_FUse(cArqEDI)
+
+aItensPed := {}
+xPedido := ''
+TEXTO := ''
+
+ While !FT_FEOF()
+	
+	TEXTO  := FT_FReadLn()
+	
+	If Subs(TEXTO,1,2) == '01' && Header
+	
+		If cBandeira == '000005' .OR.  cBandeira == '000109'
+			cPedido    	:= Subs(TEXTO,008,10)
+		Else
+			cPedido    	:= Subs(TEXTO,003,15)
+		EndIf
+		cDtHrEmis  	:= Subs(TEXTO,021,08)
+		cEANComprd 	:= Subs(TEXTO,059,13)
+		cEANFornec 	:= Subs(TEXTO,072,13)
+		cEANLocEnt 	:= Subs(TEXTO,085,13)
+		cTipoPed	:= Subs(TEXTO,018,03)
+		dDtEntreg	:= Subs(TEXTO,029,08)
+		dDtEntFim	:= Subs(TEXTO,037,08)
+		Do Case
+
+		Case cEANFornec $ '7896183200039|7896212500017'
+			cFilant 	:= '01'
+		Case cEANFornec $ '7896183209988|0814280344453'
+			cFilant 	:= '10'
+		Case cEANFornec $ '7896183209971'
+			cFilant 	:= '08'
+		Case cEANFornec $ '7896183209995'
+			cFilant 	:= '09'
+		EndCase
+		
+		//Wilson 10/09/09  Verificar se o pedido ja foi baixado se positivo nao baixa novamente.
+		aAreaSZ2 := GetArea()
+			dbSelectArea("SZ2")
+			dbSetOrder(1)
+			If dbSeek(xFilial("SZ2")+cPedido)
+				cMensagem += cPedido +  " - " + cNomeRede +  CRLF
+				lDupl := .T.
+				lGrava := .F.
+			End if
+	
+			IF cBandeira == '000005' .OR. cBandeira == '000039'  //wilson 30/01/2013 deixar baixar pedidos duplicados da rede sonda - pedido Tatiana
+				lDupl := .F.
+				lGrava := .T.
+			End If
+		RestArea(aAreaSZ2)
+		
+		dbSelectArea("SA1")
+		dbOrderNickName("SA1EANCLI")
+		If dbSeek(xFilial("SA1")+cEANLocEnt)
+			
+			If SA1->A1_XBAND == '000028'
+				cBandTemp := cBandeira
+				cBandeira := '000028'
+			End if
+			
+			If SA1->A1_XBAND == cBandeira   		
+				cCliComprd 	:= SA1->A1_COD
+				cLojComprd 	:= SA1->A1_LOJA
+				cNomComprd 	:= SA1->A1_NOME
+				cEndCli	   	:= SA1->A1_END
+				cStatus 	:= "A"
+				
+				If cBandeira == '000028'
+					cBandeira := cBandTemp
+				EndIf
+				
+			Else 
+				SA1->A1_XBAND == '002492' .OR. SA1->A1_XBAND == '002493' .OR. SA1->A1_XBAND == '002494' .OR. SA1->A1_XBAND == '002495' .OR. SA1->A1_XBAND == '002496'
+				cBandDup  := SA1->A1_XBAND
+				cBandTemp := cBandeira
+				cBandeira := cBandDup
+			End if
+			
+			If SA1->A1_XBAND == cBandeira   		
+				cCliComprd 	:= SA1->A1_COD
+				cLojComprd 	:= SA1->A1_LOJA
+				cNomComprd 	:= SA1->A1_NOME
+				cEndCli	   	:= SA1->A1_END
+				cStatus 	:= "A"
+				
+				If  cBandeira == cBandDup
+					cBandeira := cBandTemp
+				EndIf
+			Else
+				//CONOUT('[Pedido Inválido','Esse Pedido não pertence a Rede-> ' + cNomeRede+"]")
+				return
+			EndIf
+		Else
+			cCliComprd := " "
+			cLojComprd := " "
+			cNomComprd := " "
+			cEndCli	   := " "
+			cStatus	   := "I"
+		EndIF
+		
+		If cStatus == "I"
+		lAchou := .F.
+		Else
+		lAchou := .T.
+		End If
+		
+			If Empty(cCliComprd)
+				cObsPed := "*****************LOJA NAO CADASTRADA*************************"
+				//CONOUT("[Cliente EAN> " + cEANComprd + " ] [NAO CADASTRADO]")
+			Endif		
+
+		//dbSelectArea(cAliasEDI)
+		//dbSkip()
+		FT_FSKIP()	
+	
+	TEXTO  := FT_FReadLn()	
+	ElseIf Subs(TEXTO,1,2) == '03'  && Itens
+	cNumSeq := 0
+	
+	 While !FT_FEOF() .And. Subs(TEXTO,1,2) == '03'
+	 
+	 cEANProd  := Subs(TEXTO,021,14)
+			
+			dbSelectArea("SZE")
+			DbSetOrder(2)		
+			
+			If SA1->A1_XBAND == '000028' //Alterador 15/03/08 Diferenciar Pedidos Wal do Sam's - Wilson 
+			cBandTemp := cBandeira
+			cBandeira := '000028'
+			EndIf
+			
+			If SA1->A1_XBAND == '002492' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002492'
+			EndIf
+			
+			If SA1->A1_XBAND == '002493' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002493'
+			EndIf
+			
+			If SA1->A1_XBAND == '002491' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002491'
+			EndIf
+			
+			If SA1->A1_XBAND == '002494' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002494'
+			EndIf
+			
+			If SA1->A1_XBAND == '002495' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002495'
+			EndIf
+			
+			If SA1->A1_XBAND == '002496' //RONALDO 18-02-2019 Diferenciar Pedidos Cencosud
+				cBandTemp := cBandeira
+				cBandeira := '002496'
+			EndIf
+			
+			
+			If dbSeek(cFilant + cBandeira + cEANProd)
+			
+				cProduto  := SZE->ZE_CODM		
+				cDescr	  := SZE->ZE_PRODUTO
+			    	If lAchou == .T.
+				    cStatus := "A"	
+				    Else
+				    cStatus := "I"
+				    EndIf
+						If cBandeira == '000028' //Alterador 15/03/08 Diferenciar Pedidos Wal do Sam's - Wilson
+							cBandeira := cBandTemp
+						Elseif cBandeira == '002491' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						Elseif cBandeira == '002492' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						ElseIf cBandeira == '002493' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						ElseIf cBandeira == '002494' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						ElseIf cBandeira == '002495' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						Elseif cBandeira == '002496' //RONALDO 18/02/19  Diferenciar Pedidos Cencosud
+							cBandeira := cBandTemp
+						EndIf	
+			Else        
+				cObsPed := "*****************PRODUTO NAO CADASTRAD0*************************"
+				cProduto  	:= " "
+				cDescr    	:= " "
+				cStatus		:= "I"
+			Endif
+			
+			
+				If cStatus == 'I'
+					lAchou := .F.
+				EndIf
+					
+			//dbSelectArea(cAliasEDI)
+			cNumSeq   := cNumSeq + 1 
+			cUnidMed  := Subs(TEXTO,076,03)
+			nQtdePed  := Val(Subs(TEXTO,079,09))/1000
+			nPrcVen   := Val(Subs(TEXTO,088,17))/1000000
+		
+			
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+			//³Inicio da gravacao do arquivo SZ2 - Manutenao do EDI³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+			
+			// Wilson 10/09/09 - Variavel que indica se o pedido deve ser gravado, se o pedido ja existem na base na grava e avisa ao usuario
+			if lGrava
+				GravaSZ2()
+			End if
+						
+			/*BEGINDOC
+			//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-------¿
+			//³Altera o status dos Itens pedido se algum produto nao for localizado na base³
+			//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-------Ù
+			ENDDOC*/
+	
+			If lAchou == .F. 
+		 		DbSelectarea("SZ2")
+		  		DbSetOrder(1)
+				If DbSeek(xFilial('SZ2') + cPedido)
+				   	While AllTrim(SZ2->Z2_XPEDIDO) == AllTrim(cPedido)
+		  	    	RecLock("SZ2", .F.)
+			    	SZ2->Z2_XSTATUS := "I"
+			    	SZ2->Z2_XOBS := "*****************PRODUTO NAO CADASTRAD0*************************"
+			    	MsUnlock()
+			    	DbSkip()
+			    	EndDo
+			    EndIf
+			EndIf         
+			
+			FT_FSKIP()				
+			TEXTO  := FT_FReadLn()
+			//dbSelectArea(cAliasEDI)
+			//dbSkip()
+	EndDo
+	
+	// Wilson 10/09/09 - Variavel que indica se o pedido nao deve ser gravada no caso do pedido ja ter sido baixado
+	
+	lGrava := .T.
+	TEXTO  := FT_FReadLn()
+	ElseIf Subs(TEXTO,1,2) == '04' // Trailler
+		FT_FSKIP()
+		TEXTO  := FT_FReadLn()	
+		//dbSelectArea(cAliasEDI)
+		//dbSkip()
+	Else
+		FT_FSKIP()
+		TEXTO  := FT_FReadLn()	
+		//dbSelectArea(cAliasEDI)
+		//dbSkip()	
+	Endif
+
+EndDo
+
+FT_FUSE()
+
+RestArea(aAreaSA1)
+RestArea(aAreaSB1)
+
+//FCopia(cArqEDI)
+
+//Wilson 10/09/09 - Adiciona array com avisos para a listagem dos pedidos que ja existem na base e portanto nao serao baixados. 
+aadd(aRet,lDupl)
+aadd(aRet,cMensagem)
+
+Return (aRet)
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³GravaSZ2  ºAutor  ³Marcio Costa        º Data ³  07/26/06   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Gravacao do arquivo SZ2                                     º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function GravaSZ2()
+
+dbSelectArea("SZ2")
+dbSetOrder(1)
+//CONOUT("GRAVASZ2")
+        RecLock("SZ2",.T.)
+		
+        //EDI campo belo altera tipo de operacao de acordo com a filial -> Wilson 31/05/11
+		
+		SZ2->Z2_FILIAL		:= cFilAnt
+		SZ2->Z2_XSTATUS		:= cStatus
+		SZ2->Z2_XEMISS 		:= dDataBase
+		SZ2->Z2_XPEDIDO		:= cPedido
+		SZ2->Z2_XITEM  		:= StrZero(cNumSeq,6)
+		SZ2->Z2_XDATA  		:= Ctod(Substr(cDtHrEmis,7,2)+"/"+Substr(cDtHrEmis,5,2)+"/"+Substr(cDtHrEmis,1,4) )
+		SZ2->Z2_XHORA  		:= Time() 
+		SZ2->Z2_XCLIENT		:= cCliComprd
+		SZ2->Z2_XLOJA  		:= cLojComprd
+		SZ2->Z2_XNOME  		:= cNomComprd
+		SZ2->Z2_XENDCLI		:= cEndCli
+		SZ2->Z2_XEANCOM		:= cEANLocEnt
+		SZ2->Z2_XEANPRO		:= cEanProd
+		SZ2->Z2_XPRODUT		:= cProduto
+		SZ2->Z2_XDESCPR		:= cDescr
+		SZ2->Z2_XUNIMED		:= cUnidMed
+		SZ2->Z2_XQTDPED		:= nQtdePed
+		
+		//EDI campo belo altera tipo de operacao de acordo com a filial -> Wilson 31/05/11
+		
+		If cFilant == '01'
+			SZ2->Z2_XTIPOPE	:= If(cTipoPed == '001',"02",if(cTipoPed == '002','11','02'))
+		ElseiF cFilant == '08'
+			SZ2->Z2_XTIPOPE	:= If(cTipoPed == '001',"79",if(cTipoPed == '002','81','79'))
+		ElseiF cFilant == '09'
+			SZ2->Z2_XTIPOPE	:= If(cTipoPed == '001',"93",if(cTipoPed == '002','94','93'))
+		Else
+			SZ2->Z2_XTIPOPE	:= If(cTipoPed == '001',"1A",if(cTipoPed == '002','1B','1A'))		
+		End IF                                                                                  
+		
+		SZ2->Z2_XPRCVEN		:= nPrcVen          
+		SZ2->Z2_XENTREG		:= Ctod(Substr(dDtEntFim,7,2)+"/"+Substr(dDtEntFim,5,2)+"/"+Substr(dDtEntFim,1,4) )	
+		SZ2->Z2_XDTENTF		:= Ctod(Substr(dDtEntFim,7,2)+"/"+Substr(dDtEntFim,5,2)+"/"+Substr(dDtEntFim,1,4) )
+		//SZ2->Z2_XUSUARI		:= xUsuario
+		SZ2->Z2_XOBS		:= cObsPed
+		cObsPed := ""
+		
+		If !Empty(cProduto)
+		
+		dbSelectArea("SB1")
+		DbSetOrder(1)
+		dbSeek(xFilial("SB1") + cProduto )	
+					
+			If SB1->B1_PESOVAR == "S"
+				SZ2->Z2_XUMCONV	:= SB1->B1_SEGUM
+			ElseIf SB1->B1_PESOVAR == "N"
+				SZ2->Z2_XUMCONV	:= SB1->B1_UM			
+			EndIf
+				
+			SZ2->Z2_XQTCONV		:= Iif(SZE->ZE_TPCONV == "1",nQtdePed,Iif(SZE->ZE_TPCONV == "2",;
+			Round(nQtdePed*SZE->ZE_FATORC,2),	Round(nQtdePed/SZE->ZE_FATORC,6)))
+				
+			SZ2->Z2_XPRCONV		:= Iif(SZE->ZE_TPCONV == "1",nPrcVen,Iif(SZE->ZE_TPCONV == "2",;
+			Round(nPrcVen/SZE->ZE_FATORC,2),Round(nPrcVen*SZE->ZE_FATORC,6)))			
+				
+			SZ2->Z2_XTOTAL		:= Round(SZ2->Z2_XQTCONV*SZ2->Z2_XPRCONV,6)		
+					
+		EndIf
+
+dbSelectArea("SZ2")
+dbSetOrder(1)
+
+MsUnLock()
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³GeraPedidoºAutor  ³Microsiga           º Data ³  07/26/06   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Geracao do Pedido de Venda                                  º±±
+±±º          ³                                                            º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP                                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function GeraPedido()
+
+Local aCabPV 	:= {},aItemPV:= {}
+Local cQuery 	:= ""
+Local cFiltro 	:= ""
+Local aStru 	:= SZ2->(dbStruct())
+Local nI 		:= 0
+Local n1		:= 0
+Local cIndTmp 	:= ""
+Local nIndexSZ2 := ""
+Local cChaveSZ2 := ""
+Local nPrecUnit := 0
+Local cTes 		:= GETMV("MV_TESEDI")
+Local cLocSc6 	:= ""                  
+Local dEntreg 	:= MV_PAR02
+Local cNumPed	:= ""
+Local n1		:= 0
+Local n2		:= 0
+Local n3		:= 0
+Local n4		:= 0
+Local cPedEdi	:= '' //*wilson
+Local cFilPed	:= '' //*wilson
+Local cCondP    := ''
+
+//ALTERADO POR RRM - CHAMADO 6702 - 21/09/16
+//INCLUSAO DE TRATAMENTO DE DATA DE VENCTO PARA CLIENTE SODEXO 
+LOCAL cDtsod := SUPERGETMV("QU_SODEXO",,'1923;2322;2220;2024;2422;2202;0221;2121;2125;1311;1105;0519;')
+LOCAL cDIA   := 0
+LOCAL cMES   := 0
+LOCAL aVenc  := {} //array com as datas de vencimento do cliente conforme o parametro
+LOCAL dDTVEN := CTOD("  /  /  ")
+LOCAL INI    := 0 //identifica a quinzena
+LOCAL nPARC  := 0 
+LOCAL cCli   := ' '
+Local __cMSBLQL:= '' //RONALDO-24/05/2017 - Chamado-001777
+Local __cRISCO := '' //RONALDO-24/05/2017 - Chamado-001777
+Local cAliasZ2 := GetNextAlias()
+Local aPedCon	:= {}
+//FIM CHAMADO 6702
+
+Private lMsErroAuto := .F.
+Private lAutoErrNoFile:= .T.
+
+dbSelectArea("SZ2")
+dbSetOrder(1)
+
+BeginSql alias cAliasZ2
+	%noparser%
+	
+	SELECT *,R_E_C_N_O_ AS REC 
+	FROM %table:SZ2% SZ2 (NOLOCK) WHERE SZ2.%notDel% 
+	AND Z2_XSTATUS IN ('A') AND Z2_XQTDPED>0 AND Z2_XEMISS>=%Exp:Date()-1%
+	ORDER BY Z2_FILIAL,Z2_XPEDIDO,Z2_XCLIENT,Z2_XLOJA,Z2_XITEM
+
+EndSql	
+
+	aRet := GetLastQuery()
+	
+	MemoWrite("C:\HD\QUERYS\JOBRTAFM02_EXECAUTO.sql",aRet[2])
+
+While (cAliasZ2)->( !Eof() )
+	
+	cFilAnt := (cAliasZ2)->Z2_FILIAL
+	cFilPed := (cAliasZ2)->Z2_FILIAL
+	aCabPV := {}
+	aItemPV:= {}
+	
+	cChaveSZ2 := (cAliasZ2)->Z2_XPEDIDO + (cAliasZ2)->Z2_XCLIENT + (cAliasZ2)->Z2_XLOJA
+
+	dbSelectArea("SA1")
+	dbSetOrder(1)
+	dbSeek(xFilial("SA1") + (cAliasZ2)->Z2_XCLIENT + (cAliasZ2)->Z2_XLOJA)
+	
+	cTransp := Alltrim(If(Empty((cAliasZ2)->Z2_XTRANSP),SA1->A1_TRANSP,(cAliasZ2)->Z2_XTRANSP))
+	cVend	:= SA1->A1_XVEND01 //Representante Quata
+    cVend1	:= SA1->A1_XVEND02 //Representante Cristina  
+    cVend2	:= SA1->A1_XVEND03 //Representante Leite
+	cVend3	:= SA1->A1_XVEND04 //Representante Gloria
+	//Cabecalho
+	
+	If SA1->A1_MSBLQL == '1'
+		__cMSBLQL := SA1->A1_MSBLQL
+		
+		RecLock("SA1",.F.)
+			SA1->A1_MSBLQL := '2'
+		Msunlock()
+	
+	End if
+	
+	If SA1->A1_RISCO <> 'A'
+		__cRISCO:= SA1->A1_RISCO
+
+		RecLock("SA1",.F.)
+			SA1->A1_RISCO := 'A'
+		Msunlock()
+	
+	End if
+	
+	//ALTERADO POR RRM - CHAMADO 6702 - 21/09/16
+	//INCLUSAO DE TRATAMENTO DE DATA DE VENCTO PARA CLIENTE SODEXO 
+    IF (cAliasZ2)->Z2_XCLIENT	== '002727' 
+   		
+   		cDIA   := DAY((cAliasZ2)->Z2_XENTREG) 
+   		cMES   := MONTH((cAliasZ2)->Z2_XENTREG)
+   		//cCondP := SUPERGETMV("QU_CPSODEX",,'997')
+	    cCli   := ALLTRIM((cAliasZ2)->Z2_XCLIENT)
+	   	AADD(aVenc,{})
+	   	DO WHILE At(";",cDtsod)>0
+	   		aAdd(aVenc[Len(aVenc)],Substr(cDtsod,1,At(";",cDtsod)-1))
+	   		cDtsod := StrTran(Substr(cDtsod,At(";",cDtsod)+1,Len(cDtsod)-At(";",cDtsod)),'"','')
+	   	Enddo                    
+	   	IF cDIA >= 1 .and. cDIA <= 13 //primeira Quinzena 
+	   		INI := 1 
+	   	ELSE //segunda quinzena
+	   		INI := 3
+	   	Endif
+	   	dDTVEN:= MonthSum(CTOD(SUBSTR(aVenc[1][cMES],ini,2)+"/"+STRZERO(cMES,2)+"/"+STRZERO(YEAR((cAliasZ2)->Z2_XENTREG),4)),IIF(INI==1,1,2))
+	
+	ELSE 
+		cCli   := ' '	    
+	
+	ENDIF
+	//FIM CHAMADO 6702
+	
+	dbselectarea("SC5")
+	dbSetOrder(1)
+     
+	dbSelectArea("SB1")
+	dbSetOrder(1)
+	dbSeek(xFilial("SB1") + (cAliasZ2)->Z2_XPRODUT)
+	
+	If (cAliasZ2)->Z2_XCLIENT	== '002727' 
+   		cCondP := SUPERGETMV("QU_CPSODEX",,'997')
+   	Else
+		If SB1->B1_U_GRPRO == '000001' .And. !Empty(SA1->A1_XCOND1)
+			cCondP := AllTrim(SA1->A1_XCOND1) // REFRIGERADO
+		Else
+			cCondP := AllTrim(SA1->A1_COND) // SECO
+		Endif
+	EndIf
+	
+	
+	aAdd(aCabPV,{"C5_FILIAL"	,xFilial("SC5")												,Nil})// Numero do pedido
+	aAdd(aCabPV,{"C5_TIPO"		,"N"														,Nil})// Tipo de pedido
+	aAdd(aCabPV,{"C5_CLIENTE"	,(cAliasZ2)->Z2_XCLIENT											,.F.})// Codigo do cliente
+	aAdd(aCabPV,{"C5_LOJACLI"	,(cAliasZ2)->Z2_XLOJA											,Nil})// Loja do cliente
+	aAdd(aCabPV,{"C5_CLIENT" 	,(cAliasZ2)->Z2_XCLIENT											,Nil})// Codigo do cliente Entrega
+	aAdd(aCabPV,{"C5_LOJAENT"	,(cAliasZ2)->Z2_XLOJA											,Nil})// Loja para entrada
+	aAdd(aCabPV,{"C5_TIPOCLI"	,SA1->A1_TIPO												,Nil})// Tipo do Cliente
+	aAdd(aCabPV,{"C5_TRANSP"	,SA1->A1_TRANSP												,.F.})// Transportadora 000014 Nosso Carro
+	aAdd(aCabPV,{"C5_EMISSAO"	,stod((cAliasZ2)->Z2_XEMISS)											,Nil})// Data de emissao
+	
+    aAdd(aCabPV,{"C5_CONDPAG"	,cCondP 												,Nil})// Codigo da condicao de pagamanto
+    //ALTERADO POR RRM - CHAMADO 6702 - 21/09/16
+	//INCLUSAO DE TRATAMENTO DE DATA DE VENCTO PARA CLIENTE SODEXO 
+   IF ALLTRIM((cAliasZ2)->Z2_XCLIENT) == '002727' 
+    	aAdd(aCabPV,{"C5_DATA1"	    ,dDTVEN	            									,NIL})// DATA VENCTO PARA SODEXO
+    	aAdd(aCabPV,{"C5_PARC1"	    ,0   	            									,NIL})// DATA VENCTO PARA SODEXO
+	ENDIF
+	//FIM CHAMADO 6702
+	
+	aAdd(aCabPV,{"C5_VEND1"		,cVend														,Nil})// Representante Quata
+	aAdd(aCabPV,{"C5_TABELA"	,SA1->A1_TABELA												,Nil})// Tabela de preco
+	aAdd(aCabPV,{"C5_TPFRETE"	,'C'											,Nil})// Tipo de Frete  
+	
+	//Wilson 09/05/11 - EDI Confirmacao pocket - se vier do pocket nao coloca data, a data so e preenchida apos a confirmacao 
+	If !EDICONF((cAliasZ2)->Z2_XCLIENT+(cAliasZ2)->Z2_XLOJA) 
+	aAdd(aCabPV,{"C5_DTEDI"		,stod((cAliasZ2)->Z2_XEMISS)											,Nil})// Data da importacao do EDI
+	End If
+		
+	aAdd(aCabPV,{"C5_U_DTENT"	,stod((cAliasZ2)->Z2_XENTREG)											,Nil})// Data de Entrega Pedido EDI
+	aAdd(aCabPV,{"C5_XSETOR"	,'1'														,Nil})// Setor 1-PAS / 2-SAL  
+	aAdd(aCabPV,{"C5_VEND4"		,cVend1														,Nil})// Representante Cristina	
+    
+    aAdd(aCabPV,{"C5_VEND7"		,cVend2														,Nil})// Representante Leite
+	aAdd(aCabPV,{"C5_VEND8"		,cVend3														,Nil})// Representante Gloria
+	
+	aAdd(aCabPV,{"C5_U_TIPO"	,(cAliasZ2)->Z2_XTIPOPE											,Nil})// Tipo de Operacao se Venda = "02" se Bonif = "11"
+	aAdd(aCabPV,{"C5_U_USER"	,(cAliasZ2)->Z2_XUSUARI											,Nil})// Nome usuarios do sistema que converteu pedido EDI
+ 	aAdd(aCabPV,{"C5_U_PEDCL"	,(cAliasZ2)->Z2_XPEDIDO											,Nil})// Pedido Cliente
+ 	aAdd(aCabPV,{"C5_U_HORA"	,(cAliasZ2)->Z2_XHORA											,.F.})// Horario emissão pedido
+ 	aAdd(aCabPV,{"C5_U_EAN"		,(cAliasZ2)->Z2_XEANCOM											,.F.})// Ean comprador
+	aAdd(aCabPV,{"C5_U_ORIGE"	,'EDI'														,.F.})//ORIGEM PEDIDO EDI, ERP, POCKET WILSON 01/12/2008
+	aAdd(aCabPV,{"C5_MENNOTA"	,IIF((cAliasZ2)->Z2_XTIPOPE=='11','BONIFICACAO ORIGEM EDI','')	,.F.})// Mensagem Nota se tipoop=11 obrigatorio    
+    aAdd(aCabPV,{"C5_U_DTFIM"	,stod((cAliasZ2)->Z2_XDTENTF)											,.F.})//Data de entrega Final - 06/05/2008 	
+    
+    //Retirado em 09/05/11 - Campo somete será preenchido após confirmação EDI x Pocket
+    //aAdd(aCabPV,{"C5_DTEDI"		,(cAliasZ2)->Z2_XEMISS											,Nil})// Data da importacao do EDI
+	
+	//dbSelectArea("(cAliasZ2)")
+	
+	nItem := 1
+
+    nPARC  := 0
+    
+	Do While (cAliasZ2)->( !Eof() ) .And. cChaveSZ2 == (cAliasZ2)->Z2_XPEDIDO + (cAliasZ2)->Z2_XCLIENT + (cAliasZ2)->Z2_XLOJA
+	
+		dbSelectArea("SB1")
+		dbSetOrder(1)
+		dbSeek(xFilial("SB1") + (cAliasZ2)->Z2_XPRODUT)
+		
+		dbSelectArea("SF4")
+		dbSetOrder(1)
+		dbSeek(xFilial("SF4") + cTes)
+
+		// Chamado No.006171 (Tatiana Carneiro)
+		// Fixar armazem 08 para os produtos abaixo
+		//cLocSc6 := If(FwFilial()=="01".And.Alltrim((cAliasZ2)->Z2_XPRODUT)$"'001162','001163','001167','001168'","08","01")
+		cLocSc6 := "01"
+		//CriaSB2( (cAliasZ2)->Z2_XPRODUT, cLocSc6)
+
+
+		//"C6_QTDVEN"
+		//n1 := Iif((cAliasZ2)->Z2_XUMCONV='PC' .OR. (cAliasZ2)->Z2_XUMCONV='L',(cAliasZ2)->Z2_XQTCONV,0)
+		//"C6_UNSVEN"
+		//n2 := Iif((cAliasZ2)->Z2_XUMCONV='KG' .OR. (cAliasZ2)->Z2_XUMCONV='CX',Iif((cAliasZ2)->Z2_XQTCONV >= SB1->B1_PESO,	(cAliasZ2)->Z2_XQTCONV,	SB1->B1_PESO),0)
+		//"C6_PRCVEN"
+		//n3 :=	Iif((cAliasZ2)->Z2_XUMCONV='PC' .OR. (cAliasZ2)->Z2_XUMCONV='L',(cAliasZ2)->Z2_XPRCONV,0) 
+		//"C6_PRCVEN2"
+		//n4 :=  Iif((cAliasZ2)->Z2_XUMCONV='KG' .OR. (cAliasZ2)->Z2_XUMCONV='CX',(cAliasZ2)->Z2_XPRCONV,0)
+                
+        nParc:= nParc + iif(n1 == 0,n2*n4,n1*n3) //TOTALIZA O VALOR DO PEDIDO - UTILIZADO QDO A CONDIÇÃO FOR TIPO 9
+
+
+        If SB1->B1_PESOVAR == 'N'
+	        AADD(aItemPV,{{"C6_FILIAL"	,xFilial("SC6")									,Nil},; 
+	                	{"C6_ITEM   "	,STRZERO(nItem,2)								,.F.},; 
+	                	{"C6_PRODUTO"	,(cAliasZ2)->Z2_XPRODUT								,.F.},; 
+	                	{"C6_DESCRI" 	,(cAliasZ2)->Z2_XDESCPR								,Nil},; 
+	                	{"C6_QTDVEN" 	,(cAliasZ2)->Z2_XQTCONV								,.F.},;															 
+	                	{"C6_PRCVEN" 	,(cAliasZ2)->Z2_XPRCONV								,.F.},; 
+	                	{"C6_QTDLIB" 	,0												,Nil},;
+	                	{"C6_UM"     	,SB1->B1_UM   				          			,Nil},; 
+	                	{"C6_LOCAL"  	,cLocSC6                         				,Nil},; 
+	                	{"C6_EMISSAO"	,stod((cAliasZ2)->Z2_XEMISS)               				,Nil},; 
+	                	{"C6_ENTREG" 	,stod((cAliasZ2)->Z2_XENTREG)              				,Nil},; 
+	                	{"C6_DTENTF"	,stod((cAliasZ2)->Z2_XDTENTF)              				,Nil},; 
+	                	{"C6_XOPER"		,(cAliasZ2)->Z2_XTIPOPE								,Nil},; 
+	                	{"C6_PEDCLI" 	,(cAliasZ2)->Z2_XPEDIDO    	          				,Nil},; 
+	                	{"C6_XVEND"		,U_BuscaVend((cAliasZ2)->Z2_XPRODUT,(cAliasZ2)->Z2_XCLIENT,(cAliasZ2)->Z2_XLOJA),Nil},;
+	                	{"C6_U_EAN" 	,(cAliasZ2)->Z2_XEANPRO             				,NIL}})  
+		Else
+			AADD(aItemPV,{{"C6_FILIAL"	,xFilial("SC6")									,Nil},; 
+	                	{"C6_ITEM   "	,STRZERO(nItem,2)								,.F.},; 
+	                	{"C6_PRODUTO"	,(cAliasZ2)->Z2_XPRODUT								,.F.},; 
+	                	{"C6_DESCRI" 	,(cAliasZ2)->Z2_XDESCPR								,Nil},; 
+	                	{"C6_UNSVEN" 	,(cAliasZ2)->Z2_XQTCONV								,.F.},; 
+	                	{"C6_PRCVEN2" 	,(cAliasZ2)->Z2_XPRCONV								,.F.},; 
+	                	{"C6_QTDLIB" 	,0												,Nil},;
+	                	{"C6_UM"     	,SB1->B1_UM   				          			,Nil},; 
+	                	{"C6_LOCAL"  	,cLocSC6                         				,Nil},; 
+	                	{"C6_EMISSAO"	,stod((cAliasZ2)->Z2_XEMISS)               				,Nil},; 
+	                	{"C6_ENTREG" 	,stod((cAliasZ2)->Z2_XENTREG)              				,Nil},; 
+	                	{"C6_DTENTF"	,stod((cAliasZ2)->Z2_XDTENTF)              				,Nil},; 
+	                	{"C6_XOPER"		,(cAliasZ2)->Z2_XTIPOPE								,Nil},; 
+	                	{"C6_PEDCLI" 	,(cAliasZ2)->Z2_XPEDIDO    	          				,Nil},; 
+	                	{"C6_XVEND"		,U_BuscaVend((cAliasZ2)->Z2_XPRODUT,(cAliasZ2)->Z2_XCLIENT,(cAliasZ2)->Z2_XLOJA),Nil},;
+	                	{"C6_U_EAN" 	,(cAliasZ2)->Z2_XEANPRO             				,NIL}})  
+		End If
+
+        nItem++
+			                
+		SZ2->(dbSelectArea("SZ2"))
+		SZ2->(dbGoto( (cAliasZ2)->REC))
+		//dbSeek(xFilial("SZ2") + (cAliasZ2)->Z2_XPEDIDO + (cAliasZ2)->Z2_XCLIENT + (cAliasZ2)->Z2_XLOJA + (cAliasZ2)->Z2_XPRODUT + (cAliasZ2)->Z2_XITEM)
+		If SZ2->( !Eof())
+			SZ2->(RecLock("SZ2", .F.))
+				SZ2->Z2_XSTATUS := "P"
+			SZ2->(MsUnLock())
+		End If
+		cPedEdi	:= (cAliasZ2)->Z2_XPEDIDO //*wilson
+		cFilPed	:= (cAliasZ2)->Z2_FILIAL //*wilson
+		xCli 	:= (cAliasZ2)->Z2_XCLIENT
+		xLoja 	:= (cAliasZ2)->Z2_XLOJA				
+		//dbSelectArea("(cAliasZ2)")
+		(cAliasZ2)->( dbSkip() )
+	
+	EndDO
+	
+	IF cCLI == '002727' //atribui o valor total do pedido para a primeira parcela
+  	  nPos:=Ascan(ACABPV,{|x|AllTrim(x[1])=="C5_PARC1"})  
+	  ACABPV[nPos][2]:= nParc
+	
+	ENDIF
+
+	lLoop := .F.
+	If ChekPed(cFilPed,xCli,xLoja,(cAliasZ2)->Z2_XENTREG,(cAliasZ2)->Z2_XPEDIDO,aItemPV)
+	
+		MSExecAuto({|x,y,z|Mata410(x,y,z)},aCabPv,aItemPV,3)
+	Else
+		lLoop := .T.
+	End If   
+	   //--------------------------------------------//RONALDO-24/05/2017 - Chamado-001777
+	   
+	    If !Empty(__cMSBLQL)
+	    		
+	    	RecLock("SA1",.F.)
+				SA1->A1_MSBLQL := __cMSBLQL
+			Msunlock()
+		
+	    EndIF
+	    
+	    If !Empty(__cRISCO)
+	
+			RecLock("SA1",.F.)
+				SA1->A1_RISCO := __cRISCO
+			Msunlock()
+		
+		End if
+		
+	    __cMSBLQL 	:= ''
+	    __cRISCO  	:= ''
+	    cNomCli 	:=  ''
+	    cNomCli 	:=  Alltrim(SA1->A1_NOME)
+	  
+   //--------------------------------------------//RONALDO-24/05/2017 - Chamado-001777
+	If !lLoop
+		If lMsErroAuto
+			aLog := GetAutoGRLog()
+			StartJob("U_WFRFTM2A",GetEnvServer(),.F.,FwCodEmp(),FwFilial(),aLog,cPedEdi)
+			lMsErroAuto := .F. //*wilson
+			TCSQLExec("UPDATE " + RetSqlName("SZ2") + " SET Z2_XSTATUS='I' WHERE Z2_FILIAL='" + cFilPed + "' AND Z2_XPEDIDO='" + cPedEdi + "'")
+		Else
+			AADD(aPedCon,{cFilPed,SC5->C5_NUM,xCli+"-"+cNomCli,xLoja})
+		Endif
+	End If
+    
+EndDo
+	If Len(aPedCon)>0
+		StartJob("U_WFRFTM2B",GetEnvServer(),.F.,FwCodEmp(),FwFilial(),aPedCon)
+	Endif
+
+Return()
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³EDICONF   ºAutor  ³Wilson Davila       º Data ³  30/05/11   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Confirma a loja estana relacao de lojas que deverao ter    º±±
+±±º          ³ pedidos confirmados via pocket                             º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP10- QUATA                                                º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function EDICONF(cCod)
+
+Local lRet 		:= .F.
+Local cQuery 	:= ''
+
+cQuery := "SELECT A1_COD FROM " + RetSqlName("SA1") + " WHERE A1_COD+A1_LOJA='" + cCod + "' " + CRLF
+cQuery += "AND A1_COD+A1_LOJA IN( " + CRLF
+cQuery += "SELECT A1_COD+A1_LOJA AS CODIGO FROM " + RetSqlName("SA1") + " SA1 " + CRLF
+cQuery += "WHERE A1_XBAND IN('000001','000004','000002','000007','000008','000028','000030','000035','000005','000056','000003','000042','002491','002492','002493','002494','002495','002496','000085','000109','000039','000420','000011','000012','000013','000070','001217','000018','000749','002395') AND A1_MSBLQL='2' AND SA1.D_E_L_E_T_='' " + CRLF
+cQuery += "AND ( " + CRLF
+cQuery += "(A1_XVEND01 IN (SELECT A3_COD FROM " + RetSqlName("SA3") + " WHERE A3_HAND='1' AND D_E_L_E_T_='')) " + CRLF
+cQuery += "AND " + CRLF
+cQuery += "(A1_XVEND02 IN (SELECT A3_COD FROM " + RetSqlName("SA3") + " WHERE A3_HAND='1' AND D_E_L_E_T_='')))) " + CRLF
+
+Memowrite("RFATM02_1405.SQL",cQuery)
+
+	If Select( "QUERY2" ) > 0
+		QUERY2->( dbCloseArea() )
+	EndIf
+  			                                                                                                                                                                                       
+dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery), "QUERY2", .T., .T.)
+
+QUERY2->( dbGoTop() )
+
+IF QUERY2->( !Eof() )
+lRet := .T.
+End If
+
+Return(lRet)
+
+/////////////////////////////////////////////////////////////////////////////////
+User Function ChekPed(xFil,xCli,xLoja,xDtEnt,xPed,aItPed)
+
+Local lRet := .F.
+Local cAliChek := 'CALICHEK'
+
+If Select(cAliChek) > 0
+	DbSelectArea(cAliChek)
+	(cAliChek)->(DbCloseArea())
+EndIf
+
+BeginSql alias cAliChek
+	%noparser%
+		
+	SELECT DISTINCT C6_FILIAL,C6_ITEM,C6_PRODUTO
+	FROM %table:SC6% SC6
+	INNER JOIN %table:SC5% SC5 ON C5_FILIAL=C6_FILIAL AND C5_NUM=C6_NUM AND SC5.%notDel%
+	WHERE SC5.%notDel% AND C6_FILIAL=%Exp:xFil% AND C6_CLI=%Exp:xCli% AND C6_LOJA=%Exp:xLoja%
+	AND C5_U_DTENT=%Exp:xDtEnt% AND C5_U_PEDCL=%Exp:xPed%
+	ORDER BY C6_ITEM
+
+EndSql	
+
+nCount := 1
+While (cAliChek)->( !Eof() )
+	If Alltrim((cAliChek)->(C6_ITEM))+AllTrim((cAliChek)->(C6_PRODUTO)) <> AllTrim(aPedido[nCount][2][2])+AllTrim(aPedido[nCount][3][2])
+		lRet := .T.
+	End If
+nCount ++
+(cAliChek)->( dbSkip() )
+EndDo
+
+Return lRet

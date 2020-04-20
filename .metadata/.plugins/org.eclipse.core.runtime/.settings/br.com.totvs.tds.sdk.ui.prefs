@@ -1,0 +1,7 @@
+eclipse.preferences.version=1
+editor.brackets.autoinsert=false
+editor.saveActions.autoSave=true
+formatterId=br.com.totvs.tds.sdk.advpl.ui.formatterFactory
+global.includes=;
+parser.alert.structure.enclosing.exceeded=2
+parser.alert.structure.enclosing.missing=2

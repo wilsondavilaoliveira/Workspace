@@ -1,0 +1,441 @@
+<ApMenu>
+	<DocumentProperties>
+		<Module>SIGAESP</Module>
+		<Version>10.1</Version>
+	</DocumentProperties>
+	<Menu Status="Enable">
+		<Title lang="pt">&Atualizações</Title>
+		<Title lang="es">&Actualizaciones</Title>
+		<Title lang="en">&Updates</Title>
+		<Menu Status="Enable">
+				<Title lang="pt">Cadastros</Title>
+				<Title lang="es">Cadastros</Title>
+				<Title lang="en">Cadastros</Title>
+				<MenuItem Status="Enable">
+				<Title lang="pt">Cad Municipios</Title>
+				<Title lang="es">Cad Municipios</Title>
+				<Title lang="en">Cad Municipios</Title>
+				<Function>CACCOA15</Function>
+				<Type>3</Type>
+				<Tables>LDY</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+				<MenuItem Status="Enable">
+				<Title lang="pt">Propriedades</Title>
+				<Title lang="es">Propriedades</Title>
+				<Title lang="en">Propriedades</Title>
+				<Function>CACCOA01</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Tables>LBE</Tables>
+				<Tables>LBF</Tables>
+				<Tables>LBG</Tables>
+				<Tables>LBH</Tables>
+				<Tables>LBI</Tables>
+				<Tables>LBJ</Tables>
+				<Tables>LBK</Tables>
+				<Tables>LBL</Tables>
+				<Tables>LBM</Tables>
+				<Tables>LBN</Tables>
+				<Tables>LBO</Tables>
+				<Tables>LBP</Tables>
+				<Tables>LBQ</Tables>
+				<Tables>LBR</Tables>
+				<Tables>LDY</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Tanques</Title>
+				<Title lang="es">Tanques</Title>
+				<Title lang="en">Tanques</Title>
+				<Function>CACCOA04</Function>
+				<Type>3</Type>
+				<Tables>LBF</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Caminhoes</Title>
+				<Title lang="es">Caminhoes</Title>
+				<Title lang="en">Caminhoes</Title>
+				<Function>CACCOA03</Function>
+				<Type>3</Type>
+				<Tables>LBE</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Linhas</Title>
+				<Title lang="es">Linhas</Title>
+				<Title lang="en">Linhas</Title>
+				<Function>CACCOA02</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Tipos de Leite</Title>
+				<Title lang="es">Tipos de Leite</Title>
+				<Title lang="en">Tipos de Leite</Title>
+				<Function>CACCOA05</Function>
+				<Type>3</Type>
+				<Tables>LBN</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Tab. Class Leite B</Title>
+				<Title lang="es">Tab. Class Leite B</Title>
+				<Title lang="en">Tab. Class Leite B</Title>
+				<Function>CACCOA09</Function>
+				<Type>3</Type>
+				<Tables>LBI</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Tab. Class Leite C</Title>
+				<Title lang="es">Tab. Class Leite C</Title>
+				<Title lang="en">Tab. Class Leite C</Title>
+				<Function>CACCOA10</Function>
+				<Type>3</Type>
+				<Tables>LBJ</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Criterios Qualid.</Title>
+				<Title lang="es">Criterios Calidad</Title>
+				<Title lang="en">Criteria 2 Quality</Title>
+				<Function>CACCOA20</Function>
+				<Type>3</Type>
+				<Tables>LJY</Tables>
+				<Access>xxxxxxxxxx</Access>
+                            <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Tab de Bonificacao</Title>
+				<Title lang="es">Tab de Bonificacao</Title>
+				<Title lang="en">Tab de Bonificacao</Title>
+				<Function>CACCOA16</Function>
+				<Type>3</Type>
+				<Tables>LBL</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Precos do Leite</Title>
+				<Title lang="es">Precos do Leite</Title>
+				<Title lang="en">Precos do Leite</Title>
+				<Function>CACCOA08</Function>
+				<Type>3</Type>
+				<Tables>LBH</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+                        <MenuItem Status="Enable">
+				<Title lang="pt">Tipos de despesas</Title>
+				<Title lang="es">Tipos de despesas</Title>
+				<Title lang="en">Tipos de despesas</Title>
+				<Function>CACCOA17</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Faixas de Excesso</Title>
+				<Title lang="es">Faixas de Excesso</Title>
+				<Title lang="en">Faixas de Excesso</Title>
+				<Function>CACCOA13</Function>
+				<Type>3</Type>
+				<Tables>LBK</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+		</Menu>	
+	<Menu Status="Enable">
+		<Title lang="pt">&Movimentos</Title>
+		<Title lang="es">&Consultas</Title>
+		<Title lang="en">&Queries</Title>
+		<MenuItem Status="Enable">
+				<Title lang="pt">Entrada do Leite</Title>
+				<Title lang="es">Entrada do Leite</Title>
+				<Title lang="en">Entrada do Leite</Title>
+				<Function>CACCOA11</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Tables>LBO</Tables>
+                                <Tables>LBM</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+				<MenuItem Status="Enable">
+				<Title lang="pt">Classif do Leite B</Title>
+				<Title lang="es">Classif do Leite B</Title>
+				<Title lang="en">Classif do Leite B</Title>
+				<Function>CACCOA06</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Tables>LBO</Tables>
+                                <Tables>LBM</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+				<MenuItem Status="Enable">
+				<Title lang="pt">Classif do Leite C</Title>
+				<Title lang="es">Classif do Leite C</Title>
+				<Title lang="en">Classif do Leite C</Title>
+				<Function>CACCOA19</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Tables>LBO</Tables>
+                                <Tables>LBM</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+				<MenuItem Status="Enable">
+                <Title lang="pt">Classif.Qualidade</Title>
+                <Title lang="es">Classif.Qualidade</Title>
+                <Title lang="en">Classif.Qualidade</Title>
+				<Function>CACCOA21</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBO</Tables>
+                <Tables>LJZ</Tables>
+                <Tables>LJY</Tables>
+				<Access>xxxxxxxxxx</Access>
+				<Module>02</Module>
+				</MenuItem>
+				<MenuItem Status="Enable">
+                                <Title lang="pt">Fechamento Mensal</Title>
+                                <Title lang="es">Fechamento Mensal</Title>
+                                <Title lang="en">Fechamento Mensal</Title>
+				<Function>CACCOA14</Function>
+				<Type>3</Type>
+				<Tables>LBB</Tables>
+				<Tables>LBC</Tables>
+				<Tables>LBD</Tables>
+				<Tables>LBO</Tables>
+                                <Tables>LBM</Tables>
+				<Tables>LBP</Tables>
+				<Tables>LBQ</Tables>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Recalc Cota Total</Title>
+				<Title lang="es">Recalc Cota Total</Title>
+				<Title lang="en">Recalc Cota Total</Title>
+				<Function>CACCOA07</Function>
+				<Type>3</Type>
+				<Tables>LBG</Tables>
+				<Tables>LBO</Tables>
+				<Tables>LBB</Tables>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+				</MenuItem>
+	</Menu>
+
+	</Menu>
+	<Menu Status="Enable">
+		<Title lang="pt">&Relatorios</Title>
+		<Title lang="es">&Informes</Title>
+		<Title lang="en">&Reports</Title>
+			<MenuItem Status="Enable">
+                                <Title lang="pt">Propriedade/Tanque</Title>
+                                <Title lang="es">Propriedade/Tanque</Title>
+                                <Title lang="en">Propriedade/Tanque</Title>
+				<Function>CACCOR22</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Res Geral Entradas</Title>
+				<Title lang="es">Res Geral Entradas</Title>
+				<Title lang="en">Res Geral Entradas</Title>
+				<Function>CACCOR21</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+                        </MenuItem>
+			<MenuItem Status="Enable">
+                                <Title lang="pt">Ent por Linha</Title>
+                                <Title lang="es">Ent por Linha</Title>
+                                <Title lang="en">Ent por Linha</Title>
+                                <Function>CACCOR17</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+                                <Title lang="pt">Ent Linha Detalh.</Title>
+                                <Title lang="es">Ent Linha Detalh.</Title>
+                                <Title lang="en">Ent Linha Detalh.</Title>
+				<Function>CACCOR26</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+                                <Title lang="pt">Ent por Associado</Title>
+                                <Title lang="es">Ent por Associado</Title>
+                                <Title lang="en">Ent por Associado</Title>
+                                <Function>CACCOR19</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+                                <Title lang="pt">Ent nao Classific</Title>
+                                <Title lang="es">Ent nao Classific</Title>
+                                <Title lang="en">Ent nao Classific</Title>
+				<Function>CACCOR20</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+                        <MenuItem Status="Enable">
+                                <Title lang="pt">Res Geral Fecham.</Title>
+                                <Title lang="es">Res Geral Fecham.</Title>
+                                <Title lang="en">Res Geral Fecham.</Title>
+				<Function>CACCOR02</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Resumo de N.fiscal</Title>
+				<Title lang="es">Resumo de N.fiscal</Title>
+				<Title lang="en">Resumo de N.fiscal</Title>
+				<Function>CACCOR12</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Resumo Municipios</Title>
+				<Title lang="es">Resumo Municipios</Title>
+				<Title lang="en">Resumo Municipios</Title>
+				<Function>CACCOR03</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Carretos</Title>
+				<Title lang="es">Carretos</Title>
+				<Title lang="en">Carretos</Title>
+				<Function>CACCOR05</Function>
+                                <Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Funrural</Title>
+				<Title lang="es">Funrural</Title>
+				<Title lang="en">Funrural</Title>
+				<Function>CACCOR08</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Bonific Quantidade</Title>
+				<Title lang="es">Bonific Quantidade</Title>
+				<Title lang="en">Bonific Quantidade</Title>
+				<Function>CACCOR10</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Niveis de Producao</Title>
+				<Title lang="es">Niveis de Producao</Title>
+				<Title lang="en">Niveis de Producao</Title>
+				<Function>CACCOR15</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+                        <MenuItem Status="Enable">
+                                <Title lang="pt">Calculo Cota Leite</Title>
+                                <Title lang="es">Calculo Cota Leite</Title>
+                                <Title lang="en">Calculo Cota Leite</Title>
+				<Function>CACCOR04</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Produtores Retorno</Title>
+				<Title lang="es">Produtores Retorno</Title>
+				<Title lang="en">Produtores Retorno</Title>
+				<Function>CACCOR16</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Relacao Bancaria</Title>
+				<Title lang="es">Relacao Bancaria</Title>
+				<Title lang="en">Relacao Bancaria</Title>
+				<Function>CACCOR07</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Saldo devedor</Title>
+				<Title lang="es">Saldo devedor</Title>
+				<Title lang="en">Saldo devedor</Title>
+				<Function>CACCOR13</Function>
+				<Type>3</Type>
+				<Access>xxxxxxxxxx</Access>
+                                <Module>02</Module>
+			</MenuItem>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Compr. Rendimentos</Title>
+				<Title lang="es">Compr. Rendimentos</Title>
+				<Title lang="en">Compr. Rendimentos</Title>
+				<Function>CACCOR14</Function>
+				<Type>3</Type>
+					<Access>xxxxxxxxxx</Access>
+					<Module>02</Module>
+			</MenuItem>
+	</Menu>
+	<Menu Status="Enable">
+		<Title lang="pt">&Miscelanea</Title>
+		<Title lang="es">&Miscelanea</Title>
+		<Title lang="en">&Miscellaneous</Title>
+		<Menu Status="Enable">
+			<Title lang="pt">Processos</Title>
+			<Title lang="es">Procesos</Title>
+			<Title lang="en">Processes</Title>
+			<MenuItem Status="Enable">
+				<Title lang="pt">Planilha Excel</Title>
+				<Title lang="es">Planilla Excel</Title>
+				<Title lang="en">Excel Worksheet</Title>
+				<Function>APEXCEL</Function>
+				<Type>1</Type>
+				<Access>xxxxxxxxxx</Access>
+				<Module>97</Module>
+				<Owner>0</Owner>
+			</MenuItem>
+		</Menu>
+	</Menu>
+</ApMenu>

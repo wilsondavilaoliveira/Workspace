@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Renomear recurso &quot;Em desenvolvimento/JOBRFATM02.PRW&quot; a &quot;RFATM02_MODELO.PRW&quot;" description="Renomear recurso &quot;JOBRFATM02.PRW&quot;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="JOBRFATM02.PRW" name="RFATM02_MODELO.PRW" stamp="1575752561325" updateReferences="true"/>
+</session>

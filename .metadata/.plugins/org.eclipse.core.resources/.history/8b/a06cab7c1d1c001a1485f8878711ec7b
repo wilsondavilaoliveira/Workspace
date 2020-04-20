@@ -1,0 +1,112 @@
+#Include 'Totvs.ch'
+#INCLUDE "TOPCONN.CH" 
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH"
+#INCLUDE 'COLORS.CH'
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FONT.CH"
+#include "TBICONN.CH"
+
+/*
+‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+*/ 
+User Function WFRFTM2A(cEmpDoc,cFilDoc,aLog,cPed)
+Local lRet		:= .T.
+Local oProcWF   := Nil
+Local cMailAdm  := '' //SuperGetMv('ES_QUAA081',.F.,'') // e-mails
+Local cTo		:= 'wilson.oliveira@wdonet.com.br'
+
+
+	RpcSetType(3)
+	RpcSetEnv(cEmpDoc,cFilDoc,,,'FAT')
+	
+	cMailAdm  := "tatiana.carneiro@quataalimentos.com.br"
+	
+	oProcWF := TWFProcess():New("JOBEDI","Erro conversao Job EDI")
+	oProcWF:NewTask("JOBEDI","\workflow\WFOcorrenciasWebEdi.htm",.T.)
+	oProcWF:cSubject := 'ERRO Conversao Job EDI: '
+	
+
+	// E-Mail ADM
+	If ! Empty(cMailAdm)
+		If ! Empty(cTo)
+			cTo += ';'
+		EndIf
+		cTo += cMailAdm
+	EndIf
+
+	// Cabecalho
+	oProcWF:oHTML:ValByName("cPedido"		,cPed)
+	oProcWF:oHTML:ValByName("dDtAlt"		,DtoC(dDatabase))
+	oProcWF:oHTML:ValByName("cHrAlt"		,Time())
+	
+	For i := 1 to Len(aLog)
+		AAdd(oProcWF:oHTML:ValByName("it.cLog")		, AllTrim(aLog[i]))
+	Next i
+	
+	// Adiciona e-mail
+	oProcWF:cTo := cTo
+
+	oProcWF:Start()
+	WFSendMail()
+	oProcWF:Finish()
+	oProcWF := FreeObj(oProcWF)
+	
+	RpcClearEnv()
+
+Return lRet
+
+/*
+‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+*/ 
+User Function WFRFTM2B(cEmpDoc,cFilDoc,aLog)
+Local lRet		:= .T.
+Local oProcWF   := Nil
+Local cMailAdm  := '' //SuperGetMv('ES_QUAA081',.F.,'') // e-mails
+Local cTo		:= 'wilson.oliveira@wdonet.com.br'
+
+
+	RpcSetType(3)
+	RpcSetEnv(cEmpDoc,cFilDoc,,,'FAT')
+	
+	cMailAdm  := "tatiana.carneiro@quataalimentos.com.br"
+	
+	oProcWF := TWFProcess():New("JOBED1","Pedidos Job EDI")
+	oProcWF:NewTask("JOBED1","\workflow\WFOPedidosConvertidosWebEdi.htm",.T.)
+	oProcWF:cSubject := 'Pedidos Convertidos Job EDI: '
+	
+
+	// E-Mail ADM
+	If ! Empty(cMailAdm)
+		If ! Empty(cTo)
+			cTo += ';'
+		EndIf
+		cTo += cMailAdm
+	EndIf
+
+	// Cabecalho
+	oProcWF:oHTML:ValByName("dDtAlt"		,DtoC(dDatabase))
+	oProcWF:oHTML:ValByName("cHrAlt"		,Time())
+	
+	For i := 1 to Len(aLog)
+		AAdd(oProcWF:oHTML:ValByName("it.Filial")		, AllTrim(aLog[i][1]))
+		AAdd(oProcWF:oHTML:ValByName("it.cPedido")		, AllTrim(aLog[i][2]))
+		AAdd(oProcWF:oHTML:ValByName("it.cCodCli")		, AllTrim(aLog[i][3]))
+		AAdd(oProcWF:oHTML:ValByName("it.cLoja")		, AllTrim(aLog[i][4]))
+	Next i
+	
+	// Adiciona e-mail
+	oProcWF:cTo := cTo
+
+	oProcWF:Start()
+	WFSendMail()
+	oProcWF:Finish()
+	oProcWF := FreeObj(oProcWF)
+	
+	RpcClearEnv()
+
+Return lRet

@@ -1,0 +1,19 @@
+DLTK_default=106,106,106
+DLTK_keyword=0,0,160
+DLTK_keyword_bold=false
+DLTK_multi_line_comment=0,128,64
+DLTK_operator=255,0,128
+DLTK_single_line_comment=128,128,255
+DLTK_single_line_comment_bold=true
+DLTK_string=255,0,0
+active_formatter=org.eclipse.dltk.advpl.formatter.profiles.default
+br.com.totvs.tds.sdk.advpl.ui.templates=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><templates/>
+eclipse.preferences.version=1
+formatter.indentation.size=4
+formatter.tabulation.char=tab
+formatter.tabulation.size=4
+org.eclipse.dltk.coretasks.tags=FIXME;HIGH,TODO;NORMAL,XXX;NORMAL
+sourceHoverBackgroundColor=255,255,225
+sourceHoverBackgroundColor.SystemDefault=true
+useAnnotationsPrefPage=true
+useQuickDiffPrefPage=true

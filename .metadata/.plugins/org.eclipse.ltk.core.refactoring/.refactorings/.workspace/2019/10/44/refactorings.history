@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Renomear recurso &quot;Captacao Leite&quot; a &quot;Captacao Leite Template&quot;" description="Renomear recurso &quot;Captacao Leite&quot;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/Captacao Leite" name="Captacao Leite Template" stamp="1572462737602" updateReferences="true"/>
+</session>

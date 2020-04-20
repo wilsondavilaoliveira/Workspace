@@ -1,0 +1,11 @@
+active_formatter=org.eclipse.dltk.4gl.formatter.profiles.default
+br.com.totvs.tds.sdk.advpl.ui.templates=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><templates/>
+eclipse.preferences.version=1
+formatter.indentation.size=4
+formatter.tabulation.char=tab
+formatter.tabulation.size=4
+org.eclipse.dltk.coretasks.tags=FIXME;HIGH,TODO;NORMAL,XXX;NORMAL
+sourceHoverBackgroundColor=255,255,225
+sourceHoverBackgroundColor.SystemDefault=true
+useAnnotationsPrefPage=true
+useQuickDiffPrefPage=true

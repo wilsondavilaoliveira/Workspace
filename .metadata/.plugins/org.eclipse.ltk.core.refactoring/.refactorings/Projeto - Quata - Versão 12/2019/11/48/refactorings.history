@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Mover &quot;QUAA060W.PRW&quot; a &quot;PROCESSAMENTOS&quot;" description="Mover &quot;QUAA060W.PRW&quot; a &quot;PROCESSAMENTOS&quot;" destination="03 - Especificos/03.09 - Financeiro/03.09.01 - Gestão de Contratos Venda/PROCESSAMENTOS" element1="03 - Especificos/03.09 - Financeiro/03.09.01 - Gestão de Contratos Venda/Cadastros/QUAA060W.PRW" flags="7" id="org.eclipse.ltk.core.refactoring.move.resources" resources="1" stamp="1574864256705" updateReferences="true"/>
+</session>

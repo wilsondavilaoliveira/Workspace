@@ -1,0 +1,3581 @@
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH" 
+#INCLUDE 'COLORS.CH' 
+#INCLUDE "TOPCONN.CH"  
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FWMVCDEF.CH"
+#Include "TbiConn.ch"
+//#INCLUDE "MATC090.CH"
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³QUAA080W	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³GERENCIADOR DE ENTRADAS DE PEDIDOS DE VENDAS.					³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³NOVAMIX	                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+User Function QUAA080W() 
+
+Local aCoors	:= FWGetDialogSize( oMainWnd )
+Local cCadastro	:= "MONITOR DE ENTRADAS DE PEDIDOS DE VENDAS"  
+Local oC1W1 		// Layer pricipal   
+Local oC1W2 		// Layer secundario
+Local oButt1   		// Botoes para o Pedido
+//Variaveis para os Browses
+Local oPedido		// Lista dos Pedidos
+Local cPed			// Codigo do Pedido Atual
+Local oBroItp		// Lista dos Itens do Pedido 
+Local oDesbloq		// Lista dos Pedidos Desbloquados
+//Local oBroSC5		// Lista dos Pedidos Bloqueados 
+Local oPanC1W1		// Paineis na Janela do Pedido 
+//Paineis para os Botoes de Manutencoes
+Local oPanPri
+//Local oPanBtPlt   
+Local oPasta 		//Pastas para "PEDIDOS","DESBLOQUEIOS DO PEDIDO","BLOQUEIOS POR VALOR MINIMO"		
+//Local oPaniPd		//Painel para os Botoes dos Itens da Separacao 
+	// Painel dos Botoes para Manutencões   
+//Local oPanBlok		// Painel para Filtro dos Bloqueios
+//Local nInd		:= 1
+//Local cSeek
+//Local cWhere 
+Local libera	:= .F. 
+Local lHist		:= .F.
+Local lfirst	:= .T.
+Local oHist 
+Private oCodCli
+Private oCodLoja
+Private oBand
+Private oDBand
+Private oCodPro
+Private oProd
+Private oCliente
+Private oNota
+Private oSerie
+Private cCodCli  	:= Space(TamSx3("A1_COD")[1])   
+Private cLojaCli 	:= Space(TamSx3("A1_LOJA")[1])
+Private cBand  		:= Space(TamSx3("A1_COD")[1])   
+Private cDBand		:= Space(45)
+Private cCodPro  	:= Space(TamSx3("B1_COD")[1])   
+Private cProd		:= Space(45)
+Private cCliente	:= Space(45)
+Private cNota		:= Space(9)
+Private cSerie		:= Space(3)
+Private oCBX1 
+
+Private oSaldoPed		// Lista dos Pedidos Gerados Por Saldo (corte)
+Private oPanBotoes
+Private oDlg1
+Private aPedidos	:= {}     
+Private cMarca 		:= GetMark()
+Private aOrd1		:= {}
+Private cFilBloq1
+Private cOperador 
+Private aVerBloq 	:= {}  
+Private oSim		:= LoadBitmap(GetResources(),'lbtik') //lbok
+Private oNao		:= LoadBitmap(GetResources(),'lbno') 
+Private aLsc6		:= {} 
+Private aLsc61		:= {} 
+Private oItens
+Private oItens1
+Private oItens2
+
+Private aItens	:= {}
+Private aItens1	:= {}
+Private aItens2	:= {}
+
+//Legendas
+Private  aLegBloq	:= {}
+Private aCores 		:= {} 
+Private oDataDe 	
+Private dDataDe		:= dDataBase-5
+Private oPanRoda
+Private oValPed
+Private nValPed := 0
+Private oKgsPed
+Private nKgsPed := 0
+Private oPedRoda
+Private cPedRoda := Space(6)
+Private aSaldoPed 	:= {}
+Private cFilCmb2 := ""
+Private cFilCmb1 := ""
+Private cFilCmb3 := ""
+//If ! U_GetSenha()
+//	Return 
+//Endif  
+
+//DEFINE AS LEGENDAS DO MODULO
+aAdd(aLegBloq, 	{"BR_VERDE"		,"Liberado"})
+aAdd(aLegBloq,	{"BR_AZUL"		,"Liberado Pelo Gestor"}) 
+aAdd(aLegBloq,	{"BR_VERMELHO"	,"Bloqueado"})
+aAdd(aLegBloq,	{"BR_LARANJA"	,"Bloqueado-Pedido de saldo(CORTE)"})
+
+//Valida Operador
+//CB1->(DbSetOrder(2)) // Filial+Codigo Usuario Protheus 
+//cOperador := __cUserID 
+//If !CB1->(DBSeek(xFilial("CB1") + Padr(cOperador,6)))
+//	CBAlert("Operador Invalido.")
+//	Return .F.
+//Endif
+
+
+//If cFilAnt == '01'
+//	msgRun("Atualizando STATUS pedidos. Aguarde..."				,,{||u_xAtu()})
+//End IF
+
+cNomeUsu := Alltrim(CB1->CB1_NOME)
+ 
+If !LstBlocs()	//Monta Lista de Opcoes de Filtro para os Bloqueios 
+	Return
+Endif
+
+libera := .T. 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ativa tecla F4 para comunicacao com Saldos dos Lotes         ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//Set Key VK_F4 TO ShowF4(aLsc6[oBroItp:nAT,4],"01")
+cTxtTit:= "GESTÃO DE CONTRATOS COMERCIAIS -  Login:  " 
+
+cCadastro:= cTxtTit + cNomeUsu +  "       " + Dtoc(Ddatabase) + " - " + Time()  
+
+DEFINE FONT oFont4	NAME "Arial" 		SIZE 08,10	BOLD 
+//DEFINE FONT oFont1 	NAME "Courier New" 	SIZE 5,0   //6,15 
+DEFINE FONT oFont2	NAME "Arial" 		SIZE 11,15 BOLD
+DEFINE FONT oFont5	NAME "Arial" 		SIZE 9,15 BOLD  
+DEFINE FONT oFont6	NAME "Arial" 		SIZE 7,13 BOLD
+ 
+DEFINE MSDIALOG oDlg1 FROM aCoors[1],aCoors[2] TO aCoors[3],aCoors[4] TITLE cCadastro OF oMainWnd COLOR "W+/W" STYLE nOR(WS_VISIBLE,WS_POPUP) PIXEL 
+
+oDlg1:lEscClose:= .F.
+oDlg1:lMaximized := .T.	
+oFWLayer:= FWLayer():New()
+oFWLayer:init( oDlg1, .F. ) // Segundo parametro: Cria um botao de fechar utilizado para Dlg sem cabeçalho. Caso for .t.	  
+
+//COLUNA - JANELA 1=====================================================================================================================================
+oFWLayer:addLine ("Lin01",60,.F.)
+oFWLayer:addCollumn( "Col01",100, .F.,"Lin01")
+oFWLayer:addWindow( "Col01", "Win01", cCadastro, 50, .T., .F.,,"Lin01")
+oC1W1:= oFWLayer:getWinPanel( "Col01", "Win01","Lin01")  
+
+//==TECLAS DE ATALHO ============================================================================================
+bKeyF4 := SetKey( VK_F4 , Nil )
+SetKey( VK_F4 , { || oDlg1:End() } )
+
+//Painel dos Botoes para Manutencoes=============================================================================
+//oPanBotoes:=TPanel():New(5,5,,oC1W1,/*[aoFont]*/,,,/*CorTexto*/,CLR_GREEN,290,15,.T.,.T.) 
+//oPanBotoes:ALIGN:= CONTROL_ALIGN_LEFT
+
+//BOTOES=========================================================================================================
+oButt1:= FWButtonBar():new()											
+oButt1:Init(oC1W1, 17, 20,CONTROL_ALIGN_TOP, .T. )   
+oButt1:addBtnImage( "final",	  	"Sair", 	   	   		{|| oDlg1:End()},,.T.,CONTROL_ALIGN_RIGHT)  
+oButt1:addBtnImage( "S4WB001N",		"Incluir",		{|| U_QA040TELA(,,3,.T.)},,.T.,CONTROL_ALIGN_RIGHT) 
+oButt1:addBtnImage( "NOTE",		"Alterar",		{|| Altera(1) },,.T.,CONTROL_ALIGN_RIGHT) 
+oButt1:addBtnImage( "SIMULACA",		"Revisao",		{|| Altera(2) },,.T.,CONTROL_ALIGN_RIGHT) 
+oButt1:addBtnImage( "PRECO",  		"Nota Fiscal",		{|| ShowNF()}				   				,,.T.,CONTROL_ALIGN_RIGHT)
+oButt1:addBtnImage( "cargaseq", 		"Relatorio Contratos", 	{|| U_QUAR080W() }	,,.T.,CONTROL_ALIGN_RIGHT)
+//oButt1:addBtnImage( "produto",		"Ver Saldo Lote",		{|| ShowF4(aLsc6[oBroItp:nAT,4],"01",aLsc61[oBroItp1:nAT,4],oPasta) }								   						   		,,.T.,CONTROL_ALIGN_LEFT)
+//oButt1:addBtnImage( "pin",  		"Informar Motivo",		{|| Info_Bloqueio (aPedidos[oPedido:nAT,3],aPedidos[oPedido:nAT,10]),Atualizar(oPasta:nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed)}				   				,,.T.,CONTROL_ALIGN_LEFT)
+ 
+//==COMBO 1 - STATUS=============================================================================================
+cFilCmb1 := ""
+aOrdCmb1 := {} 
+AADD(aOrdCmb1,"A=ATIVOS")
+AADD(aOrdCmb1,"I=INATIVOS")
+AADD(aOrdCmb1,"T=TODOS")
+//@004+15,002 COMBOBOX oCBX1 VAR cFilCmb1 ITEMS aOrdCmb1 SIZE 80,10 PIXEL OF oC1W1 FONT oFont2 COLOR CLR_BLUE
+@003,001 COMBOBOX oCBX1 VAR cFilCmb1 ITEMS aOrdCmb1 SIZE 80,10 PIXEL OF oC1W1 FONT oFont2 COLOR CLR_BLUE;
+ON CHANGE LoadContr(.T.)
+oCBX1:Refresh()
+
+//==COMBO 2 - FILIAL=============================================================================================
+cFilCmb2 := ""
+aOrdCmb2 := QA80FIL() 
+@003,085 COMBOBOX oCBX2 VAR cFilCmb2 ITEMS aOrdCmb2 SIZE 110,10 PIXEL OF oC1W1 FONT oFont2 COLOR CLR_BLUE;
+ON CHANGE LoadContr(.T.)
+oCBX1:Refresh()
+
+//==COMBO 3 - CATEGORIA PRODUTO===================================================================================
+cFilCmb3 := ""
+aOrdCmb3 := QA80SX5() 
+@004+15,001 COMBOBOX oCBX3 VAR cFilCmb3 ITEMS aOrdCmb3 SIZE 150,10 PIXEL OF oC1W1 FONT oFont2 COLOR CLR_BLUE ;
+ON CHANGE LoadContr(.T.)
+oCBX1:Refresh()
+
+//==PRODUTO=======================================================================================================
+@006+15,330+20-198 SAY "Produto.:"	SIZE 048,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE  
+@003+15,380+20-198 MSGET oCodPro 	VAR cCodPro	SIZE 060,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE WHEN .T. F3 "SB1ZZN";
+Valid Iif(Empty(cCodPro),.T.,iif( (ExistCpo("SB1",cCodPro) .OR. Empty(cCodPro)),cProd := Posicione("SB1",1,xFilial("SB1")+cCodPro,"B1_DESC"),cProd := "" ))  PICTURE "@!" ;
+ON CHANGE LoadContr(.T.)
+@003+15,440+23-198 MSGET oProd 	VAR cProd	SIZE 200,10 OF oC1W1 WHEN .F. PIXEL FONT oFont5 COLOR CLR_BLUE WHEN .T.
+
+//==CLIENTE=======================================================================================================
+@020+18,090-089 SAY "Cliente:"		SIZE 040,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE  
+@017+18,130-089 MSGET oCodCli 	VAR cCodCli	SIZE 030,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE WHEN .T. F3 "SA1";
+Valid Iif(Empty(cCodCli),.T.,iif( (ExistCpo("SA1",cCodCli) .OR. Empty(cCodCli)),cCliente := Substr(Posicione("SA1",1,xFilial("SA1")+cCodCli,"A1_NOME"),1,33),cCliente := "" ))  PICTURE "@!" ; 
+ON CHANGE LoadContr(.T.)
+//==LOJA==========================================================================================================
+@020+18,188-087 SAY "Loja:" SIZE 030,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE  
+@017+18,215-087 MSGET oLoja 	VAR cLojaCli	SIZE 018,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE WHEN .T. ;
+Valid Iif(Empty(cLojaCli),.T.,iif( (ExistCpo("SA1",cCodCli+cLojaCli) .OR. Empty(cLojaCli)),cCliente := SubStr(Posicione("SA1",1,xFilial("SA1")+cCodCli+cLojaCli,"A1_NOME"),1,33),cCliente := "" ))  PICTURE "@!"; 
+ON CHANGE LoadContr(.T.)
+@017+18,215-089+55 MSGET oCliente 	VAR cCliente	SIZE 167,10 OF oC1W1 WHEN .F.	PIXEL FONT oFont5 COLOR CLR_BLUE WHEN .T.
+
+//==BANDEIRA======================================================================================================
+@020+18,330+20 SAY "Bandeira:"SIZE 060,10 OF oC1W1 PIXEL FONT oFont2 COLOR CLR_BLUE  
+@017+18,380+20 MSGET oBand 	VAR cBand	SIZE 060,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE F3 "BA" WHEN .T. ;
+Valid Iif(Empty(cBand),.T.,iif( (ExistCpo("SX5","BA"+cBand) .OR. Empty(cBand)),cDBand := Posicione("SX5",1,xFilial("SXE")+"BA"+cBand,"X5_DESCRI"),cDBand := "" )) PICTURE "@!"; 
+ON CHANGE LoadContr(.T.) 
+@017+18,440+23 MSGET oDBand 	VAR cDBand	SIZE 200,10 OF oC1W1 WHEN .F. PIXEL FONT oFont5 COLOR CLR_BLUE
+
+
+//==NOTA FISCAL====================================================================================================
+@035+20,090-089 SAY "Nota....:" SIZE 060,10 OF oC1W1 PIXEL FONT oFont2 COLOR CLR_BLUE  
+@032+20,130-089 MSGET oNota 	VAR cNota	SIZE 030,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE WHEN .T. ;
+ON CHANGE LoadContr(.T.)
+//Valid Iif(Empty(cBand),.T.,iif( (ExistCpo("SX5","BA"+cBand) .OR. Empty(cBand)),cDBand := Posicione("SX5",1,xFilial("SXE")+"BA"+cBand,"X5_DESCRI"),cDBand := "" )) PICTURE "@!" 
+
+@035+20,188-069 SAY "Serie:" SIZE 060,10 OF oC1W1 PIXEL FONT oFont2 COLOR CLR_BLUE  
+@032+20,215-066 MSGET oSerie 	VAR cSerie	SIZE 030,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE WHEN .T. ;
+ON CHANGE LoadContr(.T.)
+//Valid Iif(Empty(cBand),.T.,iif( (ExistCpo("SX5","BA"+cBand) .OR. Empty(cBand)),cDBand := Posicione("SX5",1,xFilial("SXE")+"BA"+cBand,"X5_DESCRI"),cDBand := "" )) PICTURE "@!" 
+
+//JANELA 2====================================================================================================================================================================
+
+//oFWLayer:addCollumn("Col01",45,.F.,"Lin01")
+oFWLayer:addWindow( "Col01", "Win02", "CONTRATOS",50, .T., .F.,,"Lin01")
+oC1W2:= oFWLayer:getWinPanel( "Col01", "Win02","Lin01")  
+
+//LISTBOX ITENS======================================================================================================
+@ 01,01 LISTBOX oItens1 Fields HEADER "S","CONTRATO","DESCRICAO                     ","REVISAO","DT.INICIAL","DT.FINAL","ATIVO?","FILIAIS";
+SIZES {04,10,10,05,05,05,05,60} SIZE 490,095 PIXEL of oC1W2 FONT oFont6 ;
+ON CHANGE LoadItens(.T.)
+//ON DBLCLICK Lin_OnOff(oPedido,aPedidos,oBroItp,lHist,oDesbloq,oSaldoPed);
+LoadContr(.F.)
+oItens1:Align := CONTROL_ALIGN_ALLCLIENT 
+oItens1:Refresh()
+
+//JANELA 3====================================================================================================================================================================
+oFWLayer:addLine ("Lin02",40,.F.)
+oFWLayer:addCollumn("Col02",40,.F.,"Lin02")
+oFWLayer:addWindow( "Col02", "Win02", "ITENS CONTRATOS", 100, .T., .F.,,"Lin02")
+oC1W3:= oFWLayer:getWinPanel( "Col02", "Win02","Lin02")  
+
+//LISTBOX ITENS======================================================================================================
+@ 01,01 LISTBOX oItens Fields HEADER "VERBA","DESCRICAO","CALC","FORMA"," % ","CONS.DEV?";
+SIZES {04,04,04,04,04,04,04} SIZE 490,095 PIXEL of oC1W3 FONT oFont6 //  ;
+//ON DBLCLICK Lin_OnOff(oPedido,aPedidos,oBroItp,lHist,oDesbloq,oSaldoPed);
+//ON CHANGE U_xRodape( aPedidos[oPedido:nAT,3] )
+oItens:Align := CONTROL_ALIGN_ALLCLIENT 
+
+oItens:Refresh()
+//JANELA 4===============================================================================================================================================
+oFWLayer:addCollumn("Col03",60,.F.,"Lin02")
+oFWLayer:addWindow( "Col03", "Win03", "RELACAO CLIENTE X CONTRATO X CATEGORIA", 100, .T., .F.,,"Lin02")
+oC1W4:= oFWLayer:getWinPanel( "Col03", "Win03","Lin02")  
+
+//LISTBOX ITENS======================================================================================================
+//ZC7_ITEM	ZC7_CODCTR	BANDEIRA	ZC7_CODCLI	ZC7_LOJA	CLIENTE	PRODUTO	CATEGORIA	MARCA
+@ 01,01 LISTBOX oItens2 Fields HEADER "BANDEIRA","CODCLI","LOJA","CLIENTE","PRODUTO","CATEGORIA","MARCA";
+SIZES {04,04,04,04,04,04,04} SIZE 490,095 PIXEL of oC1W4 FONT oFont6  ;
+//ON DBLCLICK Lin_OnOff(oPedido,aPedidos,oBroItp,lHist,oDesbloq,oSaldoPed);
+//ON CHANGE U_xRodape( aPedidos[oPedido:nAT,3] )
+oItens2:Align := CONTROL_ALIGN_ALLCLIENT 
+
+oItens2:Refresh()
+
+
+//==PAINEL TOTALIZADOR RODAPE ========================================================================================
+oPanRoda 		:= TPanel():New(1,3,,oDlg1,oFont2,,,/*CorTexto*/,/*CLR_GREEN*/,80,15,.T.,.T.) 
+oPanRoda:ALIGN 	:= CONTROL_ALIGN_BOTTOM 
+
+@004.3,005 SAY "Contrato:"	SIZE 060,10 OF oPanRoda 	PIXEL FONT oFont2 COLOR CLR_RED 
+@2.0,060 MSGET oPedRoda 	VAR cPedRoda	SIZE 060,10 OF oPanRoda WHEN .F. PIXEL FONT oFont2
+
+@004.3,130 SAY "% Desconto:"	SIZE 100,10 OF oPanRoda 		PIXEL FONT oFont2 COLOR CLR_RED  
+@2.0,200 MSGET oValPed 	VAR nValPed	SIZE 080,10 OF oPanRoda WHEN .F. PIXEL FONT oFont2 PICTURE "@E 99.99%" 
+
+//@004.3,285 SAY "Kgs Pedido:"	SIZE 100,10 OF oPanRoda 		PIXEL FONT oFont2 COLOR CLR_RED  
+//@2.0,350 MSGET oKgsPed 	VAR nKgsPed	SIZE 080,10 OF oPanRoda WHEN .F.  PIXEL FONT oFont2 PICTURE "@E 99,999.999" 
+
+//*@2.0,165 MSGET ocodPedido 	VAR cPedAtu	SIZE 060,10 OF oC1W1 	PIXEL FONT oFont2;
+//* When libera //Valid VldPedido(oPasta:nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq) PICTURE "@!"   //NO BORDER 
+
+//*@005,005 CHECKBOX oHist		VAR lHist PROMPT "Mostrar Liberados" SIZE 110,7  OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE //;
+//ON CLICK Atualizar(oPasta:nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq,oSaldoPed) 
+
+//*@004.3,235 SAY "Emissão de:"	SIZE 070,10 OF oC1W1 	PIXEL FONT oFont2 COLOR CLR_BLUE  
+
+//*@2.0,305 MSGET oDataDe 	VAR dDataDe	SIZE 070,10 OF oC1W1 	PIXEL FONT oFont2 //; 
+//valid IIF(lHist,Atualizar(oPasta:nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq,oSaldoPed),.T.) PICTURE "@E 99/99/9999" 
+
+
+//*@28.0,140 COMBOBOX oCBX1 VAR cFilBloq1 ITEMS aOrd1 SIZE 80,03 PIXEL OF oC1W1 //FONT oDlg1:oFont
+//oCbx1:bChange := {|| nOrd := oCbx1:nAt,Atualizar(oPasta:nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed,.T.)}
+//oCBX1:ALIGN:= CONTROL_ALIGN_RIGHT
+//*oCBX1:Refresh()
+
+
+//Painel Principal dos Botoes para as Manutenções e Pesquisa
+//oPanPri	:=TPanel():New(1,3,,oC1W1,oFont2,,,/*CorTexto*/,/*CLR_GREEN*///,80,15,.T.,.T.) 
+//oPanPri :ALIGN:= CONTROL_ALIGN_TOP 
+
+
+//Painel para Pesquisa do Pedido
+//oPanped	:=TPanel():New(1,3,,oC1W1,oFont2,,,/*CLR_BLUE*/,/*CLR_BLUE*/,380,15,.f.,.f.) //200,07 
+//oPanped:ALIGN := CONTROL_ALIGN_RIGHT  
+
+
+
+
+
+//@ 01,01 LISTBOX oSaldoPed FIELDS HEADER "S","Pedido","Cliente","Estado","Cidade","Cep","Data do Pedido","Data Desbloqueio", "Horario Liberacao","Observação"," " ;
+//SIZES {05,20,20,20,20,20,20,20,20,35,02} SIZE 490,095 OF oPasta:aDialogs[3] PIXEL ;	
+//ON DBLCLICK AtItemSdo(aSaldoPed[oSaldoPed:nAT,2],oBroItp)
+//oSaldoPed:Align := CONTROL_ALIGN_ALLCLIENT  //nOption,oBroItp,cPedido
+//oSaldoPed:Refresh()
+
+//Painel para Filtro dos Bloqueios============================================================================================================================== 
+
+
+
+
+
+//========================================================================================================================================================================
+
+//========================================================================================================================================================================
+/*
+CB1->(DbSetOrder(2)) // Filial+Codigo Usuario Protheus 
+cOperador := __cUserID 
+If !CB1->(DBSeek(xFilial("CB1") + Padr(cOperador,6)))
+	CBAlert("Operador Invalido.")
+	Return .F.
+Endif
+
+If Alltrim(CB1->CB1_ROTINA) $ 'ADMIN' //Filial Sao Paulo
+	oButt1:addBtnImage( "btcalend",	"Roteiro",	  			{|| CadRoteiro ()} 												   		   							,,.T.,CONTROL_ALIGN_LEFT) 
+	oButt1:addBtnImage( "nco",	   	"Cadastro de Bloqueio",	{|| U_NMCB53A()} 					   				   												,,.T.,CONTROL_ALIGN_LEFT)   
+	oButt1:addBtnImage( "GPEIMG32",	"Usuarios",				{|| CadUsuario(oPasta:nOption,oPedido,oBroItp,lHist,oDesbloq,oCBX1)}	   					,,.T.,CONTROL_ALIGN_LEFT) 
+	oButt1:addBtnImage( "folder14",	"Parametros", 	   		{|| AtuParamet()}		   			   													  			,,.T.,CONTROL_ALIGN_LEFT)  
+	oButt1:addBtnImage( "DESTINOS",	"Cad.TranspxDias Lib.",	{|| U_AXCADPX9() }		,,.T.,CONTROL_ALIGN_LEFT)
+Endif
+
+oButt1:addBtnImage( "svm", 			"Legenda", 	   			{|| FS53legPed(1,oPasta)}			   				   			   		   				  			,,.T.,CONTROL_ALIGN_LEFT)
+oButt1:addBtnImage( "PRECO", 		"Pos.Financeira", 		{|| xPosCli(oPedido) }	,,.T.,CONTROL_ALIGN_LEFT)
+oButt1:addBtnImage( "cargaseq",	"Imprime Pedidos", 			{|| U_RELPEDBL() }		,,.T.,CONTROL_ALIGN_LEFT)
+oButt1:addBtnImage( "carganew",	"Imprime Cortes", 			{|| U_RELACORTE() }		,,.T.,CONTROL_ALIGN_LEFT)
+oButt1:addBtnImage( "TK_VERTIT",	"Imprime Posicao Pedidos",	{|| U_RPEDBLFAT() }		,,.T.,CONTROL_ALIGN_LEFT)
+oButt1:addBtnImage( "EXCLUIR",	"Excluir Pedido",  		{|| DelPedido(cFilAnt,aPedidos[oPedido:nAT,3]),Atualizar(oPasta:nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed) },,.T.,CONTROL_ALIGN_LEFT)
+//DelPedido(cFilAnt,aPedidos[oPedido:nAT,3])
+*/
+//
+//RELACORTE
+//PAINEIS PRINCIPAIS
+//oPasta:= TFolder():New(000,000,{"PEDIDOS","DESBLOQUEIOS DO PEDIDO","BLOQUEIOS POR VALOR MINIMO"},{},oC1W1 ,,,,.T.,.F.,392,244,)//392,244
+//oPasta 			:= TFolder():New(000,000,{" P E D I D O S ","H I S T O R I C O   D E S B L O Q U E I O S","PEDIDOS GERADOS DE SALDO (C O R T E)"},{},oC1W1 ,,,,.T.,.F.,392,244,)//392,244
+//oPasta 			:= TFolder():New(000,000,{"V E R B A S"},{},oC1W1 ,,,,.T.,.F.,392,244,)//392,244
+//oPasta:align 	:= CONTROL_ALIGN_ALLCLIENT
+//oPasta:bChange 	:= {|| Atualizar(oPasta:nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed)}
+
+
+//DESBLOQUEIOS DO PEDIDO======================================================================================================================================
+//@ 01,01 LISTBOX oDesbloq FIELDS HEADER "S","Pedido","Cod.Bloqueio","Bloqueio Registrado","Data Desbloqueio", "Horario Desbloqueio","Observação","Responsavel"," " ;
+//SIZES {02,20,10,30,20,20,20,30,02} SIZE 490,095 PIXEL	 OF oPasta:aDialogs[2] 
+//oDesbloq:Align := CONTROL_ALIGN_ALLCLIENT  //nOption,oBroItp,cPedido
+//oDesbloq:Refresh()
+
+//ALTERACAO ITENS PEDIDO =================================================================================================================================
+
+//Relacao dos ITENS ;;;;; oSt,C6_ITEM,C6_PRODUTO,cDescProd,C6_QTDVEN,C6_QUANTLI,C6_PRCVEN,C6_VALOR
+//@ 01,01 LISTBOX oBroItp1 FIELDS HEADER ;
+//"S","PEDIDO","IT","CODPRO","PRODUTO","CLIENTE","CIDADE","EST","ARM","QTD.PED","SEG.UM","QTD.LIB","VR.UNIT","VR.TAB","TOTAL","REPRESENTANTE", " " ;
+//SIZES {5,6,2,6,35,70,15,10,10,10,15,15,15,10,10,2} SIZE 550,100 OF oPasta:aDialogs[3] PIXEL ON DBLCLICK cEditArm(oBroItp1)
+//oBroItp1:align := CONTROL_ALIGN_ALLCLIENT
+//oBroItp1:Refresh()
+//LoadSC6 (oBroItp1,'001001')
+
+
+
+
+//COLUNA1 - JANELA 2 =====================================================================================================================================
+
+//oFWLayer:addWindow( "Col01", "Win02", "RELAÇÃO DOS ITENS", 50, .T., .f. )
+//oC1W2	:= oFWLayer:getWinPanel( "Col01", "Win02")   
+
+//Relacao dos ITENS ;;;;; oSt,C6_ITEM,C6_PRODUTO,cDescProd,C6_QTDVEN,C6_QUANTLI,C6_PRCVEN,C6_VALOR
+//@ 01,01 LISTBOX oBroItp FIELDS HEADER ;
+//"S","PEDIDO","IT","CODPRO","PRODUTO","QTD.PED","SEG.UM","QTD.LIB","VR.UNIT","VR.TAB", "TOTAL","ARM","REPRESENTANTE", " " ;
+//SIZES {5,6,2,30,15,10,10,15,15,15,10,10,2} SIZE 550,100 OF oC1W2 PIXEL ON DBLCLICK IIF(!lHist,xMat460(oBroItp,oPedido,lHist,oDesbloq,oSaldoPed),.T.)
+
+//oBroItp:align := CONTROL_ALIGN_ALLCLIENT
+
+//====================================================================================================================
+
+
+//If lfirst
+//	Atualizar(oPasta:nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed,.T.)
+//	lfirst := .F.
+//Endif
+
+ACTIVATE MSDIALOG oDlg1 
+
+SET KEY VK_F4 TO
+
+Return 
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function LoadContr(lCombo)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_VERDE') 
+Local oSt2			:= LoadBitmap(GetResources(),'BR_VERMELHO')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local lCorte		:= .F.
+Local cQuery		:= ''
+Local xFil			:= ""
+Local cStatus		:= IIF(SubStr(cFilCmb1,1,1)=="A","S","N")
+
+aItens1 := {}
+
+		If SubStr(cFilCmb2,1,2) <> "00"
+			xFil := SubStr(cFilCmb2,1,2)
+		End If
+	If !Empty(cNota)
+
+	cQuery := "SELECT DISTINCT ZC4_CODCON,ZC4_DESC,ZC4_REVISA,ZC4_DTINI,ZC4_DTFIM,ZC4_ATIVO,ZC4_FILSEL " + CRLF
+	cQuery += " FROM " + RetSqlName("ZC4") + " ZC4 " + CRLF
+	cQuery += " WHERE ZC4.D_E_L_E_T_=''  AND ZC4_CODCON+ZC4_REVISA IN (SELECT E1_XNCONTR+E1_NREVISC FROM SE1010 WHERE E1_NUM='" + cNota + "' AND E1_SERIE='" + cSerie + "' AND E1_TIPO='NF') " + CRLF
+		
+	Else
+	cQuery := "SELECT DISTINCT ZC4_CODCON,ZC4_OBSOLE,ZC4_DESC,ZC4_REVISA,ZC4_DTINI,ZC4_DTFIM,ZC4_ATIVO,ZC4_FILSEL " + CRLF
+	cQuery += " FROM " + RetSqlName("ZC4") + " ZC4 " + CRLF
+	cQuery += " INNER JOIN " + RetSqlName("ZC7") + " ZC7 ON ZC7_CODCTR=ZC4_CODCON AND ZC7.D_E_L_E_T_=''
+	
+	cQuery += " WHERE ZC4.D_E_L_E_T_=''   " + CRLF
+	
+	If SubStr(cFilCmb3,1,6) <> "999999" .AND. Empty(cCodPro)
+		cQuery += " AND ZC7_CATEGO = '" + SubStr(cFilCmb3,1,6) + "' " + CRLF
+	End If
+	
+	If !Empty(cCodpro)
+		cQuery += " AND ZC7_CODPRO = '" + cCodPro + "' " + CRLF
+	End If
+
+	If !Empty(cCodCli)
+		cQuery += " AND ZC7_CODCLI = '" + cCodCli + "' " + CRLF
+	End If
+	
+	If !Empty(cLojaCli)
+		cQuery += " AND ZC7_LOJA = '" + cLojaCli + "' " + CRLF
+	End If
+
+	If !Empty(cBand) .AND. Empty(cCodCli)
+		cQuery += " AND ZC7_BANDEI = '" + cBand + "' " + CRLF
+	End If
+	
+	
+	If SubStr(cFilCmb2,1,2) <> "00"
+		cQuery += " AND ZC4_FILSEL LIKE ('%" + SubStr(cFilCmb2,1,2) + "%') " + CRLF
+	End If
+	
+	If SubStr(cFilCmb1,1,1)=="A"
+		cQuery += " AND ZC4_OBSOLE='F' " + CRLF  
+	ElseIf SubStr(cFilCmb1,1,1)=="I"
+		cQuery += " AND ZC4_OBSOLE='T' " + CRLF
+	End If
+	
+	If !Empty(cBand)
+		cQuery += " AND ZC4_CODCON IN (SELECT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_BANDEI = '" + cBand + "' AND ZC7.D_E_L_E_T_='') " + CRLF
+	End If
+	
+	cQuery += " ORDER BY ZC4_CODCON,ZC4_REVISA " + CRLF
+	
+	End If
+	
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\CONTRATOS.SQL",cQuery)
+			
+	IF Select("QUAA080W") > 0
+		QUAA080W->(dbCloseArea())
+	EndIf
+	
+	TCQUERY cQuery NEW ALIAS "QUAA080W" 
+		
+	While QUAA080W->(!Eof())
+		
+		Aadd(aItens1,{Iif(QUAA080W->ZC4_OBSOLE == "F",oSt,oSt2),; 
+					QUAA080W->ZC4_CODCON,;
+					QUAA080W->ZC4_DESC,;
+			 		QUAA080W->ZC4_REVISA,;
+			 		stod(QUAA080W->ZC4_DTINI),;
+			 		stod(QUAA080W->ZC4_DTFIM),;
+			 		IIF(QUAA080W->ZC4_OBSOLE == 'F',"S","N"),;
+			 		QUAA080W->ZC4_FILSEL,;
+					," "})										 
+		
+		QUAA080W->( dbSkip() )
+
+	End While 
+
+//04,10,60,40,30,30,30
+//@ 01,01 LISTBOX oItens Fields HEADER "CONTRATO","DESCRICAO","REVISAO","DT.INICIAL","DT.FINAL","ATIVO?","FILIAIS";
+//SIZES {04,10,60,05,10,10,10,30} SIZE 490,095 PIXEL of oC1W2//  ;
+
+If Empty(aItens1)                                
+	aItens1 := {{oSt,Space(10),Space(35),Space(05),Space(10),Space(10),Space(10),Space(10),Space(30)," "}}
+EndIf
+
+//"S","Item","Produto","Descrição","Quantidade","Qtd. Liberada","Valor Unitario", "Total", "Arm"," "	
+oItens1:SetArray(aItens1)
+oItens1:bLine := {|| {aItens1[oItens1:nAt,01],aItens1[oItens1:nAt,02],Alltrim(aItens1[oItens1:nAt,03]),aItens1[oItens1:nAt,04],aItens1[oItens1:nAt,05],aItens1[oItens1:nAt,06],;
+					aItens1[oItens1:nAt,07],aItens1[oItens1:nAt,08],aItens1[oItens1:nAt,09],aItens1[oItens1:nAt,10]}}						
+oItens1:Refresh()
+
+If lCombo
+	LoadItens(.T.)
+End If
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function LoadItens(lCombo)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_VERDE') 
+Local oSt2			:= LoadBitmap(GetResources(),'BR_AZUL')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local lCorte		:= .F.
+Local cQuery		:= ''
+
+aItens := {}
+//Local aItens		:= {}
+	//msgalert(cValToChar(nAt))
+	cQuery := " SELECT ZC5_ITEM,ZC5_CODCON,ZC5_CODVER,ZC5_DESC,ZC5_PERCEN, " + CRLF
+	cQuery += " CASE WHEN ZC5_CALCUL='1' THEN 'TOTAL PRODUTO' ELSE 'TOTAL NOTA ST' END ZC5_CALCUL, " + CRLF
+	cQuery += " CASE WHEN ZC5_FORMA='1' THEN 'DESCONTO NF' " + CRLF
+	cQuery += " WHEN ZC5_FORMA='2' THEN 'RETIDO NCC' " + CRLF
+	cQuery += " WHEN ZC5_FORMA='3' THEN 'RETIDO PAGAR' " + CRLF
+	cQuery += " WHEN ZC5_FORMA='4' THEN 'DESCONTO DUPL' END AS ZC5_FORMA, " + CRLF 
+	cQuery += " ZC5_DEVOLV " + CRLF
+	cQuery += " FROM " + RetSqlName("ZC5") + " ZC5  " + CRLF
+	cQuery += " WHERE ZC5.D_E_L_E_T_='' AND ZC5_CODCON='" + oItens1:aArray[oItens1:nAT,02] + "' AND ZC5_REVISA='" + oItens1:aArray[oItens1:nAT,04] + "' " + CRLF
+	cQuery += " ORDER BY ZC5_ITEM " + CRLF
+	//oPedido:aArray[oPedido:nAT,10]
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\CONTRATOS_ITENS.SQL",cQuery)
+			
+	IF Select("QUAA080I") > 0
+		QUAA080I->(dbCloseArea())
+	EndIf
+		
+	dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "QUAA080I", .T., .F.)
+	cPedRoda := QUAA080I->ZC5_CODCON
+	nValPed := 0
+	While QUAA080I->(!Eof())
+			nValPed += QUAA080I->ZC5_PERCEN
+	 		Aadd(aItens,{QUAA080I->ZC5_CODVER,;
+					 	SubStr(QUAA080I->ZC5_DESC,1,16),;
+					 	QUAA080I->ZC5_CALCUL,;
+					 	QUAA080I->ZC5_FORMA,;
+					 	Alltrim(Transform(QUAA080I->ZC5_PERCEN,"@E 99.99")),;
+					 	QUAA080I->ZC5_DEVOLV,;
+						," "})										 
+	
+	QUAA080I->( dbSkip() )
+
+End While 
+
+//04,10,60,40,30,30,30
+If Empty(aItens)                                
+	aItens := {{Space(4),Space(4),Space(4),Space(4),Space(4),Space(4)," "}}
+EndIf
+
+//"S","Item","Produto","Descrição","Quantidade","Qtd. Liberada","Valor Unitario", "Total", "Arm"," "	
+oItens:SetArray(aItens)
+oItens:bLine := {|| {aItens[oItens:nAt,01],aItens[oItens:nAt,02],aItens[oItens:nAt,03],aItens[oItens:nAt,04],aItens[oItens:nAt,05],aItens[oItens:nAt,06],;
+						aItens[oItens:nAt,07]}}						
+oItens:Refresh()
+
+If lCombo
+	LoadCtrCli()
+End If
+
+oPedRoda:Refresh()
+oValPed:Refresh()	
+	 
+
+
+Return
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function LoadCtrCli()
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_VERDE') 
+Local oSt2			:= LoadBitmap(GetResources(),'BR_AZUL')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local lCorte		:= .F.
+Local cQuery		:= ''
+
+aItens2 := {}
+
+	cQuery := " SELECT ZC7_ITEM,ZC7_CODCTR,ISNULL(ZC7_BANDEI+'-'+(SELECT X5_DESCRI FROM SX5010 WHERE D_E_L_E_T_='' AND X5_TABELA='BA' AND X5_CHAVE=ZC7_BANDEI),'') AS 'BANDEIRA', " + CRLF
+	cQuery += " ZC7_CODCLI,ZC7_LOJA,ISNULL((SELECT TOP 1 A1_NOME FROM SA1010 WHERE D_E_L_E_T_='' AND A1_COD=ZC7_CODCLI),'') AS 'CLIENTE', " + CRLF
+	cQuery += " ISNULL(ZC7_CODPRO+'-'+(SELECT B1_DESC FROM  SB1010 WHERE D_E_L_E_T_='' AND B1_COD=ZC7_CODPRO),'') AS 'PRODUTO', " + CRLF
+	cQuery += " ISNULL(ZC7_CATEGO+'-'+(SELECT X5_DESCRI FROM SX5010 WHERE D_E_L_E_T_='' AND X5_TABELA='X4' AND X5_CHAVE=ZC7_CATEGO),'') AS 'CATEGORIA', " + CRLF
+	cQuery += " ISNULL(ZC7_MARCA+'-'+(SELECT X5_DESCRI FROM SX5010 WHERE D_E_L_E_T_='' AND X5_TABELA='X8' AND X5_CHAVE=ZC7_MARCA),'') AS 'MARCA'  " + CRLF
+	cQuery += " FROM ZC7010 ZC7 WHERE ZC7.D_E_L_E_T_=''  " + CRLF
+	cQuery += " AND ZC7_CODCTR='" + oItens1:aArray[oItens1:nAT,02] + "' " + CRLF
+	
+	If Empty(cNota)
+	If SubStr(cFilCmb3,1,6) <> '999999' .AND. Empty(cCodPro)
+		cQuery += " AND ZC7_CATEGO='" + SubStr(cFilCmb3,1,6) + "'  " + CRLF
+	End If
+	
+	If !Empty(cCodPro)
+		cQuery += " AND ZC7_CODPRO='" + cCodpro + "' " + CRLF
+	End If
+	
+	If !Empty(cCodCli)
+		cQuery += " AND ZC7_CODCLI='" + cCodCli + "'  " + CRLF
+	End If
+	
+	If !Empty(cLojaCli)
+		cQuery += " AND ZC7_LOJA='" + cLojaCli + "'  " + CRLF
+	End If
+	
+	If !Empty(cBand) .AND. Empty(cCodCli)
+		cQuery += " AND ZC7_BANDEI='" + cBand + "'  " + CRLF
+	End If
+	End If
+	cQuery += " ORDER BY ZC7_ITEM  " + CRLF
+	
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\CONTRATOS_CLIXCONTRATO.SQL",cQuery)
+			
+	IF Select("QUAA080C") > 0
+		QUAA080C->(dbCloseArea())
+	EndIf
+		
+	dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "QUAA080C", .T., .F.)
+	//ZC7_ITEM	ZC7_CODCTR	BANDEIRA	ZC7_CODCLI	ZC7_LOJA	CLIENTE	PRODUTO	CATEGORIA	MARCA
+	While QUAA080C->(!Eof())
+		
+	 		Aadd(aItens2,{SubStr(QUAA080C->BANDEIRA,1,14),;
+					 	QUAA080C->ZC7_CODCLI,;
+					 	QUAA080C->ZC7_LOJA,;
+					 	SubStr(QUAA080C->CLIENTE,1,14),;
+					 	SubStr(QUAA080C->PRODUTO,1,14),;
+					 	SubStr(QUAA080C->CATEGORIA,1,20),;
+					 	SubStr(QUAA080C->MARCA,1,20),;
+						," "})										 
+	
+	QUAA080C->( dbSkip() )
+
+End While 
+
+//04,10,60,40,30,30,30
+If Empty(aItens2)                                
+	aItens2 := {{Space(4),Space(4),Space(4),Space(4),Space(4),Space(4),Space(4)," "}}
+EndIf
+
+//"S","Item","Produto","Descrição","Quantidade","Qtd. Liberada","Valor Unitario", "Total", "Arm"," "	
+oItens2:SetArray(aItens2)
+oItens2:bLine := {|| {aItens2[oItens2:nAt,01],aItens2[oItens2:nAt,02],aItens2[oItens2:nAt,03],aItens2[oItens2:nAt,04],aItens2[oItens2:nAt,05],aItens2[oItens2:nAt,06],;
+						aItens2[oItens2:nAt,07],aItens2[oItens2:nAt,08]}}						
+oItens2:Refresh()
+
+Return
+
+
+//**************************************************************
+Static Function QA80FIL()
+
+	Local aRet := {}
+	
+
+	dbSelectArea("SM0")
+	dbGotop()
+
+	aadd(aret,"00-TODAS AS FILIAIS")
+
+
+	While !Eof()
+
+		//cRet += ";"+SM0->M0_CODFIL+"-"+Alltrim(SM0->M0_FILIAL)
+		aadd(aRet,SM0->M0_CODFIL+"-"+Alltrim(SM0->M0_FILIAL))
+		dbSkip()
+
+	End While
+
+Return aRet
+//**************************************************************
+Static Function QA80SX5()
+
+	Local aRet := {}
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+	If dbSeek(xFilial("SX5")+'X4')
+
+		While !Eof() .AND. Alltrim(X5_TABELA) == 'X4'
+			
+			aadd(aRet,SX5->X5_CHAVE+"-"+Alltrim(SX5->X5_DESCRI))
+			dbSkip()
+	
+		End While
+
+	End If
+Return aRet
+
+
+
+
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³xMat460	³ Autor ³ WDO       	        ³ Data ³ 05/07/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³FUNCAO PARA DESEMPENHA PEDIDO                					³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³NOVAMIX	                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function xMat460(oBroItp,oPedido,lHist,oDesbloq,oSaldoPed)
+
+If SubString(oPedido:aArray[oPedido:nAT,10],1,2) == '05'
+
+	U_Mt460oPedidox(oBroItp,oPedido)
+
+ElseIF SubString(oPedido:aArray[oPedido:nAT,10],1,2) == '04'
+
+	aMargem := U_AcdDev(SubString(aPedidos[oPedido:nAT,5],1,6),SubsTring(aPedidos[oPedido:nAT,5],8,4),oBroItp:aArray[oBroItp:nAT,04]) 
+	cMsg := "Produto : " + Alltrim(oBroItp:aArray[oBroItp:nAT,04]) + "-" + AllTrim(Posicione("SB1",1,xFilial("SB1")+oBroItp:aArray[oBroItp:nAT,04],"B1_DESC")) + CRLF
+	cMsg += "Total de Compras ----------------> "+TransForm(aMargem[1][1],"@E 99,999.999")+ " Kgs" + CRLF
+	cMsg += "Total de Devoluções -------------> "+TransForm(aMargem[1][2],"@E 99,999.999")+ " Kgs" + CRLF
+	cMsg += "% Devoluções sobre Vendas -->    "+TransForm(aMargem[1][3],"@E 999.99")+ "%" + CRLF
+	cMsg += "O % Permitido é de: " + cValToChar(GetMv("FS_PERDV")) + "%"
+	
+	
+	MsgInfo(OemToAnsi(cMsg))
+
+ElseIF SubString(oPedido:aArray[oPedido:nAT,10],1,2) == '02'
+
+	cMsg := U_LgRoteiro()
+	MsgInfo(OemToAnsi(cMsg))
+
+ElseIf SubString(oPedido:aArray[oPedido:nAT,10],1,2) == '11'
+
+	xShowPed(oBroItp:aArray[oBroItp:nAT,02],oBroItp:aArray[oBroItp:nAT,04])
+
+End If
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³xPosCli	³ Autor ³ WDO       	        ³ Data ³ 05/07/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³FUNCAO PARA POSICAO DO CLIENTE.              					³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³NOVAMIX	                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function xPosCli(oPedido)
+
+Local aArea := GetArea()
+Private aRotina   := MenuDef()
+
+dbSelectArea("SA1")
+dbSetOrder(1)
+dbSeek(xFilial("SA1")+SubStr(oPedido:aArray[oPedido:nAT,05],1,6)+SubStr(oPedido:aArray[oPedido:nAT,05],8,4))
+
+a450F4Con()
+
+RestArea(aArea)
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Lin_OnOff	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Marca ou Desmarca linha com o Duplo Clique.   				³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function Lin_OnOff (oPedido,aPedidos,oBroItp,lHist,oDesbloq,oSaldoPed)	
+	
+	aPedidos[oPedido:nAT,2] := If(aPedidos[oPedido:nAT,2] == oSim,oNao,oSim)
+	Monta_SC6(oBroItp,oDesbloq,oSaldoPed)
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³LstBlocs	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Carrega o s Tipos de Bloqueios para uso do Filtro				³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function LstBlocs()
+
+Local nl
+
+cFilBloq1:=''
+aOrd1:={}
+         
+aVerBloq := StrTokArr(Alltrim(CB1->CB1_BLOQV),';')
+
+If Len(aVerBloq) == 0
+	CBAlert("Usuario não tem declaração dos Bloqueios que pode Visualizar. Verifique Cadastro de Usuário.")
+	Return .F.
+Endif
+
+PXC->(DbGotop())
+While  PXC->(! Eof()) 
+	//Verifica Os Bloqueios que poderão ser visualizados pelo Usaurio em questao 
+	// VT = Ver Todos os Bloqueios 	                                                        
+	
+	For nl:= 1 to Len (aVerBloq) 	
+		If Alltrim(aVerBloq[nl]) == "VT" .And. Empty(cFilBloq1)
+			cFilBloq1 := "VT = Ver Todos"
+			Aadd(aOrd1,"VT = Ver Todos")
+		Endif		
+		If Alltrim(aVerBloq[nl]) == "VT" .Or. Alltrim(aVerBloq[nl])  == Alltrim(PXC->PXC_COD)
+			Aadd(aOrd1,PXC->PXC_COD + " = " + Alltrim(PXC->PXC_DESCR)) 
+			//Exit
+		Endif 						
+	Next			
+	PXC->(DbSkip())
+
+EndDo
+
+Return .T.
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³AnalisePed³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Analisa Bloqueios para o Pedido em Questao.					³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+//Static Function AnalisePed (nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq,oBloqMin,lAnalisa) 
+Static Function AnalisePed (nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq,lAnalisa)
+
+
+
+	
+If lAnalisa 
+	
+	If Posicione("SC5",1,xFilial("SC5")+cPedAtu,"C5_BLOQUE") == '05'
+		Return
+	End If
+	
+	aAreaPX1 := GetArea()
+	PX1->(dbSetOrder(2))
+	If !PX1->(dbSeek(xFilial("PX1")+cPedAtu))
+		msgRun("Analisando o Pedido: " + cPedAtu + " . Aguarde...",,{|| U_NMCB54(cPedAtu)})
+		Atualizar(nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed)
+	End If
+	
+	RestArea(aAreaPX1)
+	Return
+
+End If
+
+If MsgYesNo("Deseja analisar somente o pedido selecionado?(SIM) ou Analiza todos os pedidos? (NAO)")
+	
+	If Posicione("SC5",1,xFilial("SC5")+cPedAtu,"C5_BLOQUE") == '05'
+		Return
+	End If
+	
+	aAreaPX1 := GetArea()
+	PX1->(dbSetOrder(2))
+	
+	If !PX1->(dbSeek(xFilial("PX1")+cPedAtu))
+		msgRun("Analisando o Pedido: " + cPedAtu + " . Aguarde...",,{|| U_NMCB54(cPedAtu)})
+	End If
+	
+	RestArea(aAreaPX1)
+		
+Else
+
+	For nx := 1 to Len (aPedidos)  
+		
+		If Posicione("SC5",1,xFilial("SC5")+Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1]),"C5_BLOQUE") <> '05'
+	
+		
+		aAreaPX1 := GetArea()
+		PX1->(dbSetOrder(2))
+				
+		If !PX1->(dbSeek(xFilial("PX1")+Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1])))
+			msgRun("Analisando o Pedido: " + Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1]) + " . Aguarde...",,{|| U_NMCB54(Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1]))}) 
+		End If
+	
+		RestArea(aAreaPX1)
+		
+		End If
+	
+	Next
+
+End If
+
+Atualizar(nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed)
+
+Return  
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³CadRoteiro³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Manutencao do Cadastro de ROTEIROS.							³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function CadRoteiro ()
+
+//If !U_GetSenha() 
+//	Return 
+//Endif
+
+U_NMCB21B()
+
+Return  
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³CadUsuario³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Valida Pedido a Ser Pesquisado.								³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+//Static Function CadUsuario (nOption,oPedido,oBroItp,lHist,oDesbloq,oBloqMin,oCBX)
+Static Function CadUsuario (nOption,oPedido,oBroItp,lHist,oDesbloq,oCBX1)
+//If !U_GetSenha() 
+//	Return 
+//Endif
+
+AXCadastro("CB1")  
+
+CB1->(DbSetOrder(2)) // Filial+Codigo Usuario Protheus
+cOperador := __cUserID 
+If !CB1->(DBSeek(xFilial("CB1") + Padr(cOperador,6)))
+	CBAlert("Operador Invalido.")
+	Return .F.
+Endif
+
+If LstBlocs()	//Monta Lista de Opcoes de Filtro para os Bloqueios
+	oCBX1:Refresh()
+	Atualizar(nOption,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed)
+Endif
+
+oPanBotoes:Refresh()  
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³VldPedido	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Valida Pedido a Ser Pesquisado.								³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+//Static Function VldPedido(nOption,oPedido,oBroItp,cPedido,lHist,oDesbloq,oBloqMin)  
+Static Function VldPedido(nOption,oPedido,oBroItp,cPedido,lHist,oDesbloq)
+Local cPedido:=Padr(cPedido,TamSx3("C5_NUM")[1])
+
+If !Empty(cPedido)
+	SC5->(DbSetOrder(1)) // Filial+Pedido
+	If !SC5->(DbSeek(xFilial("SC5")+cPedido)) 
+		CBAlert("Pedido Não encontrado.")
+		Return .f.
+	Endif
+Else
+	Return 
+Endif
+  
+Atualizar(nOption,oPedido,oBroItp,cPedido,lHist,oDesbloq,oSaldoPed)
+
+Return .T.
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Atualizar	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Atualiza Todos os Dados dos Paineis.							³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function Atualizar(nOption,oPedido,oBroItp,cPedAtu,lHist,oDesbloq,oSaldoPed,lTop)
+
+Default lTop := .F.
+
+msgRun("Atualizando LISTA de Pedidos. Aguarde..."			,,{||SqlPedido(oPedido,cPedAtu,lHist,.T.,oBroItp,oDesbloq,oSaldoPed,lTop)})
+msgRun("Atualizando Itens do Pedido. Aguarde..."			,,{||Monta_SC6(oBroItp,oDesbloq,oSaldoPed)})
+//msgRun("Atualizando SALDO DE Pedidos (CORTE). Aguarde..."	,,{||Mnt_SC6SD(oBroItp,oDesbloq,oSaldoPed)})
+
+Return 
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³SqlPedido	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Monta Lista de Pedidos.						 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function SqlPedido (oPedido,cPed,lHist,linicio,oBroItp,oDesbloq,oSaldoPed,lTop)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_BRANCO')  
+Local cNomeCli		:= ""
+Local cMunic		:= ""
+Local cEst			:= ""
+Local cCEP			:= "" 
+Local cDescBloq		:= ""
+Local cQuery		:= ""
+Local nl			:= 0    
+Local cFiltroBloq	:= "" 
+Local nLinha		:= oPedido:nAt
+
+cPed:= Padr(cPed,TamSx3("C5_NUM")[1]) 
+
+If linicio
+
+	aPedidos := {} 
+
+	cQuery := " SELECT SC5.C5_NUM,SC5.C5_OK,SC5.C5_CLIENTE,SC5.C5_LOJACLI,SC5.C5_BLOQUE,SC5.C5_ULTBLO, SC5.C5_EMISSAO, " + CRLF
+	cQuery += " SC5.C5_U_DTENT,SC5.C5_DTLIBBL,SC5.C5_HORLBB,SC5.C5_JUSTLIB,SC5.C5_XPEDANT, SC5.C5_U_TIPO FROM "+RetSqlName("SC5")+" SC5 " + CRLF
+	cQuery += " WHERE "  + CRLF
+	cQuery += " C5_FILIAL = '"+xFilial("SC5")+"' "  + CRLF 
+	   
+	If !lHist
+		cQuery += " AND C5_BLOQUE > '  ' AND C5_BLOQUE <> '00' AND C5_BLOQUE<>'L'  AND C5_BLOQUE<>'B' AND C5_BLOQUE<>'P'"  + CRLF 
+	Else 
+		cQuery += " AND C5_BLOQUE = '00' AND C5_EMISSAO>='" + dtos(dDataDe) + "'"  + CRLF  
+	Endif  
+	
+	If !Empty(cPed)
+		cQuery += " AND C5_NUM = '"+cPed+"' "  + CRLF
+	Endif
+	
+	If !Empty(cFilBloq1) .And. Left(cFilBloq1,2) <> 'VT' 
+		cQuery += " AND C5_BLOQUE = '" + Left(cFilBloq1,2)+ "'"  + CRLF  
+	Endif  
+	 
+	cQuery += " AND SC5.D_E_L_E_T_ = ' ' "  + CRLF
+	
+	If cFilAnt $ '08|09|10' //cFilAnt $ '08|09|10'
+		cQuery += "ORDER BY C5_NUM "  + CRLF 
+	Else
+		cQuery += "ORDER BY C5_U_DTENT,C5_NUM,C5_BLOQUE "  + CRLF
+	End If
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\NMCB53_434.SQL",cQuery)
+	
+	cQuery	:= ChangeQuery(cQuery)
+	dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "TempSC5", .T., .F.)
+	
+	SA1->(DbSetOrder(1))
+	PXC->(DbSetOrder(1))
+	
+	While TempSC5->(!Eof())
+	        
+			If !PXC->(DbSeek(xFilial("PXC")+TempSC5->C5_ULTBLO)) 
+				cDescBloq:= "Desconhecido"
+			Else
+				cDescBloq:= PXC->PXC_COD + "-" + Alltrim(PXC->PXC_DESCR) 
+			Endif
+			
+			If !SA1->(DbSeek(xFilial("SA1")+TempSC5->C5_CLIENTE+TempSC5->C5_LOJACLI))
+				cNomeCli:="Desconhecido"
+				cMunic:=""
+				cEst:=""
+				cCEP:=""
+			Else 
+				cCodCli	:= Alltrim(SA1->A1_COD)                          
+				cNomeCli:= Alltrim(SA1->A1_NOME)
+				cMunic	:= Alltrim(SA1->A1_MUN)
+				cEst	:= SA1->A1_EST
+				cCEP	:= SA1->A1_CEP 				
+			Endif
+			
+			If TempSC5->C5_BLOQUE == '00'
+				oSt:= LoadBitmap(GetResources(),"BR_VERDE") 
+			ElseIf TempSC5->C5_BLOQUE <> '00' .AND. !Empty(TempSC5->C5_XPEDANT)
+				oSt:= LoadBitmap(GetResources(),"BR_LARANJA")
+			Else
+				oSt:= LoadBitmap(GetResources(),"BR_VERMELHO")
+			Endif
+			  		   	
+		   	//"OK","S","Pedido","Cliente","Estado","Cidade","Cep","Data Pedido","Último Bloqueio","Data Desbloqueio","Horario Desbloqueio","Ocorrencia"		  		
+			//TempSC5->(Aadd(aPedidos,{oSt,oNao,C5_NUM,cCodCli+"-"+C5_LOJACLI+" : "+cNomeCli,cEst,cMunic,cCEP,StoD(C5_EMISSAO),cDescBloq,StoD(C5_U_DTENT),C5_HORLBB,Substring(Posicione("SC5",1,cFilAnt+C5_NUM,"C5_XJUSTLB"),1,5000),C5_BLOQUE," "} ))
+			TempSC5->(Aadd(aPedidos,{oSt,oNao,C5_NUM,C5_U_TIPO,cCodCli+"-"+C5_LOJACLI+" : "+cNomeCli,cEst,cMunic,cCEP,StoD(C5_EMISSAO),cDescBloq,StoD(C5_U_DTENT),C5_HORLBB,Substring(Posicione("SC5",1,cFilAnt+C5_NUM,"C5_XJUSTLB"),1,5000),C5_BLOQUE," "} ))
+			//TempSC5->(Aadd(aPedidos,{oSt,oNao,C5_NUM,cCodCli+"-"+C5_LOJACLI+" : "+cNomeCli,cEst,cMunic,cCEP,StoD(C5_EMISSAO),cDescBloq,StoD(C5_U_DTENT),C5_HORLBB,"",C5_BLOQUE," "} ))
+		TempSC5->(dbSkip())
+	EndDo
+	TempSC5->(DbCloseArea())
+Endif
+
+Monta_SC6(oBroItp,oDesbloq,oSaldoPed)
+
+If Empty(aPedidos)                                
+	//aPedidos:={{oSt,oNao,Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20)," "}}
+	aPedidos:={{oSt,oNao,Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20)," "}}
+`	//oPedido:nAt := 1
+	//oPedido:GoTop()
+EndIf 
+
+oPedido:SetArray( aPedidos )
+oPedido:bLine := { || {	aPedidos[oPedido:nAT,01], aPedidos[oPedido:nAT,02], aPedidos[oPedido:nAT,03], aPedidos[oPedido:nAT,04],;
+						aPedidos[oPedido:nAT,05],aPedidos[oPedido:nAT,06],aPedidos[oPedido:nAT,07],aPedidos[oPedido:nAT,08],;
+						aPedidos[oPedido:nAT,09],aPedidos[oPedido:nAT,10],aPedidos[oPedido:nAT,11],aPedidos[oPedido:nAT,12],;
+						aPedidos[oPedido:nAT,13] } }
+
+//oPedido:GoTop()
+
+//If lTop
+	oPedido:nAt := 1
+	oPedido:GoTop()
+//Else
+//	oPedido:GoTop()
+//	oPedido:nAt := nLinha
+//End If
+oPedido:Refresh() 
+
+Return aPedidos  
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function Monta_SC6 (oBroItp,oDesbloq,oPedido,lchange,oSaldoPed)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_BRANCO') 
+Local oSt2			:= LoadBitmap(GetResources(),'BR_AZUL')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local lCorte		:= .F.
+
+aLsc6				:= {}
+
+PXD->(DbSetOrder(1)) // Filial+Pedido
+SC6->(DbSetOrder(1)) // Filial+Pedido 
+SC5->(DbSetOrder(1)) // Filial+Pedido
+SC9->(DbSetOrder(1)) // Filial+Pedido+Item+Sequencia
+
+For nx:= 1 to Len (aPedidos)
+
+	If !lChange
+		If aPedidos[nx,2] == oNao //.Or. aPedidos[nx,13] $ "99|  "
+			Loop
+		Endif  
+	Else
+		If aPedidos[nx,3] <> aPedidos[oPedido:nAT,3] 
+			Loop
+		Endif  
+	End If
+	
+	cPedido:=Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1])
+	SC6->(DbSeek(xFilial("SC6")+cPedido)) 
+	
+	While SC6->(!Eof() .and. C6_FILIAL+C6_NUM == xFilial("SC6")+cPedido )
+		
+	If Alltrim(Posicione("SC5",1,SC6->C6_FILIAL+SC6->C6_NUM,"C5_BLOQUE")) == '11' .AND. Alltrim(SC6->C6_XCORTE) <> 'S' 
+		SC6->(dbSkip())
+		Loop	
+	End If
+		
+		If Posicione("SC5",1,cFilAnt+cPedido,"C5_BLOQUE") == '11' 
+			If SC6->C6_XCORTE=='S'
+				oSt:= 	LoadBitmap(GetResources(),'BR_VERMELHO')	//Liberado
+			Else
+				oSt:= 	LoadBitmap(GetResources(),'BR_VERDE')	//Liberado
+			End If
+		Else
+			If Empty(SC6->C6_BLOESP) .Or. SC6->C6_BLOESP == "0"
+				oSt:= 	LoadBitmap(GetResources(),'BR_VERDE')	//Liberado
+			Elseif SC6->C6_BLOESP == "1"  
+				oSt:= 	LoadBitmap(GetResources(),'BR_VERMELHO')//Bloqueado
+			Elseif SC6->C6_BLOESP == "2" 
+				oSt:= 	LoadBitmap(GetResources(),'BR_AZUL')	//Liberado pelo Gestor
+			Endif
+		End If
+		nLiberado := 0
+		nTotValIt := 0
+		
+		If SC9->(DbSeek(xFilial('SC9')+SC6->C6_NUM+SC6->C6_ITEM))			
+			While SC9->(!Eof() .AND. C9_FILIAL+C9_PEDIDO+C9_ITEM == SC6->C6_FILIAL+SC6->C6_NUM+SC6->C6_ITEM)					
+				If Empty(SC9->C9_BLEST)
+					nLiberado := nLiberado + SC9->C9_QTDLIB
+					nTotValIt := nTotValIt +(SC6->C6_PRCVEN*SC9->C9_QTDLIB)
+				//Else
+				//	nLiberado := nLiberado + SC9->C9_QTDLIB
+				//	nTotValIt := nTotValIt +(SC6->C6_PRCVEN*SC9->C9_QTDLIB)
+				End If
+				
+				SC9->(DbSkip())
+			
+			Enddo
+		Endif
+				 
+		cDescProd := Posicione("SB1",1,xFilial("SB1")+SC6->C6_PRODUTO,"B1_DESC")
+		
+		nPrPed 	:= 0
+		
+		If SC6->C6_LOCAL == '24'
+			nPrTab	:= 0
+		Else
+			nPrTab	:= U_NMCB61X(SC6->C6_CLI,SC6->C6_LOJA,dDatabase,SC6->C6_PRODUTO)
+		End If
+		
+		cTab := Posicione("SC5",1,SC6->C6_FILIAL+SC6->C6_NUM,"C5_TABELA")
+		
+		If SC6->C6_LOCAL == '24'
+		
+			cTab := GetMv("MV_ACDFIFO")
+		
+		End If
+					
+			If SB1->B1_PESOVAR == 'S'
+				If nPrTab == 0
+					nPrTab	:= Posicione("DA1",1,xFilial("DA1")+cTab+SC6->C6_PRODUTO,"DA1_XPRVE2")  		
+				End If
+				nPrPed	:= SC6->C6_PRCVEN2
+			Else
+				If nPrTab == 0
+					nPrTab	:= Posicione("DA1",1,xFilial("DA1")+cTab+SC6->C6_PRODUTO,"DA1_PRCVEN")
+				End If
+				nPrPed	:= SC6->C6_PRCVEN
+			End IF
+			
+			
+			
+		If SC6->C6_XCORTE=='S'
+		SC6->(Aadd(aLsc6,{	oSt,Alltrim(aPedidos[nx,3]),C6_ITEM,C6_PRODUTO,cDescProd,;
+							Alltrim(Transform(C6_QTDVEN-C6_QTDENT,"@E 99,999")),;
+							Alltrim(Transform(C6_UNSVEN-C6_QTDENT2,"@E 9,999,999.999")),;
+							Alltrim(Transform(nLiberado,"@E 99,999")),;
+							Alltrim(Transform(nPrPed,"@E 99,999.99")),;
+							Alltrim(Transform(nPrTab,"@E 99,999.99")),;
+							Alltrim(Transform(C6_PRCVEN * ( C6_QTDVEN-C6_QTDENT ),"@E 9,999,999.99")),C6_LOCAL,SubStr(Posicione("SA3",1,xFilial("SA3")+C6_XVEND,"A3_NOME"),1,30)," "}))										 
+		Else
+	 		SC6->(Aadd(aLsc6,{	oSt,Alltrim(aPedidos[nx,3]),C6_ITEM,C6_PRODUTO,cDescProd,;
+							Alltrim(Transform(C6_QTDVEN,"@E 99,999")),;
+							Alltrim(Transform(C6_UNSVEN,"@E 9,999,999.999")),;
+							Alltrim(Transform(nLiberado,"@E 99,999")),;
+							Alltrim(Transform(nPrPed,"@E 99,999.99")),;
+							Alltrim(Transform(nPrTab,"@E 99,999.99")),;
+							Alltrim(Transform(SC6->C6_VALOR/*nTotValIt*/,"@E 9,999,999.99")),C6_LOCAL,SubStr(Posicione("SA3",1,xFilial("SA3")+C6_XVEND,"A3_NOME"),1,30)," "}))										 
+	  End If
+	
+	SC6->(dbSkip())
+	
+	EndDo
+	
+	//CARREGA OS DESBLOQUEIOS DO PEDIDO EM QUESTAO  
+	PXD->(DbSeek(xFilial("PXD")+cPedido)) 
+	While PXD->(!Eof() .and. PXD_FILIAL+PXD_PEDIDO == xFilial("PXD")+cPedido )
+	   	//"S","Pedido","Cod.Bloqueio","Descricao do Bloqueio","Data Liberacao", "Horario Liberacao","Motivo Liberacao","Responsavel"," "			
+		PXD->(Aadd(aBloqs,{oSt2,PXD_PEDIDO,PXD_CODBLO,PXD_DESCRI,dToc(PXD_DTLIBB),PXD_HORLB,PXD_JUSTIF,PXD_GESTOR," "}))										 
+	  	PXD->(dbSkip())
+	EndDo         
+
+Next
+
+If Empty(aLsc6)                                
+	aLsc6:={{oSt,Space(6),Space(2),Space(6),Space(30),Space(6),Space(8),Space(6),Space(5),Space(5),Space(10),Space(2),Space(20)," "}}
+EndIf
+
+//"S","Item","Produto","Descrição","Quantidade","Qtd. Liberada","Valor Unitario", "Total", "Arm"," "	
+oBroItp:SetArray(aLsc6)
+oBroItp:bLine := {|| {	aLsc6[oBroItp:nAt,01],aLsc6[oBroItp:nAt,02],aLsc6[oBroItp:nAt,03],aLsc6[oBroItp:nAt,04],aLsc6[oBroItp:nAt,05],aLsc6[oBroItp:nAt,06],;
+						aLsc6[oBroItp:nAt,07],aLsc6[oBroItp:nAt,08],aLsc6[oBroItp:nAt,09],aLsc6[oBroItp:nAt,10],aLsc6[oBroItp:nAt,11],aLsc6[oBroItp:nAt,12],aLsc6[oBroItp:nAt,13]}}						
+oBroItp:Refresh()
+         
+
+If Empty(aBloqs)                                
+	aBloqs:={{oSt2,Space(20),Space(10),Space(30),Space(20),Space(20),Space(30),Space(20)," "}}
+EndIf
+oDesbloq:SetArray(aBloqs)
+oDesbloq:bLine := {|| {	aBloqs[oDesbloq:nAt,01],aBloqs[oDesbloq:nAt,02],aBloqs[oDesbloq:nAt,03],aBloqs[oDesbloq:nAt,04],aBloqs[oDesbloq:nAt,05],;
+						aBloqs[oDesbloq:nAt,06],aBloqs[oDesbloq:nAt,07],aBloqs[oDesbloq:nAt,08],aBloqs[oDesbloq:nAt,09]}}						
+oDesbloq:Refresh()   
+
+
+Return   
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_BLVM ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos Pedidos Bloqueados Por Valor Minimo		 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+//Static Function Monta_BLVM (oBloqMin,cPed,lHist)
+Static Function Monta_BLVM (cPed,lHist)
+
+Local cNomeCli:=""
+Local cMunic:=""
+Local cEst:=""
+Local cCEP:="" 
+Local cBloVm:= ""
+Local aCampos := {} 
+Local oSt:= LoadBitmap(GetResources(),'BR_BRANCO')
+Local cQuery   
+Local nl:=0 
+Local cFiltroBloq:=""
+Local aVerBloq := StrTokArr(Alltrim(CB1->CB1_BLOQV),';')  
+
+
+Default cPed:=''
+
+If EMPTY(aVerBloq)
+	CBAlert("Usuario sem direito de Visualizar Bloqueios") 
+	Return //cPed:="x"
+Else
+	//Verifica Os Bloqueios que poderão ser visualizados pelo Usuario em questao                                                          
+	For nl:= 1 to Len (aVerBloq) 	   
+		If Alltrim(aVerBloq[nl]) == "VT" //Ver Todos os Bloqueios  
+			cFiltroBloq:= ""
+			Exit
+		Endif		
+		cFiltroBloq:= cFiltroBloq + " AND C5_BLOQUE = '" + aVerBloq[nl] + "' "
+	Next
+Endif
+
+PXC->(DbSetOrder(2))
+If PXC->(DbSeek(xFilial("PXC")+ "008")) //Pesquisa Codigo de Bloqueio Para a Regra de VALOR MINIMO
+	cBloVm:= PXC->PXC_COD  
+Else
+	CBAlert("O Codigo da Regra Para o Valor Minimo nao foi encontrado. Entre em contato com o TI.") 
+	Return
+Endif
+
+cPed:= Padr(cPed,TamSx3("C5_NUM")[1])
+
+cQuery := " SELECT SC5.C5_NUM,SC5.C5_CLIENTE,SC5.C5_LOJACLI,SC5.C5_EMISSAO, SC5.C5_DTLIBBL,SC5.C5_HORLBB,SC5.C5_JUSTLIB FROM "+RetSqlName("SC5")+" SC5 "
+cQuery += " WHERE "
+cQuery += " C5_FILIAL = '"+xFilial("SC5")+"' " 
+cQuery += " AND C5_BLOQUE = '" + cBloVm + "'"  
+
+If !Empty(cPed)
+	cQuery += " AND C5_NUM = '"+cPed+"' " 
+Endif 
+If !Empty(cFiltroBloq)
+	cQuery += cFiltroBloq
+Endif  
+cQuery += " AND D_E_L_E_T_ = ' ' "
+
+cQuery	:= ChangeQuery(cQuery)
+dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "TempSC5", .T., .F.)
+
+SA1->(DbSetOrder(1))
+
+While TempSC5->(!Eof())
+        		
+	If !SA1->(DbSeek(xFilial("SA1")+TempSC5->C5_CLIENTE+TempSC5->C5_LOJACLI))
+		cNomeCli:="Desconhecido"
+		cMunic:=""
+		cEst:=""
+		cCEP:=""
+	Else 
+		cCodCli	:= Alltrim(SA1->A1_COD)                          
+		cNomeCli:= Alltrim(SA1->A1_NOME)
+		cMunic	:= Alltrim(SA1->A1_MUN)
+		cEst	:= SA1->A1_EST
+		cCEP	:= SA1->A1_CEP 				
+	Endif     
+   
+	//"S","Pedido","Cliente","Estado","Cidade","Cep","Data do Pedido","Data Desbloqueio", "Horario Liberacao","Motivo Desbloqueio"," " 
+	
+	oSt:= 	LoadBitmap(GetResources(),'BR_VERMELHO')	//Bloqueado
+		  		
+	TempSC5->(Aadd(aCampos,{oSt,C5_NUM,cCodCli+"-"+cNomeCli,cEst,cMunic,cCEP,StoD(C5_EMISSAO),StoD(C5_DTLIBBL),C5_HORLBB,C5_JUSTLIB," "} ))										 
+
+	TempSC5->(dbSkip())
+EndDo
+
+TempSC5->(DbCloseArea())
+
+If Empty(aCampos)                                
+	aCampos:={{oSt,Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(1)}}
+EndIf 
+
+//oBloqMin:SetArray(aCampos)
+//oBloqMin:bLine := {|| {	aCampos[oBloqMin:nAt,01],aCampos[oBloqMin:nAt,02],aCampos[oBloqMin:nAt,03],aCampos[oBloqMin:nAt,04],aCampos[oBloqMin:nAt,05],;
+//						aCampos[oBloqMin:nAt,06],aCampos[oBloqMin:nAt,07],aCampos[oBloqMin:nAt,08],aCampos[oBloqMin:nAt,09],aCampos[oBloqMin:nAt,10],;
+//						aCampos[oBloqMin:nAt,11]}}
+//oBloqMin:Refresh()
+
+Return 
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Descri‡…o ³ PERMITE DESBLOQUEAR OS PEDIDOS BLOQUEADOS.					³±± 
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+//Static Function ProcBloq (nopcao,oPedido,oBroItp,lHist,oDesbloq,oBloqMin)   
+Static Function ProcBloq (nopcao,oPedido,oBroItp,lHist,oDesbloq)
+
+Local cMensagem     
+Local aTipoBloq	:= {}
+Local cDescBloq	:= "" 
+Local lTipBloq	:= .F.
+Local nL 
+Local cBlk		:= "" 
+Local lret:=.t.  
+Local cBloqueio	:= ""  
+Local lLibParc	:= .F. 
+Local l410Auto := .T.
+
+Private cJustific := ""
+//Solicita a Senha do Gestor 
+/*
+If ! U_GetSenha()
+	Return 
+Endif
+*/ 
+
+SA1->(DbSetOrder(1))
+SC5->(DbSetOrder(1))
+  
+aTipoBloq := StrTokArr(Alltrim(CB1->CB1_BLOQA),';')  
+
+cBloqueio:= ""
+
+For nx:= 1 to Len (aPedidos)  
+
+	PXC->(DbSetOrder(1))
+	
+	If aPedidos[nx,2] == oNao .Or. aPedidos[nx,14] $ "99|00|  "
+		Loop
+	Endif
+	
+	cPedido:= Padr(aPedidos[nx,3],TamSx3("C5_NUM")[1])    
+
+	If !SC5->(DbSeek(xFilial("SC5")+cPedido)) 
+		CBAlert("Pedido: " + Alltrim(cPedido) + " Não foi encontrado na Base.")
+		Loop 
+	Endif 
+	
+	If !SA1->(DbSeek(xFilial("SA1")+SC5->C5_CLIENTE+SC5->C5_LOJACLI))
+		CBAlert("O Cliente do Pedido: " + Alltrim(cPedido) + " não foi encontrado.")
+		Loop  
+	Endif 
+	
+	//Verifica se o Operador tem Permissao para Desbloquear o Pedido conforme o Bloqueio     
+    lTipBloq := .F.                                                       
+	For nl:= 1 to Len (aTipoBloq)
+		If aTipoBloq[nl] == SC5->C5_BLOQUE
+			lTipBloq := .T.
+		Endif
+	Next
+
+	If !lTipBloq 
+		CBAlert("Voce não tem Permissão para Liberar o Bloqueio: " + cDescBloq + " do Pedido: " + Alltrim(cPedido))
+		Loop
+	Endif  
+	
+	If cBloqueio <> aPedidos[nx,14]
+	
+		cBloqueio := aPedidos[nx,14]
+	
+		If !PXC->(DbSeek(xFilial("PXC") + aPedidos[nx,14])) 
+			cCodBloq:= aPedidos[nx,14]
+			cDescBloq:= "Desconhecido"
+		Else
+			cCodBloq:= PXC->PXC_COD
+			cDescBloq:= Alltrim(PXC->PXC_DESCR )
+		Endif
+		
+		If SC5->C5_BLOQUE == '11'
+		
+			If MsgYesNo("EMITIR PEDIDO <<( S I M )>>  <-OU->   ELIMINAR RESIDUOS <<( N A O )>> ")
+				GerPedido(cFilAnt,Alltrim(aPedidos[nx,3]))
+			Else
+				Ma410Resid("SC5",SC5->( recno() ),2)
+
+				RecLock("SC5",.F.)
+					SC5->C5_BLOQUE := '00' //BLOQUEIO POR SALDO DE PEDIDO PARA AVALIACAO DE CORTE 
+					SC5->C5_DTLIBBL:= Ddatabase 
+					SC5->C5_HORLBB:= Time() 
+				MsUnlock()
+				
+				MsgAlert("Resíduo do pedido Excluído !") 
+			End If
+		
+			Loop
+		
+		End If
+		
+		cMensagem:= "Esta operação libera o Pedido: " + Alltrim(aPedidos[nx,3]) + " que esta Bloqueado" + CRLF 
+		cMensagem+= "Por: " + cCodBloq + "-" + cDescBloq  + CRLF 
+		cMensagem+= "A Liberação ira permitir que a Ordem de Separação possa ser executada" + CRLF 
+		cMensagem+= "caso não houver outro tipo de Bloqueio." + CRLF + CRLF
+		
+		cMensagem+= "CONFIRMA LIBERAR O PEDIDO MARCADO ?"
+		
+		If !MsgYesNo(cMensagem,":: Liberação do Pedido. ::")	
+			Exit
+		Endif 
+				
+		If !Info_Motiv(cCodBloq,cDescBloq) .Or. Empty(cJustific) //Solicita Justificativa para a Liberacao do Bloqueio
+			If !MsgYesNo("A justificativa não foi declarada. Deseja parar a operação ?")	
+				cBloqueio := ""
+				Loop
+			Else
+				Exit
+			Endif 
+		Else
+			//Volta cliente para risco B
+			If SC5->C5_BLOQUE == '09'
+				If MsgYesNo("Deseja alterar RISCO do cliente para B?",":: Liberação do Pedido. ::")
+					aAreaSA1 := GetArea()
+						SA1->(dbSetOrder(1))
+						If SA1->(dbSeek(xFilial("SA1")+SC5->C5_CLIENTE+SC5->C5_LOJACLI))
+							RecLock("SA1",.F.)
+								SA1->A1_RISCO := 'B'
+							MsUnlock()
+						End If
+					RestArea(aAreaSA1)
+				End If
+			End If
+			
+			If SC5->C5_BLOQUE == '06' // Bloqueio por limite de credito excedido (grava saldo do pedido + saldo duplicata)
+				aAreaSA1 := GetArea()
+					SA1->(dbSetOrder(1))
+					If SA1->(dbSeek(xFilial("SA1")+SC5->C5_CLIENTE+SC5->C5_LOJACLI))
+						RecLock("SC5",.F.)
+							SC5->C5_XMSALDO := ( SA1->A1_SALDUP+SA1->A1_SALPED )
+						MsUnlock()
+					End If
+				RestArea(aAreaSA1)
+			End If 
+			
+			If SC5->C5_BLOQUE == '08' // Bloqueio por valor minimo
+				RecLock("SC5",.F.)
+					SC5->C5_BLOQUE 	:= "00" //Status de Liberado Pelo Gestor  
+					SC5->C5_BLOQLIB := If(Empty(SC5->C5_BLOQLIB),'08',Alltrim(SC5->C5_BLOQLIB) + ";" + '08') // Grava Codigo de Bloqueio que ja foi liberado		
+					SC5->C5_DTLIBBL:= Ddatabase 
+					SC5->C5_HORLBB:= Time() 
+				MsUnlock()
+			End If 
+			
+			If xLibC9(cPedido) .AND. SC5->C5_BLOQUE == '05'
+				LIBSC9X(SC5->C5_NUM)
+				If xLibC9(cPedido)
+					MsgAlert("Pedido não pode ser desbloqueado pois não há estoque dispinivel para nenhum item do pedido!")
+					Loop
+				End If
+			End If
+			
+			//30/11/2017//////////////// wilson
+			If SC5->C5_BLOQUE == '03' .AND. SC5->C5_FILIAL $ GetMv("ES_NMCB60I") // Bloqueio data de entrega 
+				RecLock("SC5",.F.)
+					SC5->C5_DTLIBDT := date() // Marca Data da liberacao para nao bloquear pedido no Job de acordo com dias no paramentro ES_DIASJOB  
+				MsUnlock()
+			End If 
+			
+			If SC5->C5_BLOQUE == '10' // Bonificacao se for esse bloqueio nao passa pelos demais bloqueios
+				RecLock("SC5",.F.)
+					SC5->C5_BLOQUE 	:= "00" //Status de Liberado Pelo Gestor  
+					SC5->C5_BLOQLIB := If(Empty(SC5->C5_BLOQLIB),'10',Alltrim(SC5->C5_BLOQLIB) + ";" + '10') // Grava Codigo de Bloqueio que ja foi liberado		
+					SC5->C5_DTLIBBL:= Ddatabase 
+					SC5->C5_HORLBB:= Time() 
+				MsUnlock()
+			End If 
+			///////////////////////////
+
+		Endif 
+	
+	Else	                    
+			If SC5->C5_BLOQUE == '11'
+				If MsgYesNo("Deseja ::::::EMITIR PEDIDO <<( S I M )>> ::::   <-OU->   :::EMILIMAR RESIDUOS <<( N A O )>>> ::::  ?  ")
+					GerPedido(cFilAnt,Alltrim(aPedidos[nx,3]))
+				Else
+					Ma410Resid("SC5",SC5->( recno() ),2)
+	
+					RecLock("SC5",.F.)
+						SC5->C5_BLOQUE := '00'
+						SC5->C5_DTLIBBL:= Ddatabase 
+						SC5->C5_HORLBB:= Time() 
+					MsUnlock()
+					
+					MsgAlert("Resíduo do pedido Excluído !") 
+				End If
+			Loop
+			End If		
+			
+			//Volta cliente para risco B
+			If SC5->C5_BLOQUE == '09'
+				If MsgYesNo("Deseja alterar RISCO do cliente para B?",":: Liberação do Pedido. ::")
+					aAreaSA1 := GetArea()
+						SA1->(dbSetOrder(1))
+						If SA1->(dbSeek(xFilial("SA1")+SC5->C5_CLIENTE+SC5->C5_LOJACLI))
+							RecLock("SA1",.F.)
+								SA1->A1_RISCO := 'B'
+							MsUnlock()
+						End If
+					RestArea(aAreaSA1)
+				End If
+			End If
+			
+			If SC5->C5_BLOQUE == '06' // Bloqueio por limite de credito excedido (grava saldo do pedido + saldo duplicata)
+				aAreaSA1 := GetArea()
+					SA1->(dbSetOrder(1))
+					If SA1->(dbSeek(xFilial("SA1")+SC5->C5_CLIENTE+SC5->C5_LOJACLI))
+						RecLock("SC5",.F.)
+							SC5->C5_XMSALDO := ( SA1->A1_SALDUP+SA1->A1_SALPED )
+						MsUnlock()
+					End If
+				RestArea(aAreaSA1)
+			End If 
+ 
+ 			If SC5->C5_BLOQUE == '08' // Bloqueio por valor minimo
+				RecLock("SC5",.F.)
+					SC5->C5_BLOQUE 	:= "00" //Status de Liberado Pelo Gestor  
+					SC5->C5_BLOQLIB := If(Empty(SC5->C5_BLOQLIB),'08',Alltrim(SC5->C5_BLOQLIB) + ";" + '08') // Grava Codigo de Bloqueio que ja foi liberado		
+					SC5->C5_DTLIBBL:= Ddatabase 
+					SC5->C5_HORLBB:= Time() 
+				MsUnlock()
+			End If 
+			
+			If xLibC9(cPedido) .AND. SC5->C5_BLOQUE == '05'
+				LIBSC9X(SC5->C5_NUM)
+				If xLibC9(cPedido)
+					MsgAlert("Pedido não pode ser desbloqueado pois não há estoque dispinivel para nenhum item do pedido!")
+					Loop
+				End If
+			End If
+			
+			//30/11/2017//////////////// wilson
+			If SC5->C5_BLOQUE == '03' .AND. SC5->C5_FILIAL $ GetMv("ES_NMCB60I") // Bloqueio data de entrega 
+				RecLock("SC5",.F.)
+					SC5->C5_DTLIBDT := date() // Marca Data da liberacao para nao bloquear pedido no Job de acordo com dias no paramentro ES_DIASJOB  
+				MsUnlock()
+			End If 
+			
+			If SC5->C5_BLOQUE == '10' // Bonificacao se for esse bloqueio nao passa pelos demais bloqueios
+				RecLock("SC5",.F.)
+					SC5->C5_BLOQUE 	:= "00" //Status de Liberado Pelo Gestor  
+					SC5->C5_BLOQLIB := If(Empty(SC5->C5_BLOQLIB),'10',Alltrim(SC5->C5_BLOQLIB) + ";" + '10') // Grava Codigo de Bloqueio que ja foi liberado		
+					SC5->C5_DTLIBBL:= Ddatabase 
+					SC5->C5_HORLBB:= Time() 
+				MsUnlock()
+			End If 
+			/////////////////////////////
+			
+	Endif
+		
+	Begin Transaction   
+	
+		GrvHist (cDescBloq)   						//Grava Justificativa para a Liberacao do Bloqueio
+			    	    
+		If U_NMCB55 ("003") == SC5->C5_BLOQUE		//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra da Data Final de Entregar
+			lret:=U_NMCB60C(.F.)	   				//Analisa e Libera Bloqueio Por Regra de Valor 
+		ElseIf U_NMCB55 ("011") == SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra da Data Final de Entregar
+			lret:=U_NMCB60H(.F.)	   				//Analisa e Libera Bloqueio Por Regra de Cliente Bonificado
+		Elseif U_NMCB55 ("002")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra de Roteiro		
+			lret:=U_NMCB60B(.F.)			   		//Analisa e Libera Bloqueio Por Regra de Roteiro 
+		Elseif U_NMCB55 ("001")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra da Regra de Valo
+			lret:=U_NMCB60A(.F.)			   		//Analisa e Libera Bloqueio Por Regra da Data Final de Entrega 
+		Elseif U_NMCB55 ("004")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra de Devolucao
+			lret:=U_NMCB60D(.F.) 					//Analisa e Libera Bloqueio Por Regra de Devolucao
+		Elseif U_NMCB55 ("010")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra de CLIENTE COM RISCO E
+			lret:=U_NMCB60G(.F.) 					//Analisa e Libera Bloqueio Por Regra de CLIENTE COM RISCO E
+		Elseif U_NMCB55 ("006")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a REGRA DE LIMITE EXCEDIDO  	
+			lret:=U_NMCB60E(.F.)  		   			//Analisa e Libera Bloqueio Por REGRA DE LIMITE EXCEDIDO 
+		Elseif U_NMCB55 ("007")== SC5->C5_BLOQUE	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a REGRA DE CLIENTE EM ATRASO	 
+			lret:=U_NMCB60F(.F.)			   		//Analisa e Libera Bloqueio Por REGRA DE CLIENTE EM ATRASO	
+		Elseif U_NMCB55 ("005")== SC5->C5_BLOQUE   	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a REGRA DE SALDO EM ESTOQUE  
+			lret:=U_NMCB60(.F.)	   					//Analisa e EXECUTA LIBERACAO AUTOMATICA DO PEDIDO DE VENDAS 
+		Endif 
+									 			 
+	End Transaction 
+	
+	If SC5->C5_BLOQUE <> U_NMCB55 ("008") 	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra de VALOR MINIMO 	//Nao e a Regra de Valor Minimo  			
+			MsgRun("Analisando outros possiveis Bloqueios. Aguarde...",,{|| U_NMCB54(cPedido)})	// Analisa se existem outros Bloqueios
+	End If	
+			
+Next
+
+Atualizar(nopcao,oPedido,oBroItp,"",lHist,oDesbloq,oSaldoPed,.T.)
+	 	  
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Info_Motiv ³ Autor ³ Luiz Enrique	        ³ Data ³ 25/05/2012 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Informa o Motivo da Liberacao.							  	³±± 
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function Info_Motiv (cCodBloq,cDescBloq) 
+
+Local cDescm	:= ""
+Local oDescm 
+Local lRet		:= .F.
+	  			
+DEFINE FONT oFont4	NAME "Arial" SIZE 08,10	//BOLD  		   							
+DEFINE DIALOG oDlgMot TITLE "Gestor"  FROM 0, 0 TO 22, 75 SIZE 750, 480  /* OF <oWnd> */    pixel
+//DEFINE DIALOG oDlgMot TITLE "Gestor"  FROM 0, 0 TO 22, 75 SIZE 600, 350  /* OF <oWnd> */    pixel
+
+If !Empty(SC5->C5_XJUSTLB)
+cDescm := SC5->C5_XJUSTLB
+End If
+
+
+//EnchoiceBAr(oDlgMot,{|| If(lok,GrvHist(oBroDiv,cMotivo),),oDlgMot:End()},{|| oDlgMot:End()},,/*abuttons*/)  
+
+oFW := FWLayer():New()
+oFW:init( oDlgMot, .f. )  
+oFW:addCollumn( "Col01", 100, .F. )
+oFW:addWindow( "Col01", "Win01", "JUSTIFICATIVA PARA A LIBERAÇÃO DO BLOQUEIO", 100, .T., .F.)
+oWin:= oFW:getWinPanel( "Col01", "Win01" )
+ 
+//Painel para os Botoes
+oPanC1W1:=TPanel():New(1,3,,oWin,/*[aoFont]*/,,/*Reservado*/,/*CorTexto*/,CLR_BLUE,40,18,.T.,.T.)   
+oPanC1W1:ALIGN:= CONTROL_ALIGN_TOP	
+oButt1:= FWButtonBar():new()
+oButt1:Init(oPanC1W1, 17, 85,CONTROL_ALIGN_TOP, .T. ) 
+oButt1:addBtnImage( "OK"   		,"Confirmar",	{|| lRet:= .t. ,oDlgMot:End()},,.T.,CONTROL_ALIGN_LEFT) 
+oButt1:addBtnImage( "final"		,"Sair", 	   	{|| oDlgMot:End()},,.T.,CONTROL_ALIGN_LEFT) 
+   
+oPanInf := TPanel():New(020,100,,oWin,oFont4,,,CLR_BLUE,/*CLR_BLUE*/,550,400,.T.,.T.)
+oPanInf:align :=CONTROL_ALIGN_ALLCLIENT 
+
+//Painel para Filtro dos Bloqueios============================================================================================================================== 
+
+aOrd2 		:= {}
+Aadd(aOrd2,"OCORRENCIAS")
+cFilBloq2 	:= ''
+
+If Alltrim(cCodBloq) == '06'
+//SX5 -> XU
+//06	BLOQUEIO POR LIMITE DE CREDITO EXCEDIDO – POR PEDIDO/CLIENTE   
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+		
+	dbSeek(xFilial("SX5")+"XU")
+	
+	While SX5->X5_TABELA == "XU"
+		Aadd(aOrd2,SX5->X5_DESCRI)
+		dbskip()
+	End While
+
+ElseIf Alltrim(cCodBloq) == '07'
+//SX5 -> XV
+//07	BLOQUEIO POR CLIENTE EM ATRASO – POR PEDIDO/CLIENTE                                                                     
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+		
+	dbSeek(xFilial("SX5")+"XV")
+	
+	While SX5->X5_TABELA == "XV"
+		Aadd(aOrd2,SX5->X5_DESCRI)
+		dbskip()
+	End While
+
+ElseIf Alltrim(cCodBloq) == '09'
+//SX5 -> XY
+//09	BLOQUEIO CLIENTE COM RISCO E                                                                                            
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+		
+	dbSeek(xFilial("SX5")+"XY")
+	
+	While SX5->X5_TABELA == "XY"
+		Aadd(aOrd2,SX5->X5_DESCRI)
+		dbskip()
+	End While
+
+End If
+
+@01.0,140 COMBOBOX oCBX2 VAR cFilBloq2 ITEMS aOrd2 SIZE 80,03 COLOR CLR_BLUE PIXEL OF oPanInf FONT oFont2
+oCbx2:bChange := {|| nOrd := oCbx2:nAt,AtCBx2(@cDescm,cFilBloq2,oDescm)}
+oCBX2:ALIGN:= CONTROL_ALIGN_TOP
+oCBX2:Refresh()    	
+    	
+@ 01.0,002 SAY "Codigo do Bloqueio: "		+ Alltrim(cCodBloq)				OF oPanInf  
+@ 02.0,002 SAY "Descrição:"	+ Alltrim(cDescBloq)							OF oPanInf  
+@ 04.0,002 SAY "Justifique a Liberação: "							   		OF oPanInf  							   	   								
+
+//@ 05.0,002 GET oDescm VAR cDescm MEMO SIZE 250,050 COLOR CLR_RED NO BORDER	OF oPanInf 
+
+@ 05.0,002 GET oDescm VAR cDescm MEMO	SIZE 340,120 COLOR CLR_RED OF oPanInf	
+ACTIVATE DIALOG oDlgMot   CENTER 
+	
+//ACTIVATE DIALOG oDlgMot   CENTER  
+
+cJustific := Alltrim(cDescm)
+
+Return lRet
+
+Static Function AtCBx2(cDescm,cFilBloq2,oDescm)
+
+If AllTrim(cFilBloq2) <> "OCORRENCIAS"
+cDescm += CRLF + cNomeUsu+':'+Dtoc(date())+'-'+Time()+'->' + cFilBloq2 
+oDescm:Refresh()
+End If
+
+Return
+
+
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³GrvHist	³ Autor ³ Luiz Enrique	        ³ Data ³ 18/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Grava a Justificativa da Liberacao no Pedido.					³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/  
+Static Function GrvHist (cDescBloq) 
+
+//Grava Registro de Desbloqueio da Regra do Pedido
+PXD->(RecLock("PXD",.T.))  
+PXD->PXD_FILIAL:= xFilial("PXD")
+PXD->PXD_PEDIDO:= SC5->C5_NUM
+PXD->PXD_CODBLO:= SC5->C5_BLOQUE	
+PXD->PXD_DESCRI:= cDescBloq
+PXD->PXD_DTLIBB:= Ddatabase 
+PXD->PXD_HORLB:= Time()
+PXD->PXD_JUSTIF:= cJustific  
+PXD->PXD_GESTOR:= Alltrim(CB1->CB1_NOME)   
+PXD->(MsUnlock())  
+
+SC5->(RecLock("SC5",.F.))
+//SC5->C5_JUSTLIB:= cJustific 
+//SC5->C5_XJUSTLB := Alltrim(Substring(SC5->C5_XJUSTLB,1,10000))+CRLF+ Alltrim(Substring(cJustific,1,10000))
+SC5->C5_XJUSTLB := Alltrim(Substring(cJustific,1,10000))
+SC5->C5_DTLIBBL:= Ddatabase 
+SC5->C5_HORLBB:= Time() 
+If SC5->C5_BLOQUE == U_NMCB55 ("008")	//BUSCA EM CADASTRO, O CODIGO DE BLOQUEIO Para a Regra de VALOR MINIMO 	// He Regra de Valor Minimo
+	SC5->C5_BLOQUE:= '00'
+Endif
+SC5->(MsUnlock())  
+
+Return .T.  
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³FS53legPed³ Autor ³ Luiz Enrique	        ³ Data ³ 16-09-2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Mostra legenda.												³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function FS53legPed(ntipo,oPasta) 	
+
+Local aLegAtual:= {} 
+Local MsgLeg:= ""
+
+If oPasta:nOption == 1						
+	aLegAtual:= Aclone (aLegBloq) 
+	MsgLeg:="STATUS DOS BLOQUEIOS"		
+ElseIf oPasta:nOption == 2				  
+	aLegAtual:= Aclone (aLegBloq) 
+	MsgLeg:="USO FUTURO"
+Endif 
+
+BrwLegenda(MsgLeg,"Legenda" ,aLegAtual) 
+
+Return .T. 
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³AtuParamet ³ Autor ³ Luiz Enrique	        ³ Data ³ 17/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Parametros da Aplicação.										³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function AtuParamet()
+
+Local aSX6 := {	"FS_TIPORV"	,"FS_TIPORR","FS_TIPODF","FS_TIPODV","FS_PERDV",;
+				"FS_TIPOAT"	,"FS_TIPOEX","FS_CLIBLOQ","FS_TIPODFC","FS_FILCREC",;
+				"FS_CONFOBR","MV_ACDSDO","MV_ACDFLRC","MV_MTA410T","MV_NMCB60",;
+				"MV_NMCB60A","MV_NMCB60B","MV_NMCB60C","MV_NMCB60D","MV_NMCB60E",;
+				"MV_NMCB60F","MV_NMCB60G","MV_NMCB60H","MV_M410PVN","MV_NMCB19F",;
+				"MV_ACD60B","ES_NMCB60I","ES_DIASJOB","ES_ACDBONI","MV_ACDFIFO",;
+				"ES_ARMDEV","ES_PERLBC9"} 									
+
+Local aSX3:={"C5_BLOQUE","C5_XJUSTLB","C5_DTLIBBL","C5_HORLBB","C6_BLOESP","PX6_SEGUND","PX6_TERCA","PX6_QUARTA","PX6_QUINTA","PX6_SEXTA","PXC_REGRA","PXC_COD","PXC_DESCR","PXC_DTCRIA","CB1_BLOQV","CB1_BLOQA"}
+   
+//CBParam(aSX6,aSX3)
+U_CadSX6(aSX6)
+Return .t. 
+
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³RetHeaderForm ³ Autor ³ Luiz Enrique          ³ Data ³ 28/05/12 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Carrega o Header dos formularios.							      ³±±
+±±³          ³															      ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function RetHeaderForm()
+
+Local aHeaderTMP := {}
+
+AADD(aHeaderTMP,{ "Local"		,"cLocSug" 		,"@!"							,02,0,,,"C","","","",,".t."}) 
+AADD(aHeaderTMP,{ "Endereco"	,"cEndSug" 		,"@!"							,15,0,,,"C","","","",,".t."}) 
+AADD(aHeaderTMP,{ "Quantidade"	,"nQtdSug" 		,PesqPict('PX2','PX2_SCONF1')	,12,2,,,"N","","","",0,".T."}) 
+AADD(aHeaderTMP,{ "Lote"		,"cLoteSug"		,"@!"    			   			,10,0,,,"C","","","",,".T."})
+
+Return aClone( aHeaderTMP )
+
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³RetColsForm   ³ Autor ³ Luiz Enrique          ³ Data ³ 28/05/12 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Carrega o aCols dos formularios.							      ³±±
+±±³          ³															      ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function RetColsForm()
+
+Local cArmOri   := PX4->PX4_LOCAL
+Local cEndOri   := PX4->PX4_LCALIZ
+Local cLoteOri  := PX4->PX4_LOTECT
+Local nQtdSep   := PX4->PX4_SCONF1
+
+//Local aColsTMP := {}
+
+AADD(aColsForm,Array(Len(aHeadForm)+1))
+
+aColsForm[Len(aColsForm),1] := cArmOri
+aColsForm[Len(aColsForm),2] := cEndOri 
+aColsForm[Len(aColsForm),3] := nQtdSldInf
+aColsForm[Len(aColsForm),4] := cLoteOri
+aColsForm[Len(aColsForm),5] := .F.
+
+Return aClone( aColsForm ) 
+
+
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³FiltBlok	³ Autor ³ Luiz Enrique		    ³ Data ³ 10/12/14 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Obtem Codigo e texto dos Bloqueios para opcao de Filtro  	  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function FiltBlok()   
+
+Local cQuery
+Local aBlocks:={"..-Todos os Bloqueios apresentados"}
+
+cQuery := "SELECT PXC.PXC_COD,PXC.PXC_DESCR FROM " + RetSqlName("PXC") + " PXC "
+cQuery += "WHERE PXC.PXC_FILIAL= '"+xFilial("PXC") + "'" 
+cQuery += "AND PXC.D_E_L_E_T_ = ' ' " 
+cQuery += "Order By PXC_COD"
+cQuery := ChangeQuery(cQuery)		
+TCQUERY cQuery NEW ALIAS "FILTRO" 
+
+While FILTRO->(!Eof())	
+	Aadd(aBlocks,FILTRO->PXC_COD+"-"+Alltrim(FILTRO->PXC_DESCR))	
+	FILTRO->(DbSkip())
+Enddo
+
+FILTRO->(DbCloseArea())
+
+Return aBlocks
+
+          
+
+
+
+
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Descri‡…o ³ IMPRIME RELATORIO DA ORDEM DE SEPARACAO EM QUESTAO.		  	³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function RelPedido(cPedido)
+
+cPedido:= Padr(cPedido,TamSx3("C5_NUM")[1])
+
+SC5->(DbSetOrder(1)) //Pedido 					   
+If SC5->(DbSeek(xFilial("SC5")+ cPedido)) 
+	U_NMCB23B(cPedido) 
+Else
+	CBAlert("Pedido Não Disponível para Impressão.") 
+Endif 
+
+Return   
+  
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ ShowF4        ºAutor  ³Fabrica Software - ERPº Data ³  28/04/09   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Monta tela com saldos disponiveis							     º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function ShowF4(cProdAtu,cLocal,cProdAtu1,oPasta)  
+
+Local   cCampo := AllTrim(Upper(ReadVar()))
+Local   oDlgEnd
+Local   nOpcEnd  := 0
+Local   nAtEnd
+Local 	cProdAtux := cProdAtu
+Private oListEnd
+Private aListEnd := {}
+Private cVarEnd
+
+If oPasta:nOption == 3
+	cProdAtux := cProdAtu1
+End If
+
+	//Carrega saldos disponiveis para substituicao:
+	aListEnd := RetSld(Nil,cProdAtux)  //Retorna array com os saldos disponiveis
+	aSort(aListEnd,,,{|x,y| x[01]+x[02]+x[04]+x[05]+x[06] < y[01]+y[02]+y[04]+y[05]+y[06]})
+		
+	If Empty(aListEnd)
+		MsgAlert("Produto sem saldo disponivel!!!")
+		Return .f.
+	Endif
+	
+	DEFINE MSDIALOG oDlgEnd TITLE ":: Saldos Disponiveis ::" From 50,20 to 300,700 PIXEL
+		@ 00,00 LISTBOX oListEnd VAR cVarEnd Fields HEADER 'Produto','Lotes', 'Saldo Disponivel', 'Local', 'Enderecos','Empenho','A Classificar' SIZE 50,100 PIXEL of oDlgEnd
+		//oListEnd:Align := CONTROL_ALIGN_TOP
+		oListEnd:Align := CONTROL_ALIGN_ALLCLIENT
+		oListEnd:SetArray( aListEnd )
+		oListEnd:bLine := { || { aListEnd[oListEnd:nAT,1], aListEnd[oListEnd:nAT,2], aListEnd[oListEnd:nAT,3], aListEnd[oListEnd:nAT,4], aListEnd[oListEnd:nAT,5], aListEnd[oListEnd:nAT,6],aListEnd[oListEnd:nAT,7] } }
+		oListEnd:Refresh()
+		//DEFINE SBUTTON FROM 113,145 TYPE 1 ACTION (nOpcEnd:=1,nAtEnd:=oListEnd:nAT,oDlgEnd:End()) ENABLE Of oDlgEnd
+		//DEFINE SBUTTON FROM 113,173 TYPE 2 ACTION oDlgEnd:End() ENABLE Of oDlgEnd
+	ACTIVATE DIALOG oDlgEnd CENTERED
+	
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ RetSld        ºAutor  ³Fabrica Software - ERPº Data ³  28/04/09   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Retorna array com os saldos disponiveis		    		   	 	 º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function RetSld(cChave,cProdAtu)
+
+Local   aRet   := {}
+Default cChave := "" 
+
+cProdAtu:= Padr(cProdAtu,TamSx3("B1_COD")[1])
+
+SB2->(DbSetOrder(1))
+If !SB2->(DbSeek(xFilial("SB2")+cProdAtu))
+	Return aClone(aRet)
+Endif
+While SB2->(!Eof() .AND. B2_FILIAL+B2_COD == xFilial("SB2")+cProdAtu)	
+	
+	If SB2->B2_LOCAL $ '01|24'
+		Aadd(aRet,{SB2->B2_COD,"",Transform(SB2->(B2_QATU-B2_RESERVA-B2_QACLASS),"@E 999,999"),SB2->B2_LOCAL,"LIBERADOS",Transform(SB2->B2_RESERVA,"@E 999,999"),Transform(SB2->B2_QACLASS,"@E 999,999")})
+	End If
+	
+	SB2->(DbSkip())
+
+Enddo
+
+//SBF->(DbSetOrder(2))
+//If !SBF->(DbSeek(xFilial("SBF")+cProdAtu))
+//	Return aClone(aRet)
+//Endif
+//While SBF->(!Eof() .AND. BF_FILIAL+BF_PRODUTO == xFilial("SBF")+cProdAtu)	
+//	Aadd(aRet,{SBF->BF_PRODUTO,SBF->BF_LOTECTL,Transform(SBF->(BF_QUANT-BF_EMPENHO),"@E 999,999"),SBF->BF_LOCAL,SBF->BF_LOCALIZ,Transform(SBF->BF_EMPENHO,"@E 999,999")})
+//	SBF->(DbSkip())
+//Enddo
+
+Return aClone(aRet)
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Info_Bloqueio ³ Autor ³ Luiz Enrique	    ³ Data ³ 25/05/2012 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Informa o Motivo do Bloqueio.							  	³±± 
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/ 
+Static Function Info_Bloqueio (cPedido,cDescBloq) 
+
+Local cDescm	:= ""//cValToChar(date())+"-"+time()+"->"
+Local oDescm 
+Local lRet 		:= .F.
+Local aOrd3		:= {}
+Local oCBX3 
+Local cFilBloq3 
+
+SC5->(DbSetOrder(1)) //FILIAL+PEDIDO
+SC5->(DbSeek(xFilial("SC5")+cPedido))
+
+If !Empty(SC5->C5_XJUSTLB)
+cDescm := SC5->C5_XJUSTLB
+End If
+
+DEFINE FONT oFont4	NAME "Arial" SIZE 08,10	//BOLD  		   							
+DEFINE DIALOG oDlgMot TITLE "Gestor"  FROM 0, 0 TO 22, 75 SIZE 750, 480  /* OF <oWnd> */    pixel
+
+//EnchoiceBAr(oDlgMot,{|| If(lok,GrvHist(oBroDiv,cMotivo),),oDlgMot:End()},{|| oDlgMot:End()},,/*abuttons*/)  
+
+oFW := FWLayer():New()
+oFW:init( oDlgMot, .f. )  
+oFW:addCollumn( "Col01", 100, .F. )
+oFW:addWindow( "Col01", "Win01", "JUSTIFICATIVA PARA O BLOQUEIO", 100, .T., .F.)
+oWin:= oFW:getWinPanel( "Col01", "Win01" )
+ 
+//Painel para os Botoes
+oPanC1W1:=TPanel():New(1,3,,oWin,/*[aoFont]*/,,/*Reservado*/,/*CorTexto*/,CLR_BLUE,40,18,.T.,.T.)   
+oPanC1W1:ALIGN:= CONTROL_ALIGN_TOP	
+oButt1:= FWButtonBar():new()
+oButt1:Init(oPanC1W1, 17, 85,CONTROL_ALIGN_TOP, .T. ) 
+oButt1:addBtnImage( "OK"   		,"Confirmar",	{|| lRet:= .t. ,oDlgMot:End()},,.T.,CONTROL_ALIGN_LEFT) 
+oButt1:addBtnImage( "final"		,"Sair", 	   	{|| oDlgMot:End()},,.T.,CONTROL_ALIGN_LEFT) 
+   
+oPanInf := TPanel():New(020,100,,oWin,oFont4,,,CLR_BLUE,/*CLR_BLUE*/,550,400,.T.,.T.)
+oPanInf:align :=CONTROL_ALIGN_ALLCLIENT 
+
+Aadd(aOrd3,"OCORRENCIAS")
+cFilBloq3 	:= ''
+
+dbSelectArea("SX5")
+dbSetOrder(1)
+	
+dbSeek(xFilial("SX5")+"XW")
+
+While SX5->X5_TABELA == "XW"
+	Aadd(aOrd3,Alltrim(SX5->X5_DESCRI)+Alltrim(SX5->X5_DESCSPA))
+	dbskip()
+End While
+
+
+@01.0,140 COMBOBOX oCBx3 VAR cFilBloq3 ITEMS aOrd3 SIZE 80,03 COLOR CLR_BLUE PIXEL OF oPanInf FONT oFont5
+oCbx3:bChange := {|| nOrd := oCbx3:nAt,AtCBx3(@cDescm,cFilBloq3,oDescm)}
+oCBx3:ALIGN:= CONTROL_ALIGN_TOP
+oCBx3:Refresh()  
+
+    	
+@ 01.0,002 SAY "Pedido: "	+ Alltrim(cPedido)			OF oPanInf  
+@ 02.0,002 SAY "Descrição:"	+ Alltrim(cDescBloq)		OF oPanInf  
+@ 04.0,002 SAY "Justifique o Bloqueio: "				OF oPanInf  							   	   								
+//@ 05.0,002 MSGET oDescm VAR cDescm 	Picture "@!" SIZE 250,050 COLOR CLR_RED NO BORDER OF oPanInf 
+@ 05.0,002 GET oDescm VAR cDescm MEMO	SIZE 340,120 COLOR CLR_RED OF oPanInf	
+ACTIVATE DIALOG oDlgMot   CENTER  
+
+//Grava Motivo pelo qual o Pedido esta Bloqueado C5_JUSTLIB
+
+If lRet .And. SC5->(DbSeek(xFilial("SC5")+cPedido))
+	SC5->(RecLock("SC5",.F.))  
+	//SC5->C5_JUSTLIB:= Alltrim(cDescm)    
+	SC5->C5_XJUSTLB := Alltrim(cDescm)
+	SC5->(MsUnlock()) 
+Endif
+
+Return 
+
+
+Static Function AtCBx3(cDescm,cFilBloq3,oDescm)
+
+If AllTrim(cFilBloq3) <> "OCORRENCIAS"
+cDescm += CRLF+cNomeUsu+':'+Dtoc(date())+'-'+Time()+'->'+cFilBloq3 
+oDescm:Refresh()
+End If
+
+Return
+
+
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³ AjustaSX1º Autor ³ Paulo Augusto      ºFecha ³  10/06/03   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³ Criar pergunta para compatibilizar com o MATA468N          º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ MATA461	                                                  º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+Static Function AjustaSX1(lP21)
+Local aArea := GetArea()
+Local aKey  := {{"MT462R","05"},;
+				{"MT462R","06"}	}
+Local nI := 0	
+Local cPerg   := "MT460A"			
+Local aHelpPor:= {}
+Local aHelpEng:= {}
+Local aHelpSpa:= {}				
+  
+Default lP21 := .F. 				
+
+DbSelectArea("SX1")
+DbSetOrder(1)     
+If cPaisLoc=="BRA"
+
+	//Deixa o parâmetro com data base, para não gerar nota fiscal com cotação errada. 
+	If SX1->(DbSeek("MT460A    21")) .And. !Empty(SX1->X1_CNT01)
+	    lP21 := .T.
+		RecLock("SX1",.F.)
+		Replace SX1->X1_CNT01 	With ""
+		SX1->(MsUnLock())
+	Endif
+
+	//Adiciona a opcao DAV no MV_PAR16 (para clientes com obrigacao PAF-ECF)
+	If SX1->(dbSeek(Padr(cPerg,len(SX1->X1_GRUPO))+"16")) .and. SuperGetMV("MV_LJPAFEC",,.F.) .AND. LjNfPafEcf(SM0->M0_CGC)
+		RecLock("SX1",.F.)
+		SX1->X1_DEF03 		:= "DAV"
+		SX1->X1_DEFSPA3 	:= "DAV"
+		SX1->X1_DEFENG3		:= "DAV"
+		SX1->(msUnlock())
+	EndIf	 	
+	
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³Gera Guia de Recolhimento ou Titulo ICMS no Contas a pagar quando nao for do mesmo Estado ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	//Inclusao de novas perguntas para que o usuario tenha a opcao de recolhe a guia e gerar o titulo na Documentacao de Entrada
+	aHelpPor:= {}
+	aHelpEng:= {}
+	aHelpSpa:= {}
+	Aadd( aHelpPor, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpPor, "a pagar do ICMS Substituição Tributária ") 
+	Aadd( aHelpPor, "quando este for calculado no documento e")
+	Aadd( aHelpPor, " a UF de destino for diferente da UF que")
+	Aadd( aHelpPor, " está emitindo o documento.")
+	Aadd( aHelpEng, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpEng, "a pagar do ICMS Substituição Tributária ") 
+	Aadd( aHelpEng, "quando este for calculado no documento e")
+	Aadd( aHelpEng, " a UF de destino for diferente da UF que")
+	Aadd( aHelpEng, " está emitindo o documento.")
+	Aadd( aHelpSpa, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpSpa, "a pagar do ICMS Substituição Tributária ") 
+	Aadd( aHelpSpa, "quando este for calculado no documento e")
+	Aadd( aHelpSpa, " a UF de destino for diferente da UF que")
+	Aadd( aHelpSpa, " está emitindo o documento.")
+	PutSx1(cPerg,"17","Gera Titulo ?"           ,"¿Genera Titulo ? "           ,"Generate Bill ? "           ,"mv_chh","N",01,0,2,"C","","","","","mv_par17","Sim","Si","Yes","","Nao","No","No","","","","","","","","","",aHelpPor,aHelpEng,aHelpSpa)
+	aHelpPor:= {}
+	aHelpEng:= {}
+	aHelpSpa:= {}
+	Aadd( aHelpPor, "Informe se deverá ser gerada uma Guia ")
+	Aadd( aHelpPor, "de Recolhimento do ICMS Substituição ")
+	Aadd( aHelpPor, "Tributária quando este for calculado ")
+	Aadd( aHelpPor, "no documento e a UF de destino for ")
+	Aadd( aHelpPor, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpPor, "documento. O sistema irá apresentar ")
+	Aadd( aHelpPor, "uma tela para que as informações ")
+	Aadd( aHelpPor, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpPor, "preenchidas.")
+	Aadd( aHelpEng, "Informe se deverá ser gerada uma Guia ")
+	Aadd( aHelpEng, "de Recolhimento do ICMS Substituição ")
+	Aadd( aHelpEng, "Tributária quando este for calculado ")
+	Aadd( aHelpEng, "no documento e a UF de destino for ")
+	Aadd( aHelpEng, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpEng, "documento. O sistema irá apresentar ")
+	Aadd( aHelpEng, "uma tela para que as informações ")
+	Aadd( aHelpEng, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpEng, "preenchidas.")
+	Aadd( aHelpSpa, "Informe se deverá ser gerada uma Guia ")
+	Aadd( aHelpSpa, "de Recolhimento do ICMS Substituição ")
+	Aadd( aHelpSpa, "Tributária quando este for calculado ")
+	Aadd( aHelpSpa, "no documento e a UF de destino for ")
+	Aadd( aHelpSpa, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpSpa, "documento. O sistema irá apresentar ")
+	Aadd( aHelpSpa, "uma tela para que as informações ")
+	Aadd( aHelpSpa, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpSpa, "preenchidas.")
+	PutSx1(cperg,"18","Gera guia recolhimento ?","¿Genera form. de pago ? "    ,"Generate tax payment form ?","mv_chi","N",01,0,2,"C","","","","","mv_par18","Sim","Si","Yes","","Nao","No","No","","","","","","","","","",aHelpPor,aHelpEng,aHelpSpa)
+	aHelpPor:= {}
+	aHelpEng:= {}
+	aHelpSpa:= {}
+	Aadd( aHelpPor, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpPor, "a pagar do ICMS Próprio quando") 
+	Aadd( aHelpPor, "este for calculado no documento e")
+	Aadd( aHelpPor, "a UF de destino for diferente da UF que")
+	Aadd( aHelpPor, "está emitindo o documento.")
+	Aadd( aHelpEng, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpEng, "a pagar do ICMS Próprio quando") 
+	Aadd( aHelpEng, "este for calculado no documento e")
+	Aadd( aHelpEng, "a UF de destino for diferente da UF que")
+	Aadd( aHelpEng, "está emitindo o documento.")
+	Aadd( aHelpSpa, "Informe se deverá ser gerado o título ")
+	Aadd( aHelpSpa, "a pagar do ICMS Próprio quando") 
+	Aadd( aHelpSpa, "este for calculado no documento e")
+	Aadd( aHelpSpa, "a UF de destino for diferente da UF que")
+	Aadd( aHelpSpa, "está emitindo o documento.")
+	PutSx1(cPerg,"19","Gera Titulo ICMS Próprio ?" ,"Gera Titulo ICMS Próprio ?","Gera Titulo ICMS Próprio ?" ,"mv_chj","N",01,0,2,"C","","","","","mv_par19","Sim","Si","Yes","","Nao","No","No","","","","","","","","","",aHelpPor,aHelpEng,aHelpSpa)
+	aHelpPor:= {}
+	aHelpEng:= {}
+	aHelpSpa:= {}
+	Aadd( aHelpPor, "Informe se deverá ser gerada uma  ")
+	Aadd( aHelpPor, "Guia de Recolhimento do ICMS Próprio ")
+	Aadd( aHelpPor, "quando este for calculado no ")
+	Aadd( aHelpPor, "documento e a UF de destino for ")
+	Aadd( aHelpPor, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpPor, "documento. O sistema irá apresentar ")
+	Aadd( aHelpPor, "uma tela para que as informações ")
+	Aadd( aHelpPor, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpPor, "preenchidas.")
+	Aadd( aHelpEng, "Informe se deverá ser gerada uma  ")
+	Aadd( aHelpEng, "Guia de Recolhimento do ICMS Próprio ")
+	Aadd( aHelpEng, "quando este for calculado no ")
+	Aadd( aHelpEng, "documento e a UF de destino for ")
+	Aadd( aHelpEng, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpEng, "documento. O sistema irá apresentar ")
+	Aadd( aHelpEng, "uma tela para que as informações ")
+	Aadd( aHelpEng, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpEng, "preenchidas.")
+	Aadd( aHelpSpa, "Informe se deverá ser gerada uma  ")
+	Aadd( aHelpSpa, "Guia de Recolhimento do ICMS Próprio ")
+	Aadd( aHelpSpa, "quando este for calculado no ")
+	Aadd( aHelpSpa, "documento e a UF de destino for ")
+	Aadd( aHelpSpa, "diferente da UF que está emitindo o ") 
+	Aadd( aHelpSpa, "documento. O sistema irá apresentar ")
+	Aadd( aHelpSpa, "uma tela para que as informações ")
+	Aadd( aHelpSpa, "necessárias a geração da Guia sejam ")
+	Aadd( aHelpSpa, "preenchidas.")
+	PutSx1(cperg,"20","Gera Guia ICMS Próprio?","Gera Guia ICMS Próprio?","Gera Guia ICMS Próprio?","mv_chl","N",01,0,2,"C","","","","","mv_par20","Sim","Si","Yes","","Nao","No","No","","","","","","","","","",aHelpPor,aHelpEng,aHelpSpa)
+Else
+	For nI := 1 To Len(aKey)
+		If !DbSeek(aKey[nI][1]+aKey[nI][2]) 
+			
+			If aKey[nI][1]+aKey[nI][2]  == "MT462R05"  
+				PutSx1( aKey[nI][1], aKey[nI][2],"Gera " + GetDescRem()+ " pela ?","Genera " + GetDescRem()+ " por ?","Gera " + GetDescRem()+ " By ?","mv_ch5","N",1,0,1,"C","","","","",;
+				"mv_par05","Moeda " + GetDescRem() + " .","Moneda " + GetDescRem()+ " ." ,  GetDescRem() + "Currency .","","Moeda Selecionada.","Moneda Seleccionada.","Selected Currency.","","","","","","","","","")
+				aHelpPor:= {}
+				aHelpEng:= {}
+				aHelpSpa:= {}				
+				aAdd(aHelpEng,"Select the currency to be used  ")
+				aAdd(aHelpPor,"Selecione em qual moeda sera ")
+				aAdd(aHelpPor,"gerado .")
+				aAdd(aHelpSpa,"Seleccione en que moneda se  ")
+				aAdd(aHelpSpa,"generara .")
+				PutSX1Help("P.MT462R05.",aHelpPor,aHelpEng,aHelpSpa)	 
+			ElseIf aKey[nI][1]+aKey[nI][2] == "MT462R06" 	
+				PutSx1( aKey[nI][1], aKey[nI][2],"Fatura pela Moeda  ?","Factura pela Moneda  ?","Fatura pela Moeda  ?","mv_ch6","N",1,0,1,"C","","","","",;
+				"mv_par06","Moeda 1   ","Moneda 1   ","Currency 1 ","","Moeda 2   ","Moneda 2   ","Currency 2","Moeda 3","Moneda 3","Currency 3","Moeda 4","Moneda 4","Currency 4","Moeda 5","Moneda 5","Currency 5","","","","")	
+				aHelpPor:= {}
+				aHelpEng:= {}
+				aHelpSpa:= {}				
+				aAdd(aHelpEng,"Select the currency. ")
+				aAdd(aHelpPor,"Selecione a moeda  ")
+				aAdd(aHelpSpa,"Seleccione la moneda ")
+				PutSX1Help("P.MT462R06.",aHelpPor,aHelpEng,aHelpSpa)	 
+			EndIf
+		EndIf
+	Next nI
+EndIf
+RestArea(aArea)
+
+Return
+//-------------------------------------------------------------------
+/*{Protheus.doc} AjustaHelp
+
+Ajusta o Help
+
+@author Clovis Nunes do Nascimento
+@since 05/11/14
+@version 1.0
+*/
+//-------------------------------------------------------------------
+
+Static Function AjustaHelp()
+
+Local aHlpPor1 := { "Não é possível realizar estorno de ","documentos com carga montada. "}
+
+PutSX1Help("PMATA46101", aHlpPor1, , , .F.)
+
+Return 
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³AjustSX1_A³ Autor ³Patricia A. Salomao    ³ Data ³ 25/10/01 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Deleta Pergunta criada para o Modulo TMS (Transporte)      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MT461A                                                     ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+STATIC FUNCTION AjustSX1_A()
+
+Local aArea	:=	GetArea()
+
+dbSelectArea("SX1")
+dbSetOrder(1)
+If MsSeek("MT461A13") .And. X1_F3 == "M6"
+	RecLock("SX1",.F.)
+	dbDelete()
+	MsUnlock()
+EndIf
+
+RestArea(aArea)
+
+Return
+
+Static Function MenuDef()
+
+Private	aRotina := {	{"Pesquisar","PesqBrw"	, 0 , 1,0,.F.},;	// "Pesquisar"
+						{"Autom tica","A450LibAut", 0 , 0,0,NIL},;	// "Autom tica"
+						{"Manual","A450LibMan", 0 , 0,0,NIL},;	// "Manual"
+						{"Legenda","A450Legend", 0 , 3,0,.F.}}	// "Legenda"
+
+If ExistBlock("MA450MNU")
+	ExecBlock("MA450MNU",.F.,.F.)
+EndIf
+
+Return(aRotina)
+
+///*****************************************************************************8
+Static Function xLibC9(cPedido)
+
+Local lRet := .T.
+
+aArea := GetArea()
+
+SC9->(DbSetOrder(1))
+SC9->(DbSeek(xFilial("SC9")	+ cPedido))
+
+While SC9->(!Eof() .AND. C9_FILIAL+C9_PEDIDO == xFilial("SC9")+SC5->C5_NUM) 
+	If Empty(SC9->C9_BLEST)  
+		lRet := .F.
+	Endif				  		
+	SC9->(DbSkip())
+Enddo   
+
+RestArea(aArea)
+
+Return lRet
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³ xOrdSep      ³Autor ³  WDO                 ³Data³ 06/06/17 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡ao ³                                                            ³±±
+±±³          ³                                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function xOrdSep(xNum)
+
+Local aArea := GetArea()
+Local cRet	:= ''
+
+PX1->( dbSetOrder(2)) //PX1_FILIAL+PX1_PEDIDO+PX1_LOCAL+PX1_CLIENT+PX1_LOJA     
+
+If PX1->( dbSeek( xFilial("SC5")+xNum ) ) 
+	cRet := PX1->PX1_PEDIDO
+End If
+
+RestArea(aArea)
+
+Return cRet
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_COR	 ³ Autor ³ WDO                   ³ Data ³ 21/09/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS CORTADOS               				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function Monta_COR (oBroItp,oDesbloq,oPedido,lchange)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_BRANCO')  
+Local cNomeCli		:= ""
+Local cMunic		:= ""
+Local cEst			:= ""
+Local cCEP			:= "" 
+Local cDescBloq		:= ""
+Local cQuery		:= ""
+Local nl			:= 0    
+Local cFiltroBloq	:= "" 
+Local aBloqs1		:= {}
+
+//cPed:= Padr(cPed,TamSx3("C5_NUM")[1]) 
+
+If lchange
+
+	//aPedidos := {} 
+
+	cQuery := " SELECT SC5.C5_NUM,SC5.C5_OK,SC5.C5_CLIENTE,SC5.C5_LOJACLI,SC5.C5_BLOQUE,SC5.C5_ULTBLO, SC5.C5_EMISSAO,SC5.C5_U_DTENT,SC5.C5_DTLIBBL,SC5.C5_HORLBB,SC5.C5_JUSTLIB FROM "+RetSqlName("SC5")+" SC5 "
+	cQuery += " WHERE "
+	cQuery += " C5_FILIAL = '"+xFilial("SC5")+"' " 
+	   
+	cQuery += " AND C5_BLOQUE = '10' "
+	 
+	cQuery += " AND SC5.D_E_L_E_T_ = ' ' " 
+	cQuery += "ORDER BY C5_U_DTENT,C5_NUM,C5_BLOQUE " 
+	
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\NMCB53_2355.SQL",cQuery)
+	
+	If Select("PEDCORTE") > 0
+		PEDCORTE->(DbCloseArea())
+	Endif
+	
+	TCQUERY cQuery NEW ALIAS "PEDCORTE"
+	
+	//SA1->(DbSetOrder(1))
+	//PXC->(DbSetOrder(1))
+	
+	While PEDCORTE->( !Eof() )
+   	
+	   	//"S","Pedido","Cod.Bloqueio","Descricao do Bloqueio","Data Liberacao", "Horario Liberacao","Motivo Liberacao","Responsavel"," "			
+		Aadd(aBloqs1,{oSt,PEDCORTE->C5_NUM,'10','RESIDUOS DE PEDIDOS',dToc(dDataBase),'','',''," "})										 
+	  	
+	  	PEDCORTE->(dbSkip())
+
+	End While
+
+Endif
+
+        
+If Empty(aBloqs1)                                
+	aBloqs1 := {{oSt,Space(20),Space(10),Space(30),Space(20),Space(20),Space(30),Space(20)," "}}
+EndIf
+oDesbloq:SetArray(aBloqs1)
+oDesbloq:bLine := {|| {	aBloqs1[oDesbloq:nAt,01],aBloqs1[oDesbloq:nAt,02],aBloqs1[oDesbloq:nAt,03],aBloqs1[oDesbloq:nAt,04],aBloqs1[oDesbloq:nAt,05],;
+						aBloqs1[oDesbloq:nAt,06],aBloqs1[oDesbloq:nAt,07],aBloqs1[oDesbloq:nAt,08],aBloqs1[oDesbloq:nAt,09]}}						
+oDesbloq:Refresh()   
+
+Return   
+
+
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³GerPedido  ³ Autor ³ WDO                   ³ Data ³ 26/09/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Execauto para geracao de novo pedido com residuo  			 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function GerPedido(xFil,xPedido)
+
+Local aCabPV  := {} 
+Local aItemPV := {}
+Local aArea	  := GetArea()	
+
+Private lMsErroAuto := .F.
+
+SC5->( dbSetOrder(1) )
+SB1->( dbSetOrder(1) )
+
+If SC5->( dbSeek(xFil+xPedido) )
+
+	aAdd(aCabPV,{"C5_FILIAL"	,xFil				,Nil})// Numero do pedido
+	aAdd(aCabPV,{"C5_TIPO"		,SC5->C5_TIPO		,Nil})// Tipo de pedido
+	aAdd(aCabPV,{"C5_CLIENTE"	,SC5->C5_CLIENTE	,.F.})// Codigo do cliente
+	aAdd(aCabPV,{"C5_LOJACLI"	,SC5->C5_LOJACLI	,Nil})// Loja do cliente
+	aAdd(aCabPV,{"C5_CLIENT" 	,SC5->C5_CLIENT		,Nil})// Codigo do cliente Entrega
+	aAdd(aCabPV,{"C5_LOJAENT"	,SC5->C5_LOJAENT	,Nil})// Loja para entrada
+	aAdd(aCabPV,{"C5_TIPOCLI"	,SC5->C5_TIPOCLI		,Nil})// Tipo do Cliente
+	aAdd(aCabPV,{"C5_TRANSP"	,SC5->C5_TRANSP		,.F.})// Transportadora 000014 Nosso Carro
+	aAdd(aCabPV,{"C5_EMISSAO"	,dDataBase			,Nil})// Data de emissao
+   	aAdd(aCabPV,{"C5_CONDPAG"	,SC5->C5_CONDPAG 	,Nil})// Codigo da condicao de pagamanto
+   	aAdd(aCabPV,{"C5_DATA1"	    ,SC5->C5_DATA1	    ,NIL})// DATA VENCTO PARA SODEXO
+   	aAdd(aCabPV,{"C5_PARC1"	    ,SC5->C5_PARC1   	,NIL})// DATA VENCTO PARA SODEXO
+	aAdd(aCabPV,{"C5_TABELA"	,SC5->C5_TABELA		,Nil})// Tabela de preco
+	aAdd(aCabPV,{"C5_TPFRETE"	,SC5->C5_TPFRETE	,Nil})// Tipo de Frete  
+	aAdd(aCabPV,{"C5_U_DTENT"	,SC5->C5_U_DTENT	,Nil})// Data de Entrega Pedido EDI
+	aAdd(aCabPV,{"C5_XSETOR"	,SC5->C5_XSETOR		,Nil})// Setor 1-PAS / 2-SAL  
+	aAdd(aCabPV,{"C5_U_TIPO"	,SC5->C5_U_TIPO		,Nil})// Tipo de Operacao se Venda = "02" se Bonif = "11"
+	aAdd(aCabPV,{"C5_U_USER"	,SC5->C5_U_USER		,Nil})// Nome usuarios do sistema que converteu pedido EDI
+ 	aAdd(aCabPV,{"C5_U_PEDCL"	,SC5->C5_U_PEDCL	,Nil})// Pedido Cliente
+ 	aAdd(aCabPV,{"C5_U_HORA"	,time()				,.F.})// Horario emissão pedido
+ 	aAdd(aCabPV,{"C5_U_EAN"		,SC5->C5_U_EAN		,.F.})// Ean comprador
+	aAdd(aCabPV,{"C5_U_ORIGE"	,SC5->C5_U_ORIGE	,.F.})//ORIGEM PEDIDO EDI, ERP, POCKET WILSON 01/12/2008
+	aAdd(aCabPV,{"C5_MENNOTA"	,SC5->C5_MENNOTA	,.F.})// Mensagem Nota se tipoop=11 obrigatorio    
+    aAdd(aCabPV,{"C5_U_DTFIM"	,SC5->C5_U_DTFIM	,.F.})//Data de entrega Final - 06/05/2008 	
+    aAdd(aCabPV,{"C5_XPEDANT"	,SC5->C5_NUM		,.F.})//Pedido original
+   
+    nItem := 0
+    
+    SC6->(dbSetOrder(1))
+    
+    If SC6->(dbSeek(xFil+SC5->C5_NUM))
+    
+	    While SC6-> ( !Eof() ) .AND. xFil+xPedido == SC6->C6_FILIAL+SC6->C6_NUM	
+	    	
+	    	If SC6->C6_XCORTE <> 'S' 
+	    		SC6->( dbSkip() )
+	    		Loop
+	    	End If
+		    
+		    nItem ++
+		    
+		    nQte := SdoPedido(xFil,xPedido,SC6->C6_PRODUTO)
+		    //nQte := 12
+		    SB1->( dbSeek(xFilial("SB1")+SC6->C6_PRODUTO) )
+		    
+		     IF SB1->B1_PESOVAR=='S'
+		     	nPrcVen2 := SC6->C6_PRCVEN2 
+		     Else
+		     	If SB1->B1_TIPCONV == 'M'
+		     		nPrcVen2 := (nQte*SC6->C6_PRCVEN)/(nQte*SB1->B1_XCONV)
+		     	Else
+		     		nPrcVen2 := (nQte*SC6->C6_PRCVEN)/(nQte/SB1->B1_XCONV)
+		     	End I	
+		     End If
+		     
+		     
+		     AADD(aItemPV,{{"C6_FILIAL"	,xFil																,Nil},; 
+		                  {"C6_ITEM   "	,STRZERO(nItem,2)													,.F.},; 
+		                  {"C6_PRODUTO"	,SC6->C6_PRODUTO													,NIL},; 
+		                  {"C6_QTDVEN" 	,Iif(SB1->B1_PESOVAR=='N',nQte,1)									,.F.},;
+						  {"C6_UNSVEN" 	,Iif(SB1->B1_TIPCONV=='M',nQte*SB1->B1_XCONV,nQte/SB1->B1_XCONV) 	,.F.},;
+						  {"C6_PRCVEN" 	,Iif(SB1->B1_PESOVAR=='N',SC6->C6_PRCVEN,1)							,.F.},;
+						  {"C6_PRCVEN2" ,nPrcVen2															,.F.},;
+						  {"C6_QTDLIB" 	,0						           									,Nil},;
+						  {"C6_UM"     	,SB1->B1_UM 				          								,Nil},;
+						  {"C6_ENTREG" 	,SC6->C6_ENTREG              										,Nil},;
+						  {"C6_DTENTF"	,SC6->C6_DTENTF              										,Nil},;
+						  {"C6_EMISSAO"	,dDatabase			               									,Nil},;
+						  {"C6_XOPER"	,SC6->C6_XOPER														,Nil},;
+						  {"C6_LOCAL"	,SC6->C6_LOCAL														,Nil},;
+						  {"C6_XVEND"	,SC6->C6_XVEND														,Nil},;
+						  {"C6_PEDCLI" 	,SC6->C6_PEDCLI    	          										,NIL}})
+	    
+			SC6->( dbSkip() )
+	    
+	    End While
+    
+    End If
+	
+	MSExecAuto({|x,y,z|Mata410(x,y,z)},aCabPv,aItemPV,3)
+
+	
+   If lMsErroAuto
+	
+		cErrolog := MemoRead(NomeAutolog())
+		MostraErro()
+		lMsErroAuto := .F. 
+	Else
+		MsgAlert("Pedido " + SC5->C5_NUM + " - Gerado com sucesso!")
+		If SC5->( dbSeek(xFil+xPedido) )
+		RecLock("SC5",.F.)
+			SC5->C5_BLOQUE := '00' //BLOQUEIO POR SALDO DE PEDIDO PARA AVALIACAO DE CORTE 
+		MsUnlock()
+		End If
+	Endif
+	
+End If
+
+RestArea(aArea)	
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³SdoPedido ³ Autor ³  WDO                  ³ Data ³02/10/17  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Verifica se existe corte para gerar novo pedido de saldo.  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³                                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function SdoPedido(xFil,xPedido,xProduto)
+
+Local aArea	 	:= GetArea()
+Local cQuery 	:= '' 
+Local nQte		:= 0
+
+cQuery := "SELECT B1_QE,C6_PRODUTO,SC6.R_E_C_N_O_ AS REC,C6_QTDVEN AS C6_QTDVEN,ISNULL(D2_QUANT,0) AS D2_QUANT,(C6_QTDVEN*B1_XCONV3) AS KGPED, " + CRLF
+cQuery += "  ISNULL(D2_XTERUM,0) AS KGFAT,  " + CRLF
+cQuery += " (CAST((C6_QTDVEN-ISNULL(D2_QUANT,0))/CASE WHEN B1_QE=0 THEN 0.01 ELSE B1_QE END AS INT) * B1_QE) AS CORTE_PECAS, " + CRLF
+cQuery += "  CASE WHEN D2_XTERUM IS NULL THEN CAST((CAST((C6_QTDVEN-ISNULL(D2_QUANT,0))/ " + CRLF
+cQuery += "  CASE WHEN B1_QE=0 THEN 0.01 ELSE B1_QE END AS INT) * B1_QE) *ISNULL((D2_XTERUM/D2_QUANT),B1_XCONV3) AS NUMERIC (10,3)) ELSE " + CRLF 
+cQuery += "  CASE WHEN B1_PESOVAR = 'S' THEN  " + CRLF
+cQuery += "  CASE WHEN (C6_UNSVEN-ISNULL(D2_XTERUM,0)) >= (B1_QE*B1_XCONV3) THEN C6_UNSVEN-ISNULL(D2_XTERUM,0) ELSE 0 END ELSE " + CRLF 
+cQuery += "  CASE WHEN ((C6_QTDVEN*B1_XCONV3)-ISNULL(D2_XTERUM,0)) >= (B1_QE*B1_XCONV3) THEN ((C6_QTDVEN*B1_XCONV3)-ISNULL(D2_XTERUM,0)) " + CRLF 
+cQuery += "  ELSE 0 END END END AS CORTE_KGS,  " + CRLF
+cQuery += "  CASE WHEN D2_XTERUM IS NULL THEN CAST((CAST((C6_QTDVEN-ISNULL(D2_QUANT,0))/ " + CRLF
+cQuery += "  CASE WHEN B1_QE=0 THEN 0.01 ELSE B1_QE END AS INT) * B1_QE) *ISNULL((D2_XTERUM/D2_QUANT),B1_XCONV3) AS NUMERIC (10,3)) " + CRLF 
+cQuery += "  ELSE CASE WHEN B1_PESOVAR = 'S' THEN " + CRLF 
+cQuery += "  CASE WHEN (C6_UNSVEN-ISNULL(D2_XTERUM,0)) >= (B1_QE*B1_XCONV3) THEN C6_UNSVEN-ISNULL(D2_XTERUM,0) ELSE 0 END ELSE " + CRLF 
+cQuery += "  CASE WHEN ((C6_QTDVEN*B1_XCONV3)-ISNULL(D2_XTERUM,0)) >= (B1_QE*B1_XCONV3) THEN ((C6_QTDVEN*B1_XCONV3)-ISNULL(D2_XTERUM,0)) ELSE 0 " + CRLF 
+cQuery += "  END END END * (C6_VALOR/(C6_QTDVEN*B1_XCONV3)) AS CORTE_VALOR  " + CRLF
+  
+cQuery += "  FROM  " + RetSqlName("SC6") + " SC6  " + CRLF
+cQuery += "  INNER JOIN  " + RetSqlName("SC5") + " SC5 ON C5_FILIAL=C6_FILIAL AND C5_NUM=C6_NUM AND SC5.D_E_L_E_T_= ' ' AND C5_TIPO='N' AND SC5.C5_XFAT='S' " + CRLF 
+cQuery += "  LEFT JOIN   " + RetSqlName("SD2") + " SD2 ON C6_FILIAL=D2_FILIAL AND D2_PEDIDO=C6_NUM AND C6_PRODUTO=D2_COD AND SD2.D_E_L_E_T_= ' '  " + CRLF
+cQuery += "  LEFT JOIN   " + RetSqlName("SF2") + " SF2 ON F2_FILIAL=D2_FILIAL AND F2_DOC=D2_DOC AND F2_SERIE=D2_SERIE AND SF2.D_E_L_E_T_= ' '  " + CRLF
+cQuery += "  INNER JOIN  " + RetSqlName("SA1") + " SA1 ON A1_COD=C6_CLI AND A1_LOJA=C6_LOJA AND SA1.D_E_L_E_T_= ' '  " + CRLF
+cQuery += "  INNER JOIN  " + RetSqlName("SA3") + " SA3 ON A3_COD=C6_XVEND AND SA3.D_E_L_E_T_= ' '  " + CRLF
+cQuery += "  INNER JOIN  " + RetSqlName("SA3") + " SA31 ON SA31.A3_COD=C6_XGEREN AND SA31.D_E_L_E_T_= ' '  " + CRLF
+cQuery += "  INNER JOIN  " + RetSqlName("SB1") + " SB1 ON B1_COD=C6_PRODUTO AND SB1.D_E_L_E_T_= ' ' AND B1_TIPO='PA' " + CRLF
+  
+cQuery += "  WHERE C6_FILIAL = '" + xFil + "' AND SC6.D_E_L_E_T_= ' ' AND C6_FILIAL = '" + xFil + "' AND C6_NUM='" + xPedido + "' " + CRLF          
+cQuery += "  AND C6_PRODUTO='" + xProduto + "' AND (CAST((C6_QTDVEN-ISNULL(D2_QUANT,0))/CASE WHEN B1_QE=0 THEN 0.01 ELSE B1_QE END AS INT) * B1_QE) > 0 " + CRLF 
+
+MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\NMCB53_2806.SQL",cQuery)
+
+If Select("SdoPedido") > 0
+	SdoPedido->(DbCloseArea())
+Endif 
+
+TCQUERY cQuery NEW ALIAS "SdoPedido" 
+
+
+While SdoPedido->( ! Eof() )
+
+	If SdoPedido->(CORTE_KGS) > 0
+		
+		nQte := SdoPedido->(CORTE_PECAS) 
+	
+	End If
+	
+	SdoPedido->( dbSkip() )
+
+End While
+
+RestArea(aArea)
+
+Return nQte
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³Ma410Resid³ Autor ³ Eduardo Riera         ³ Data ³18/01/2007³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Rotina e eliminacao de residuo                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Parametros³ExpC1: Alias do cabecalho do pedido de venda                ³±±
+±±³          ³ExpN2: Recno do cabecalho do pedido de venda                ³±±
+±±³          ³ExpN3: Opcao do arotina                                     ³±±
+±±³          ³                                                            ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Retorno   ³ Nenhum                                                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³   DATA   ³ Programador   ³Manutencao Efetuada                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³          ³               ³                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Ma410Resid(cAlias,nReg,nOpc)
+
+Local aArea    := GetArea()
+Local lValido  := .F.
+Local lContinua:= .T.
+Local lMt410Ace := Existblock("MT410ACE")
+
+If SoftLock(cAlias)
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Ponto de entrada para validar acesso do usuario na funcao ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If lMt410Ace
+		lContinua := Execblock("MT410ACE",.F.,.F.,{nOpc})
+	Endif		
+	
+	If .T. //a410Visual(cAlias,nReg,nOpc)==1
+		If ExistBlock("M410VRES")
+			lContinua := ExecBlock("M410VRES",.F.,.F.)
+		EndIf
+		If lContinua
+			Begin Transaction
+				//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+				//³ Eliminacao de residuo                                ³
+				//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+				dbSelectArea("SC6")
+				dbSetOrder(1)
+				MsSeek(xFilial("SC6")+SC5->C5_NUM)
+				
+				While ( !Eof() .And. SC6->C6_FILIAL == xFilial("SC6") .And. SC6->C6_NUM 	== SC5->C5_NUM )
+				
+					lValido  := .T.
+					If lValido .And. !Empty(SC5->C5_PEDEXP) .And. SuperGetMv("MV_EECFAT") // Integracao SIGAEEC
+						If FindFunction("EECZERASALDO")
+							lValido := EECZeraSaldo(,SC5->C5_PEDEXP,,.T.,SC5->C5_NUM)
+						Else
+							lValido := EECCancelPed(,SC5->C5_PEDEXP,,.T.,SC5->C5_NUM)
+						EndIf
+					EndIf
+					If lValido .And. (SC6->C6_QTDVEN - SC6->C6_QTDENT) > 0
+						 MaResDoFat(,.T.,.F.)
+					EndIf	
+					
+					//If SC6->C6_XCORTE == 'S'
+					//	RecLock("SC6",.F.)
+					//		SC6->C6_XCORTE := 'C'
+					//	MsUnlock()
+					//End If
+					
+					dbSelectArea("SC6")
+					dbSkip()
+				
+				EndDo
+				//SC6->(MaLiberOk({SC5->C5_NUM},.T.))
+			End Transaction
+		EndIf
+	EndIf
+EndIf
+RestArea(aArea)
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Mnt_SC6SD	 ³ Autor ³ WDO         	         ³ Data ³ 05/10/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos de Saldo (Cortes)         ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function Mnt_SC6SD (oBroItp,oDesbloq,oSaldoPed)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_BRANCO')  
+Local cNomeCli		:= ""
+Local cMunic		:= ""
+Local cEst			:= ""
+Local cCEP			:= "" 
+Local cDescBloq		:= ""
+Local cQuery		:= ""
+Local nl			:= 0    
+Local cFiltroBloq	:= "" 
+Local lInicio		:= .T.
+Local cCodCli		:= ""                          
+
+
+If linicio
+
+	//aPedidos := {} 
+
+	cQuery := " SELECT SC5.C5_NUM,SC5.C5_OK,SC5.C5_CLIENTE,SC5.C5_LOJACLI,SC5.C5_BLOQUE,SC5.C5_ULTBLO, SC5.C5_EMISSAO, " + CRLF
+	cQuery += " SC5.C5_U_DTENT,SC5.C5_DTLIBBL,SC5.C5_HORLBB,SC5.C5_JUSTLIB FROM "+RetSqlName("SC5")+" SC5 " + CRLF
+	cQuery += " WHERE "  + CRLF
+	cQuery += " C5_FILIAL = '"+xFilial("SC5")+"' "  + CRLF 
+	cQuery += " AND C5_XFAT<>'S' AND C5_NOTA='' AND C5_XPEDANT<>'' "  + CRLF 
+	cQuery += " AND SC5.D_E_L_E_T_ = ' ' "  + CRLF
+	cQuery += "ORDER BY C5_U_DTENT,C5_NUM,C5_BLOQUE "  + CRLF 
+	
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\Mnt_SC6SD.SQL",cQuery)
+
+	//dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "TempSC5", .T., .F.)
+	
+	If Select("SC6SD") > 0
+		SC6SD->(DbCloseArea())
+	Endif 
+	
+	TCQUERY cQuery NEW ALIAS "SC6SD" 
+	
+	SA1->(DbSetOrder(1))
+	PXC->(DbSetOrder(1))
+	
+	While SC6SD->(!Eof())
+				
+			If !SA1->(DbSeek(xFilial("SA1")+SC6SD->C5_CLIENTE+SC6SD->C5_LOJACLI))
+				cNomeCli:="Desconhecido"
+				cMunic:=""
+				cEst:=""
+				cCEP:=""
+			Else 
+				cCodCli	:= Alltrim(SA1->A1_COD)                          
+				cNomeCli:= Alltrim(SA1->A1_NOME)
+				cMunic	:= Alltrim(SA1->A1_MUN)
+				cEst	:= SA1->A1_EST
+				cCEP	:= SA1->A1_CEP 				
+			Endif
+			
+			//If TempSC5->C5_BLOQUE == '00'
+				oSt:= LoadBitmap(GetResources(),"BR_LARANJA") 
+			//Else
+			//	oSt:= LoadBitmap(GetResources(),"BR_VERMELHO")
+			//Endif
+			  		   	
+		   	//"OK","S","Pedido","Cliente","Estado","Cidade","Cep","Data Pedido","Último Bloqueio","Data Desbloqueio","Horario Desbloqueio","Ocorrencia"		  		
+			SC6SD->(Aadd(aSaldoPed,{oSt,C5_NUM,cCodCli+"-"+C5_LOJACLI+" : "+cNomeCli,cEst,cMunic,cCEP,StoD(C5_EMISSAO),cDescBloq,StoD(C5_U_DTENT),C5_HORLBB,Posicione("SC5",1,cFilAnt+C5_NUM,"C5_XJUSTLB"),C5_BLOQUE," "} ))
+		SC6SD->(dbSkip())
+	EndDo
+	SC6SD->(DbCloseArea())
+Endif
+
+//Monta_SC6(oBroItp,oDesbloq,oSaldoPed)
+
+If Empty(aSaldoPed)                                
+	aSaldoPed:={{oSt,Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20),Space(20)," "}}
+EndIf 
+
+oSaldoPed:SetArray( aSaldoPed )
+oSaldoPed:bLine := { || {	aSaldoPed[oSaldoPed:nAT,01], aSaldoPed[oSaldoPed:nAT,02], aSaldoPed[oSaldoPed:nAT,03], aSaldoPed[oSaldoPed:nAT,04],;
+						aSaldoPed[oSaldoPed:nAT,05],aSaldoPed[oSaldoPed:nAT,06],aSaldoPed[oSaldoPed:nAT,07],aSaldoPed[oSaldoPed:nAT,08],;
+						aSaldoPed[oSaldoPed:nAT,09],aSaldoPed[oSaldoPed:nAT,10],aSaldoPed[oSaldoPed:nAT,11],aSaldoPed[oSaldoPed:nAT,12] } }
+
+oSaldoPed:nAt := 1
+oSaldoPed:GoTop()
+oSaldoPed:Refresh() 
+
+Return
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function AtItemSdo (xPedido,oBroItp)
+
+Local oSt			:= LoadBitmap(GetResources(),'BR_BRANCO') 
+Local oSt2			:= LoadBitmap(GetResources(),'BR_AZUL')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local aLsc61		:= {}
+
+SC6->(DbSetOrder(1)) // Filial+Pedido 
+SC9->(DbSetOrder(1)) // Filial+Pedido+Item+Sequencia
+	
+	cPedido := Padr(xPedido,TamSx3("C5_NUM")[1])
+	
+	SC6->(DbSeek(xFilial("SC6")+cPedido)) 
+
+	While SC6->(!Eof() .and. C6_FILIAL+C6_NUM == xFilial("SC6")+cPedido )
+	
+		oSt:= 	LoadBitmap(GetResources(),'BR_CINZA')
+		
+		nLiberado := 0
+		nTotValIt := 0
+		
+		If SC9->(DbSeek(xFilial('SC9')+SC6->C6_NUM+SC6->C6_ITEM))			
+			While SC9->(!Eof() .AND. C9_FILIAL+C9_PEDIDO+C9_ITEM == SC6->C6_FILIAL+SC6->C6_NUM+SC6->C6_ITEM)					
+				If Empty(SC9->C9_BLEST)
+					nLiberado := nLiberado + SC9->C9_QTDLIB
+					nTotValIt := nTotValIt +(SC6->C6_PRCVEN*SC9->C9_QTDLIB)
+				End If
+				SC9->(DbSkip())
+			Enddo
+		Endif
+				 
+		cDescProd := Posicione("SB1",1,xFilial("SB1")+SC6->C6_PRODUTO,"B1_DESC")
+		
+		nPrPed 	:= 0
+		
+		If SC6->C6_LOCAL == '24'
+			nPrTab	:= 0
+		Else
+			nPrTab	:= U_NMCB61X(SC6->C6_CLI,SC6->C6_LOJA,dDatabase,SC6->C6_PRODUTO)
+		End If
+		
+		cTab := Posicione("SC5",1,SC6->C6_FILIAL+SC6->C6_NUM,"C5_TABELA")
+		
+		If SC6->C6_LOCAL == '24'
+		
+			cTab := GetMv("MV_ACDFIFO")
+		
+		End If
+					
+			If SB1->B1_PESOVAR == 'S'
+				If nPrTab == 0
+					nPrTab	:= Posicione("DA1",1,xFilial("DA1")+cTab+SC6->C6_PRODUTO,"DA1_XPRVE2")  		
+				End If
+				nPrPed	:= SC6->C6_PRCVEN2
+			Else
+				If nPrTab == 0
+					nPrTab	:= Posicione("DA1",1,xFilial("DA1")+cTab+SC6->C6_PRODUTO,"DA1_PRCVEN")
+				End If
+				nPrPed	:= SC6->C6_PRCVEN
+			End IF
+			
+		
+		SC6->(Aadd(aLsc61,{	oSt,Alltrim(cPedido),C6_ITEM,C6_PRODUTO,cDescProd,;
+							Alltrim(Transform(C6_QTDVEN,"@E 99,999")),;
+							Alltrim(Transform(C6_UNSVEN,"@E 9,999,999.999")),;
+							Alltrim(Transform(nLiberado,"@E 99,999")),;
+							Alltrim(Transform(nPrPed,"@E 99,999.99")),;
+							Alltrim(Transform(nPrTab,"@E 99,999.99")),;
+							Alltrim(Transform(C6_VALOR,"@E 9,999,999.99")),;
+							C6_LOCAL,SubStr(Posicione("SA3",1,xFilial("SA3")+C6_XVEND,"A3_NOME"),1,30)," "}))										 
+	 SC6->( dbSkip() )
+	
+	EndDo
+
+If Empty(aLsc61)                                
+	aLsc61 := {{oSt,Space(6),Space(2),Space(6),Space(30),Space(6),Space(8),Space(6),Space(5),Space(5),Space(10),Space(2),Space(20)," "}}
+EndIf
+	
+oBroItp:SetArray(aLsc61)
+oBroItp:bLine := {|| {	aLsc61[oBroItp:nAt,01],aLsc61[oBroItp:nAt,02],aLsc61[oBroItp:nAt,03],aLsc61[oBroItp:nAt,04],aLsc61[oBroItp:nAt,05],aLsc61[oBroItp:nAt,06],;
+						aLsc61[oBroItp:nAt,07],aLsc61[oBroItp:nAt,08],aLsc61[oBroItp:nAt,09],aLsc61[oBroItp:nAt,10],aLsc61[oBroItp:nAt,11],aLsc61[oBroItp:nAt,12],aLsc61[oBroItp:nAt,13]}}						
+oBroItp:Refresh()
+
+Return   
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³GerPedido  ³ Autor ³ WDO                   ³ Data ³ 26/09/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Execauto para geracao de novo pedido com residuo  			 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function DelPedido(xFil,xPedido)
+
+Local aCabPV  := {} 
+Local aItemPV := {}
+Local aArea	  := GetArea()	
+
+Private lMsErroAuto := .F.
+
+SC5->( dbSetOrder(1) )
+If SC5->( dbSeek(xFil+xPedido) )
+	If !Empty(SC5->C5_XPEDANT)
+		MsgAlert(OemToAnsi("O Pedido é originado de saldo do pedido cortado: " + SC5->C5_XPEDANT + ", não pode ser excluido, pode ser faturado ou Eliminado Resíduo!"))
+		Return .F.
+	Else
+		If !MsgYesNo(OemToAnsi("Deseja excluir o pedido: " + SC5->C5_NUM + " ?"))
+			Return .F.
+		End If
+	End If
+	
+End If
+
+SB1->( dbSetOrder(1) )
+
+//EXCLUI LIBERACAO ATUAL
+SC9->(DbSetOrder(1))
+SC9->(DbSeek(xFil+xPedido))
+
+While SC9->(!Eof() .AND. C9_FILIAL+C9_PEDIDO == xFil+xPedido) 
+	A460Estorna	(.T.,.T.)	//(lMata410,lAtuEmp,nVlrCred)    
+	SC9->(DbSkip())
+Enddo   
+
+If SC5->( dbSeek(xFil+xPedido) )
+
+	aAdd(aCabPV,{"C5_FILIAL"	,SC5->C5_FILIAL				,Nil})// Numero do pedido
+	aAdd(aCabPV,{"C5_NUM"		,SC5->C5_NUM		,Nil})// Tipo de pedido
+	aAdd(aCabPV,{"C5_TIPO"		,SC5->C5_TIPO		,Nil})// Tipo de pedido
+	aAdd(aCabPV,{"C5_CLIENTE"	,SC5->C5_CLIENTE	,.F.})// Codigo do cliente
+	aAdd(aCabPV,{"C5_LOJACLI"	,SC5->C5_LOJACLI	,Nil})// Loja do cliente
+    
+    SC6->(dbSetOrder(1))
+    
+    If SC6->(dbSeek(xFil+SC5->C5_NUM))
+    
+	    While SC6-> ( !Eof() ) .AND. xFil+xPedido == SC6->C6_FILIAL+SC6->C6_NUM	
+		    
+		    SB1->( dbSeek(xFilial("SB1")+SC6->C6_PRODUTO) )
+
+		     AADD(aItemPV,{{"C6_FILIAL"	,SC6->C6_FILIAL													,Nil},; 
+		                  {"C6_NUM   "	,SC6->C6_NUM													,.F.},;
+		                  {"C6_ITEM   "	,SC6->C6_ITEM													,.F.},; 
+		                  {"C6_PRODUTO"	,SC6->C6_PRODUTO												,NIL}})
+	    
+			SC6->( dbSkip() )
+	    
+	    End While
+    
+    End If
+	
+	MSExecAuto({|x,y,z|Mata410(x,y,z)},aCabPv,aItemPV,5)
+
+	
+   If lMsErroAuto
+	
+		cErrolog := MemoRead(NomeAutolog())
+		MostraErro()
+		lMsErroAuto := .F. 
+	Else
+		MsgAlert("Pedido Excluido com sucesso!")
+	Endif
+	
+End If
+
+RestArea(aArea)	
+
+Return
+
+
+Static Function xShowPed(xPedido,xProd)
+
+Local aArea := GetArea()
+
+//C6_FILIAL+C6_NUM+C6_PRODUTO                                                                                                                                     
+SC6->( dbSetOrder(12) )
+If SC6->( dbSeek(cFilAnt+xPedido+xProd))
+	
+	cMsg := Padr("Produto:",27,"")+Alltrim(SC6->C6_PRODUTO) + CRLF
+	cMsg += Padr("Qtd.Pedido:",25,"")+Padl(TransForm(SC6->C6_QTDVEN,"@E 99,999"),10,"") + CRLF
+	cMsg += Padr("Qtd.Faturado:",24,"")+Padl(TransForm(SC6->(C6_QTDENT),"@E 99,999"),10,"") + CRLF
+	cMsg += Padr("Kgs/Cxs Pedido:",19,"")+Padl(TransForm(SC6->C6_UNSVEN,"@E 99,999.999"),10,"") + CRLF
+	cMsg += Padr("Kgs/Cxs Faturado:",18,"")+Padl(TransForm(SC6->C6_QTDENT2,"@E 99,999.999"),10,"") + CRLF
+	
+	MsgInfo(OemToAnsi(cMsg))
+End If
+
+RestArea(aArea)
+
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Funcao    ³ LIBSC9       ³Autor ³  WDO                 ³Data³ 06/06/17 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡ao ³ LIBERA SC9 CASO NAO EXISTE,                                ³±±
+±±³          ³                                                            ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function LIBSC9X(cPedido)
+
+Local aArea 	:= GetArea()
+Local lRet		:= .F.
+Local nReg		:= 0
+Local nTotPed	:= 0
+Local nTotLib	:= 0
+
+SC5->(DbSetOrder(1))
+SC5->(DbSeek(xFilial("SC5")+cPedido)) 
+
+	Begin Transaction 
+	
+	//====================================================================================================================================================
+	U_EstC9(cPedido)
+	SC6->(DBSetOrder(1)) //FILIAL+PEDIDO
+	SC6->(DbSeek(xFilial("SC6")+SC5->C5_NUM))
+	
+	While SC6->(!Eof() .AND. C6_FILIAL+C6_NUM) == xFilial("SC5")+cPedido 
+						   
+	   RecLock("SC6",.F.)
+	      SC6->C6_BLOQUEI := ''
+	   MsUnlock()
+	   
+	   //Define Quantidade multipla do Pedido pela Quantidade da Embalagem
+		nQtdVen := SC6->C6_QTDVEN
+		nTotPed	+= SC6->C6_QTDVEN
+		
+		SB1->(DbSeek(xFilial("SB1")+ SC6->(C6_PRODUTO)))	
+		//MsgAlert(SC6->C6_PRODUTO+" SB1")
+		SB2->(DbSeek(xFilial("SB2")+SC6->(C6_PRODUTO)+SC6->(C6_LOCAL)))
+		//MsgAlert(SC6->C6_PRODUTO+" SB2")
+		//Verifica quantidade possivel para Liberação 
+		//SaldoSB2(.F.,.F.,NIL,.T.,.F.) = Parametros Default: 
+		//1-) 		Considera Saldo a Distribuir; 
+		//2 e 3-) 	Considera Empenho do SD4; 
+		//4-) 		Considera qtd de terceiros em nosso poder e 
+		//5-)  		Considera qtd nossa em poder de terceiros 
+		
+		nSaldo := SaldoSB2(.F.,.F.,NIL,.T.,.F.)	  			
+	    //MsgAlert(cValToChar(nSaldo))
+		//aSaldo := SldPorLote(SC6->C6_PRODUTO,SC6->C6_LOCAL,nQtdVen,/*nQtd2UM*/Nil,/*cLoteCtl*/NIL,/*cNumLote*/Nil,/*cLocaliza*/Nil,/*cNumSer*/Nil,/*aTravas*/Nil,/*lBaixaEmp*/NIL,/*cLocalAte*/Nil,/*lConsVenc*/Nil,/*aLotesFil*/Nil,/*lEmpPrevisto*/Nil,dDataBase)   
+		//AEval(aSaldo,{|x|nSaldo+=x[5]})
+		//If nSaldo > 0 .And. nSaldo < nQtdVen 
+		//	nQtdVen := nSaldo  
+		//EndIf
+		
+		nQtdLib2 := ConvUm(SC6->C6_PRODUTO,0,2,nQtdVen)					 	 							    
+	                                                                                                 
+	    //MaLibDoFat(nRegSC6,nQtdaLib,lCredito,lEstoque,lAvCred,lAvEst,lLibPar,lTrfLocal,aEmpenho,bBlock,aEmpPronto,lTrocaLot,lOkExpedicao,nVlrCred,nQtdalib2)   
+		nQtdLib := MaLibDoFat(SC6->(Recno()),;
+		   					nQtdVen,;		// -->Quantidade a ser liberada
+							.T.,; 			// --> Bloqueio de Credito
+							.T.,; 			// --> Bloqueio de Estoque - lBloqueia
+		   					.F.,; 			// --> Avaliacao de Credito
+							.T.,; 			// --> Avaliacao de Estoque
+		   					.T.,; 	   		// --> Permite Liberacao Parcial
+		   					.F.,; 			// --> Tranfere Locais automaticamente
+		   					Nil,; 			// --> Empenhos ( Caso seja informado nao efetua a gravacao apenas avalia )
+		   		   			Nil,; 			// --> CodBlock a ser avaliado na gravacao do SC9
+		   		   			NiL,;			// --> Array (aSaldos) com Empenhos previamente escolhidos (impede selecao dos empenhos pelas rotinas)
+		   		   			Nil,Nil,Nil,,nQtdLib2)
+		   		   					
+			
+		//MaLiberOk({SC6->C6_NUM},.F.) 
+			
+	 	SC6->( DbSkip() )		
+		
+	End While
+ 
+	End Transaction
+
+RestArea(aArea)
+
+Return
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³cEditProd	 ³ Autor ³ WDO         	         ³ Data ³ 15/03/2018 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³                                                  			 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function cEditProd(oBroItp1)
+
+Private cProd := Space(6)
+	
+	DEFINE FONT oFont4  	NAME "Arial" 	    SIZE 20,50 BOLD
+
+	DEFINE MSDIALOG _oDlg53 TITLE "Produto" FROM 296,382 TO 490,728 PIXEL
+	
+	// Cria as Groups do Sistema
+	@ 002,000 TO 114,174 LABEL "" PIXEL OF _oDlg53
+
+	// Cria Componentes Padroes do Sistema
+	@ 029,004 Say "PRODUTO>" Size 030,013  PIXEL OF _oDlg53 
+	@ 018,040 MsGet oCxs  Var cProd PICTURE "@999999" Size 100,030 WHEN .T. VALID (ExistCpo("SB1",cProd) .or. Vazio()) F3 "SB1ZZH" PIXEL OF _oDlg53 
+	oCxs:oFont := oFont4
+	
+	@ 079,045 Button "&OK"       Action( lOkpx2 := .T.,_oDlg53:End(),MsgRun("Aguarde...",,{||LoadSC6 (oBroItp1,cProd)})) Size 037,012 PIXEL OF _oDlg53
+	@ 079,004 Button "&Cancelar" Action( _oDlg53:End()          ) Size 037,012 PIXEL OF _oDlg53
+	//MsgRun("Acessando Geração de Cargas. Aguarde...",,{|| U_NMCB24(PX1->PX1_ORDSEP)})
+	ACTIVATE MSDIALOG _oDlg53 CENTERED
+
+Return cProd
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³cEditArm 	 ³ Autor ³ WDO         	         ³ Data ³ 15/03/2018 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³                                                  			 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function cEditArm(oBroItp1)
+
+Local aCampos 	:= {}
+Local xPedido 	:= AllTrim(oBroItp1:aArray[oBroItp1:nAT,02])
+Local xProd		:= Alltrim(oBroItp1:aArray[oBroItp1:nAT,04])
+Local xItem		:= Alltrim(oBroItp1:aArray[oBroItp1:nAT,03])
+
+Private cProd 	:= Space(6)
+Private cCampos := Space(2)
+
+	PX1->( dbSetOrder(2)) //PX1_FILIAL+PX1_PEDIDO+PX1_LOCAL+PX1_CLIENT+PX1_LOJA     
+	If PX1->( dbSeek( xFilial("PX1")+xPedido ) ) 
+	   	ApMsgInfo(OemtoAnsi("Ordem de Separação ja emitida para esse pedido, não é mais permitido alteracao!"),"Atencao")
+	   	Return
+	EndIf
+	
+	If sfPedLib(xPedido,xProd,xItem)
+		ApMsgInfo(OemtoAnsi("Pedido Venda já possui liberação, não é permitido alteração !"),"Atencao")
+	   	Return
+	EndIf
+	
+	DEFINE FONT oFont4  	NAME "Arial" 	    SIZE 20,50 BOLD
+
+	NNR->(dbSetOrder(1))
+	NNR->(dbGotop())   
+	While NNR->( !Eof() )
+      If NNR->(NNR_CODIGO) $ '01|08|23|24|'
+      	AAdd(aCampos,NNR->(NNR_CODIGO))
+      End If
+      NNR->( dbSkip() )
+	End While
+
+	DEFINE MSDIALOG _oDlg53 TITLE "Armazem" FROM 296,382 TO 490,728 PIXEL
+	
+	// Cria as Groups do Sistema
+	@ 002,000 TO 114,174 LABEL "" PIXEL OF _oDlg53
+
+	// Cria Componentes Padroes do Sistema
+	@ 026,004 Say "ARMAZEM>" Size 030,013  PIXEL OF _oDlg53 
+	
+	//@ 010,005 COMBOBOX cCampos ITEMS aCampos       SIZE 100,10 PIXEL OF oDlgPesq 
+	@ 018,040 COMBOBOX cCampos ITEMS aCampos Size 100,030 PIXEL OF _oDlg53 
+	
+	//oCxs:oFont := oFont4
+	
+	@ 079,045 Button "&OK"       Action( lOkpx2 := .T.,_oDlg53:End(),;
+	MsgRun("Aguarde...",,{||AltPedido(cFilAnt,xPedido,cCampos,xProd,xItem)}),;
+	MsgRun("Aguarde...",,{||LoadSC6 (oBroItp1,xProd)}));
+	 Size 037,012 PIXEL OF _oDlg53
+	
+	@ 079,004 Button "&Cancelar" Action( _oDlg53:End()          ) Size 037,012 PIXEL OF _oDlg53
+	//MsgRun("Acessando Geração de Cargas. Aguarde...",,{|| U_NMCB24(PX1->PX1_ORDSEP)})
+	ACTIVATE MSDIALOG _oDlg53 CENTERED
+
+Return cProd
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³GerPedido  ³ Autor ³ WDO                   ³ Data ³ 26/09/2017 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Execauto para geracao de novo pedido com residuo  			 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function AltPedido(xFil,xPedido,xLocal,xProd,xItem)
+
+Local aCabPV  	:= {} 
+//Local aItemPV 	:= {}
+Local aArea	  	:= GetArea()	
+//Local aLinha	:= {}
+//Local aItens	:= {}
+//Private lMsErroAuto := .F.
+
+SC5->( dbSetOrder(1) )
+//SB1->( dbSetOrder(1) )
+
+If SC5->( dbSeek(xFil+xPedido) )
+
+	//aAdd(aCabPV,{"C5_FILIAL"	,SC5->C5_FILIAL		,Nil})// Numero do pedido
+	//aAdd(aCabPV,{"C5_NUM"		,SC5->C5_NUM		,Nil})// Numero do pedido
+	//aAdd(aCabPV,{"C5_CLIENTE"	,SC5->C5_CLIENTE	,.F.})// Codigo do cliente
+	//aAdd(aCabPV,{"C5_LOJACLI"	,SC5->C5_LOJACLI	,Nil})// Loja do cliente
+    
+    SC6->(dbSetOrder(2))
+    
+    If SC6->(dbSeek(Alltrim(xFil)+Pad(xProd,TamSX3("C6_PRODUTO")[1])+SC5->C5_NUM+xItem))
+   
+        RecLock("SC6",.F.)
+        	SC6->C6_LOCAL := xLocal
+        MsUnlock()
+        //aLinha := {}
+        //aadd(aLinha,{"C6_ITEM"		,SC6->C6_ITEM	,NIL})
+        //aadd(aLinha,{"AUTDELETA"	,"N"			,Nil})
+        //aadd(aLinha,{"C6_PRODUTO"	,SC6->C6_PRODUTO,Nil})
+        //aadd(aLinha,{"C6_QTDVEN"	,SC6->C6_QTDVEN	,Nil})
+        //aadd(aLinha,{"C6_PRCVEN"	,SC6->C6_PRCVEN	,.F.})
+        //aadd(aLinha,{"C6_UNSVEN"	,SC6->C6_UNSVEN	,.F.})
+        //aadd(aLinha,{"C6_LOCAL"		,xLocal			,Nil})
+        //aadd(aLinha,{"C6_PRUNIT"	,SC6->C6_PRUNIT	,Nil})
+        //aadd(aLinha,{"C6_TES"		,SC6->C6_TES	,Nil})
+        //aadd(aItens,aLinha)
+
+    End If
+	
+	//MATA410(aCabPv,aItens,4) 
+	
+	//If lMsErroAuto
+	//	cErrolog := MemoRead(NomeAutolog())
+	//	MostraErro()
+	//	lMsErroAuto := .F. 
+	//Endif
+	
+End If
+
+RestArea(aArea)	
+
+Return
+
+
+//
+// Verifica se o item do pedido já possui liberacao na tabela SC9
+//
+Static Function sfPedLib(_cNumPv, _cProdPv, _cItemPv)
+
+Local lLib      := .F.
+Local cAliasQry := GetNextAlias()
+
+BeginSql Alias cAliasQry
+
+	SELECT C9_PEDIDO
+	  FROM %Table:SC9% SC9
+	 WHERE SC9.C9_FILIAL  = %xFilial:SC9%
+	   AND SC9.C9_PEDIDO  = %Exp:_cNumPv%
+	   AND SC9.C9_PRODUTO = %Exp:_cProdPv%
+	   AND SC9.C9_ITEM    = %Exp:_cItemPv%
+	   AND SC9.%NotDel%
+
+EndSql
+
+If (cAliasQry)->(! Eof())
+	lLib := .T.
+EndIf
+
+(cAliasQry)->(DbCloseArea())
+
+Return(lLib)
+
+
+
+Static Function ShowNF()
+
+Local cAlias
+Local nReg
+Local nOpc
+aArea := GetArea()
+dbSelectArea("SF2")
+dbSetOrder(1)
+
+If dbSeek(cFilAnt+cNota+cSerie)
+ Mc090Visual(cAlias,nReg,nOpc)
+End If
+
+RestArea(aArea)
+
+Return
+
+
+Static Function Altera(xOp)
+
+INCLUI := .T.
+
+dbSelectArea("ZC4")
+dbSetOrder(1)
+
+If dbSeek(xFilial("ZC4")+oItens1:aArray[oItens1:nAT,02]+oItens1:aArray[oItens1:nAT,04])
+
+	If xOp == 1
+		U_QA040TELA(,,6,.T.)
+	Else
+		U_QA040TELA(,,4,.T.)
+	End If
+End If
+
+Return
+
+
+
+
+
+
+
+
+
+
+
+
+

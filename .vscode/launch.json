@@ -1,0 +1,35 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "Totvs Language Debug",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:\\HD\\Arq Trabalho\\NOVAMIX\\smartclient_TESTE\\smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"args": [
+				"aRet"
+			],
+			"label": "xGetFrete",
+			"description": "aRet"
+		},
+		{
+			"args": [],
+			"label": "xGetFrete",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "sigaadv",
+			"description": ""
+		}
+	],
+	"lastProgramExecuted": "SIGAADV"
+}

@@ -1,0 +1,309 @@
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH" 
+#INCLUDE 'COLORS.CH' 
+#INCLUDE "TOPCONN.CH"  
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FWMVCDEF.CH"
+#Include "TbiConn.ch"
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³NMCB53	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³GERENCIADOR DE ENTRADAS DE PEDIDOS DE VENDAS.					³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³NOVAMIX	                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+User Function QUAA022C() 
+
+Local aCoors	:= FWGetDialogSize( oMainWnd )
+Local cCadastro	:= "SIMULADOR PRECOS LEITE PRODUTOR"  
+Local oC1W1 		// Layer pricipal   
+Local oC1W2 		// Layer secundario
+Local oButt1   		// Botoes para o Pedido
+//Variaveis para os Browses
+Local oPrcLeite		// Lista dos Pedidos
+Local cPed			// Codigo do Pedido Atual
+Local oBroItp		// Lista dos Itens do Pedido 
+Local oDesbloq		// Lista dos Pedidos Desbloquados
+//Local oBroSC5		// Lista dos Pedidos Bloqueados 
+Local oPanC1W1		// Paineis na Janela do Pedido 
+//Paineis para os Botoes de Manutencoes
+Local oPanPri
+//Local oPanBtPlt   
+Local oPasta 		//Pastas para "PEDIDOS","DESBLOQUEIOS DO PEDIDO","BLOQUEIOS POR VALOR MINIMO"		
+//Local oPaniPd		//Painel para os Botoes dos Itens da Separacao 
+	// Painel dos Botoes para Manutencões   
+//Local oPanBlok		// Painel para Filtro dos Bloqueios
+//Local nInd		:= 1
+//Local cSeek
+//Local cWhere 
+Local libera	:= .F. 
+Local lHist		:= .F.
+Local lfirst	:= .T.
+Local oHist 
+Local ocodPedido
+Local cPedAtu := Space(TamSx3("C5_NUM")[1])   
+Local oCBX1 
+//Local cOrd 			 
+//Local lInverte 		:= .F. 
+
+Private oSaldoPed		// Lista dos Pedidos Gerados Por Saldo (corte)
+Private oPanBotoes
+Private oDlg1
+Private aPedidos	:= {}     
+Private cMarca 		:= GetMark()
+Private aOrd1		:= {}
+Private cFilBloq1
+Private cOperador 
+Private aVerBloq 	:= {}  
+Private oSim		:= LoadBitmap(GetResources(),'lbtik') //lbok
+Private oNao		:= LoadBitmap(GetResources(),'lbno') 
+Private aLsc6		:= {} 
+Private aLsc61		:= {} 
+Private aPrcLeite		:= {} 
+
+//Legendas
+Private  aLegBloq	:= {}
+Private aCores 		:= {} 
+Private oDataDe 	
+Private dDataDe		:= dDataBase-5
+Private oPanRoda
+Private oValPed
+Private nValPed := 0
+Private oKgsPed
+Private nKgsPed := 0
+Private oPedRoda
+Private cPedRoda := Space(6)
+Private aSaldoPed 	:= {}
+Private cHead		:= ''
+Private nHead		:= 0
+
+
+//DEFINE AS LEGENDAS DO MODULO
+aAdd(aLegBloq, 	{"BR_VERDE"		,"Liberado"})
+aAdd(aLegBloq,	{"BR_AZUL"		,"Liberado Pelo Gestor"}) 
+aAdd(aLegBloq,	{"BR_VERMELHO"	,"Bloqueado"})
+aAdd(aLegBloq,	{"BR_LARANJA"	,"Bloqueado-Pedido de saldo(CORTE)"})
+
+libera := .T. 
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Ativa tecla F4 para comunicacao com Saldos dos Lotes         ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//Set Key VK_F4 TO ShowF4(aLsc6[oBroItp:nAT,4],"01")
+
+DEFINE FONT oFont4	NAME "Arial" 		SIZE 08,10	BOLD 
+DEFINE FONT oFont2	NAME "Arial" 		SIZE 11,17 BOLD 
+DEFINE FONT oFont5	NAME "Arial" 		SIZE 9,12 BOLD  
+ 
+DEFINE MSDIALOG oDlg1 FROM aCoors[1],aCoors[2] TO aCoors[3],aCoors[4] TITLE cCadastro OF oMainWnd COLOR "W+/W" STYLE nOR(WS_VISIBLE,WS_POPUP) PIXEL 
+
+oDlg1:lEscClose:= .F.
+oDlg1:lMaximized := .T.	
+oFWLayer:= FWLayer():New()
+oFWLayer:init( oDlg1, .F. ) // Segundo parametro: Cria um botao de fechar utilizado para Dlg sem cabeçalho. Caso for .t.	  
+
+
+//COLUNA - JANELA 1=====================================================================================================================================
+oFWLayer:addCollumn( "Col01", 100, .F. )
+oFWLayer:addWindow( "Col01", "Win01", cCadastro, 100, .T., .F.)
+oC1W1:= oFWLayer:getWinPanel( "Col01", "Win01" )  
+ 
+//Painel Principal dos Botoes para as Manutenções e Pesquisa
+oPanPri	:=TPanel():New(1,3,,oC1W1,oFont2,,,/*CorTexto*/,/*CLR_GREEN*/,80,15,.T.,.T.) 
+oPanPri :ALIGN:= CONTROL_ALIGN_TOP 
+
+//Painel dos Botoes para Manutenções
+oPanBotoes:=TPanel():New(1,3,,oPanPri,/*[aoFont]*/,,,/*CorTexto*/,/*CLR_GREEN*/,290,15,.T.,.T.) 
+oPanBotoes:ALIGN:= CONTROL_ALIGN_LEFT
+
+//Painel para Pesquisa do Pedido
+oPanped	:=TPanel():New(1,3,,oPanPri,oFont2,,,/*CLR_BLUE*/,/*CLR_BLUE*/,380,15,.f.,.f.) //200,07 
+oPanped :ALIGN:= CONTROL_ALIGN_RIGHT  
+
+//BOTOES
+oButt1:= FWButtonBar():new()											
+oButt1:Init(oPanBotoes, 17, 25,CONTROL_ALIGN_TOP, .T. )   
+oButt1:addBtnImage( "Final",	  	"Sair"	,{|| Sair(oDlg1,oPrcLeite,aPrcLeite)},,.T.,CONTROL_ALIGN_LEFT)  
+ 
+ cHead := cHead()
+//LISTBOX
+@ 01,01 LISTBOX oPrcLeite Fields HEADER cHead ;//"CODPRO","PRODUTOR","PROPRIEDADE","LITROS","PR.BASE";
+SIZES {15,30,30,15,15,06} SIZE 490,095 FONT oFont2 PIXEL of oC1W1 ;
+ON DBLCLICK Lin_OnOff(oPrcLeite,aPrcLeite)
+
+oPrcLeite:Align := CONTROL_ALIGN_ALLCLIENT 
+oPrcLeite:Refresh()
+LoadOrdem (oPrcLeite,.F.,cHead)
+
+ACTIVATE MSDIALOG oDlg1 
+
+Return 
+
+
+Static Function Sair(oDlg1,oPrcLeite,aPrcLeite)
+
+Local cQuery := ''
+
+	If MsgYesNo("Deseja Salvar ?")
+	
+		For i := 1 To Len(aPrcLeite)
+			
+			cQuery := "UPDATE " + RetSqlName("LJX") + " SET LJX_ORDEM=" + cValToChar(oPrcLeite:aArray[i,03]) + " " + CRLF
+			cQuery += "WHERE LJX_FILIAL='" + cFilAnt + "' AND LJX_CODBON='" + cValToChar(oPrcLeite:aArray[i,04])+"'"  
+			
+			TcSqlExec(cQuery)
+		
+		Next i
+		
+		
+	EndIf
+	
+	oDlg1:End()
+
+Return
+
+/*ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Lin_OnOff	³ Autor ³ Luiz Enrique	        ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³Marca ou Desmarca linha com o Duplo Clique.   				³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function Lin_OnOff (oPrcLeite,aPrcLeite)	
+	
+	
+	If oPrcLeite:ColPos == 1 .AND. oPrcLeite:nAT > 1
+		oPrcLeite:aArray[oPrcLeite:nAT,03] := oPrcLeite:aArray[oPrcLeite:nAT,03]-1 
+		oPrcLeite:aArray[(oPrcLeite:nAT)-1,03] := oPrcLeite:aArray[(oPrcLeite:nAT)-1,03]+1
+		oPrcLeite:GoUp()
+	ElseIf oPrcLeite:ColPos == 2 .AND. oPrcLeite:nAT <> Len(aPrcLeite) 
+		oPrcLeite:aArray[oPrcLeite:nAT,03] := oPrcLeite:aArray[oPrcLeite:nAT,03]+1
+		oPrcLeite:aArray[(oPrcLeite:nAT)+1,03] := oPrcLeite:aArray[(oPrcLeite:nAT)+1,03]-1
+		oPrcLeite:GoDown()
+	EndIf
+	
+	
+	LoadOrdem (oPrcLeite,.T.)
+	
+	oPrcLeite:Refresh()
+
+Return
+
+
+/*/
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³Monta_SC6	 ³ Autor ³ Luiz Enrique	         ³ Data ³ 15/09/2014 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta a Lista dos ITENS dos pedidos Bloqueados 				 ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß*/
+Static Function LoadOrdem (oPrcLeite,lAjusta)
+
+Local oSt			:= LoadBitmap(GetResources(),'PMSSETAUP') 
+Local oSt2			:= LoadBitmap(GetResources(),'PMSSETADOWN')    
+Local aBloqs		:= {} 
+Local cDescProd		:= ""
+Local nLiberado		:= 0
+Local nTotValIt		:= 0 
+Local lCorte		:= .F.
+Local cQuery		:= ''
+Local aOrdAju		:= {}
+
+	
+	If !lAjusta
+		
+		aPrcLeite		:= {}
+		
+		cQuery := "SELECT LJX_CODBON,LJX_DESC,LJX_ORDEM FROM " + RetSqlName("LJX") + " LJX WHERE LJX.D_E_L_E_T_='' AND LJX_PLAN='S' ORDER BY LJX_ORDEM " + CRLF
+		
+		MemoWrite("C:\HD\QUERYS\QUAA015B.SQL",cQuery)
+				
+		IF Select("LoadOrdem") > 0
+			LoadOrdem->(dbCloseArea())
+		EndIf
+			
+		dbUseArea(.T., "TOPCONN", TCGENQRY(,,cQuery), "LoadOrdem", .T., .F.)
+	
+		While LoadOrdem->(!Eof())
+						
+		 	Aadd(aPrcLeite,{	oSt,;
+						 		oSt2,; 
+						 		LoadOrdem->LJX_ORDEM,;
+						 		LoadOrdem->LJX_CODBON,;
+						 		LoadOrdem->LJX_DESC," "})										 
+			LoadOrdem->( dbSkip() )
+		EndDo 
+	
+	Else
+		
+			aOrdAju := aPrcLeite
+		 	aSort(aOrdAju,,,{ |x,y | x[3] < y[3] })
+		 	aPrcLeite := {}
+		 	
+		 	For i := 1 to Len(aOrdAju)
+			 	Aadd(aPrcLeite,{	oSt,;
+			 					oSt2,; 
+			 					aOrdAju[i][3],;
+			 					aOrdAju[i][4],;
+			 					aOrdAju[i][5]," "})										 
+		 	Next i
+	End If
+
+
+
+aPrcLeite := Array(1,nHead)
+If Empty(aPrcLeite)                                
+	aPrcLeite :={{oSt,oSt2,Space(6),Space(6),Space(6),Space(6)," "}}
+EndIf
+
+//"S","Item","Produto","Descrição","Quantidade","Qtd. Liberada","Valor Unitario", "Total", "Arm"," "	
+oPrcLeite:SetArray(aPrcLeite)
+oPrcLeite:bLine := {|| {	aPrcLeite[oPrcLeite:nAt,01],aPrcLeite[oPrcLeite:nAt,02],aPrcLeite[oPrcLeite:nAt,03],aPrcLeite[oPrcLeite:nAt,04],aPrcLeite[oPrcLeite:nAt,05],aPrcLeite[oPrcLeite:nAt,06]}}						
+oPrcLeite:Refresh()
+
+Return
+
+
+Static Function cHead()
+
+Local cRet :=  '"'
+Local cAl022C :=  GetNextAlias()
+
+
+	Beginsql Alias cAl022C
+			
+			%NOPARSER%
+			 	
+			SELECT LJX_DESC FROM %table:LJX% LJX WHERE LJX_FILIAL=%Exp:cFilAnt% AND LJX_PAGA='S' AND LJX.%notDel% ORDER BY LJX_ORDEM
+	Endsql
+		
+	While (cAl022C)->( !Eof() )	
+		cRet += AllTrim((cAl022C)->(LJX_DESC))+'",'
+		(cAl022C)->( dbSkip() )
+		nHead ++
+	EndDo
+	
+	
+	If (cAl022C)->( Eof() )
+		cRet := ''
+	End If
+
+	If !Empty(cRet)
+		cRet := SubStr(cRet,1,Len(cRet)-1)
+	End If
+
+Return cRet
+
+

@@ -1,0 +1,609 @@
+#include "protheus.ch"
+#INCLUDE "TBICONN.CH"
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณDC11A     บAutor  ณWDONET              บ Data ณ  20/08/14   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณ RELATORIO CAPA PRETA NOVA VERSAO                           บฑฑ
+ฑฑบ          ณ                                                            บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ AP                                                         บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+User Function QUAR080W()
+
+	Local cQuery7 	:= ''
+	Local nHdlimp 	:= 0
+	Local nCount 	:= 0
+	Local nRegistro	:= 0
+	Local cLinha 	:= ''
+	Local cCFOPVen	:= ""
+	Local cCFOPBon	:= ""
+	Local cDataIni	:= ""
+	Local cDataFim	:= ""
+	Local nDataAtu	:= DOW( date() )
+	Local cDataI	:= ''
+	Local cDataF	:= ''
+	Local cProduto	:= ''
+	Local cHoraI	:= Time()
+	Local cHoraF	:= ''
+	Local cPeriodoI	:= ''
+	Local cPeriodoF	:= ''
+	Local aDados	:= {}
+	Local cEmail	:= ''
+	Local nPRMQ		:= 0
+	Local nPRMQPF	:= 0
+	Local nPRMQT	:= 0
+	Local nPRMCR	:= 0
+	Local nPRMOU	:= 0
+	Local nPRML		:= 0
+	Local nPRMG		:= 0
+	Local nPRMGL	:= 0
+	Local nPRM1T	:= 0
+	Local nPRM1M	:= 0
+
+	Local cCorpo	:= ''
+	Local lFim		:= .F.
+
+	Local cPath 	:= ''
+	
+	cPath := cGetFile ( ,, 1,, .F., GETF_RETDIRECTORY+GETF_LOCALHARD)
+	
+	If !Empty(cPath)
+	
+		MsgRun("Aguarde...",,{|| GEREXCEL(cPath) })
+
+	End If
+
+Return(lFim)
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณGEREXCEL  บAutor  ณWilson Davila       บ Data ณ  03/11/10   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณGera relatorio de resumo das comissoes para excel           บฑฑ
+ฑฑบ          ณ                                                            บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ AP10 - Quata                                               บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+Static Function GEREXCEL(cPath)
+	
+	Local cXml		:= ' '
+
+
+	fErase(cPath+'RELATORIO_CONTRATOS.XLS')
+	nHdlImp := fCreate(cPath+'RELATORIO_CONTRATOS.XLS', 0)
+
+	cXml := '<?xml version="1.0"?>' + CRLF
+	cXml += '<?mso-application progid="Excel.Sheet"?>' + CRLF
+	cXml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"' + CRLF
+	cXml += 'xmlns:o="urn:schemas-microsoft-com:office:office"' + CRLF
+	cXml += 'xmlns:x="urn:schemas-microsoft-com:office:excel"' + CRLF
+	cXml += 'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"' + CRLF
+	cXml += 'xmlns:html="http://www.w3.org/TR/REC-html40">' + CRLF
+	cXml += '<DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">' + CRLF
+	cXml += '<Author>Monica Pessoa</Author>' + CRLF
+	cXml += '<LastAuthor>Wilson</LastAuthor>' + CRLF
+	cXml += '<Created>2018-12-13T15:25:21Z</Created>' + CRLF
+	cXml += '<LastSaved>2018-12-21T17:50:42Z</LastSaved>' + CRLF
+	cXml += '<Company>HP</Company>' + CRLF
+	cXml += '<Version>16.00</Version>' + CRLF
+	cXml += '</DocumentProperties>' + CRLF
+	cXml += '<OfficeDocumentSettings xmlns="urn:schemas-microsoft-com:office:office">' + CRLF
+	cXml += '<AllowPNG/>' + CRLF
+	cXml += '</OfficeDocumentSettings>' + CRLF
+	cXml += '<ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">' + CRLF
+	cXml += '<WindowHeight>7755</WindowHeight>' + CRLF
+	cXml += '<WindowWidth>20115</WindowWidth>' + CRLF
+	cXml += '<WindowTopX>240</WindowTopX>' + CRLF
+	cXml += '<WindowTopY>30</WindowTopY>' + CRLF
+	cXml += '<ProtectStructure>False</ProtectStructure>' + CRLF
+	cXml += '<ProtectWindows>False</ProtectWindows>' + CRLF
+	cXml += '</ExcelWorkbook>' + CRLF
+	cXml += '<Styles>' + CRLF
+	cXml += '<Style ss:ID="Default" ss:Name="Normal">' + CRLF
+	cXml += '<Alignment ss:Vertical="Bottom"/>' + CRLF
+	cXml += '<Borders/>' + CRLF
+	cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' + CRLF
+	cXml += '<Interior/>' + CRLF
+	cXml += '<NumberFormat/>' + CRLF
+	cXml += '<Protection/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s16" ss:Name="Hiperlink">' + CRLF
+	cXml += '<Font ss:FontName="Arial" x:Family="Swiss" ss:Color="#0000FF"' + CRLF
+	cXml += 'ss:Underline="Single"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s17" ss:Name="Porcentagem">' + CRLF
+	cXml += '<NumberFormat ss:Format="0%"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	
+	cXml += '<Style ss:ID="s18">' + CRLF
+	cXml += '<Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="9"/>' + CRLF
+	cXml += '<Interior ss:Color="#BFBFBF" ss:Pattern="Solid"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	
+	cXml += '<Style ss:ID="s19" ss:Parent="s16">' + CRLF
+	cXml += '<Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="9" ss:Color="#0000FF"' + CRLF
+	cXml += 'ss:Underline="Single"/>' + CRLF
+	cXml += '<Interior ss:Color="#BFBFBF" ss:Pattern="Solid"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s20">' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<NumberFormat ss:Format="Short Date"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s21">' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s23" ss:Parent="s17">' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s24">' + CRLF
+	cXml += '<Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="9"/>' + CRLF
+	cXml += '<Interior ss:Color="#FFFF00" ss:Pattern="Solid"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '<Style ss:ID="s25">' + CRLF
+	cXml += '<Borders>' + CRLF
+	cXml += '<Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>' + CRLF
+	cXml += '</Borders>' + CRLF
+	cXml += '<Interior/>' + CRLF
+	cXml += '<NumberFormat ss:Format="0%"/>' + CRLF
+	cXml += '</Style>' + CRLF
+	cXml += '</Styles>' + CRLF
+	cXml += '<Worksheet ss:Name="Plan1">' + CRLF
+	cXml += '<Table x:FullColumns="1" x:FullRows="1" ss:DefaultRowHeight="15">' + CRLF
+	
+	//==QUERY 1
+	cQueryV := "SELECT DISTINCT ZC5_CODVER,ZC5_DESC,ZC3_PREFIX " + CRLF 
+	cQueryV += " FROM ZC5010 ZC5 " + CRLF
+	cQueryV += " INNER JOIN ZC4010 ZC4 ON ZC4.D_E_L_E_T_='' AND ZC4_OBSOLE='F' " + CRLF
+	cQueryV += " INNER JOIN ZC3010 ZC3 ON ZC3.D_E_L_E_T_='' AND ZC3_COD=ZC5_CODVER " + CRLF
+	cQueryV += " WHERE ZC5.D_E_L_E_T_='' " + CRLF
+	cQueryV += " ORDER BY ZC5_CODVER " + CRLF
+	
+	
+	If Select( "VERBAS" ) > 0
+		VERBAS->( dbCloseArea() )
+	EndIf
+
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQueryV), "VERBAS", .T., .T.)
+	
+	nCol 		:= 0
+	nColItem	:= 0
+	aVerbas := {}
+	While VERBAS->( !Eof() )
+		nCol ++
+		nColItem ++
+		AADD(aVerbas,VERBAS->ZC5_CODVER)
+		VERBAS->( dbSkip() )
+	EndDo
+	
+	cXml += '<Column ss:Index="1" ss:AutoFitWidth="0" ss:Width="56"/>' + CRLF
+	cXml += '<Column ss:Index="2" ss:AutoFitWidth="0" ss:Width="50"/>' + CRLF
+	cXml += '<Column ss:Index="3" ss:AutoFitWidth="0" ss:Width="50"/>' + CRLF
+	cXml += '<Column ss:Index="4" ss:AutoFitWidth="0" ss:Width="230"/>' + CRLF
+	cXml += '<Column ss:Index="5" ss:AutoFitWidth="0" ss:Width="50"/>' + CRLF
+	cXml += '<Column ss:Index="6" ss:AutoFitWidth="0" ss:Width="50"/>' + CRLF
+	cXml += '<Column ss:Index="7" ss:AutoFitWidth="0" ss:Width="300"/>' + CRLF
+	cXml += '<Column ss:Index="8" ss:AutoFitWidth="0" ss:Width="50"/>' + CRLF
+	cXml += '<Column ss:Index="9" ss:AutoFitWidth="0" ss:Width="200"/>' + CRLF
+	cXml += '<Column ss:Index="10" ss:AutoFitWidth="0" ss:Width="55"/>' + CRLF
+	
+	For i := 1 to nCol
+		cXml += '<Column ss:Index="' + cValToChar(i+10) + '" ss:AutoFitWidth="0" ss:Width="35"/>' + CRLF
+	Next i
+	
+	nCol := nCol + 10
+	
+	cXml += '<Column ss:Index="' + cValToChar(nCol+1) + '" ss:AutoFitWidth="0" ss:Width="120"/>' + CRLF
+	cXml += '<Column ss:Index="' + cValToChar(nCol+2) + '" ss:AutoFitWidth="0" ss:Width="120"/>' + CRLF
+	cXml += '<Column ss:Index="' + cValToChar(nCol+3) + '" ss:AutoFitWidth="0" ss:Width="100"/>' + CRLF
+
+
+	cXml += '<Row ss:Height="36">' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">DATA DA INSERCAO DA REVISAO</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">CONTRATOS ATIVOS</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">CONTRATOS INATIVOS</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">FILIAL</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">CLIENTE/BANDEIRA</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">LOJA</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">CATEGORIA OU</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">PRODUTO</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">NOME CLI/BAND</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s24"><Data ss:Type="String">TOTAL</Data></Cell>' + CRLF
+	
+	VERBAS->( dbGoTop() )
+	
+	While VERBAS->( !Eof() )
+	
+		cXml += '<Cell ss:StyleID="s18"><Data ss:Type="String">' + VERBAS->ZC3_PREFIX + '</Data></Cell>' + CRLF
+	
+		VERBAS->( dbSkip())
+	
+	End
+	
+	cXml += '<Cell ss:StyleID="s24"><Data ss:Type="String">FORMA</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s24"><Data ss:Type="String">CALCULO</Data></Cell>' + CRLF
+	cXml += '<Cell ss:StyleID="s24"><Data ss:Type="String">CONSIDERA DEVOLUCAO?</Data></Cell>' + CRLF
+	cXml += '</Row>' + CRLF
+	
+	cQueryI := "SELECT ZC4_DTINI,ZC4_CODCON,ZC4_REVISA,ZC4_FILSEL,ZC7_BANDEI,ZC7_CODCLI,ZC7_LOJA,ZC7_CODPRO, " + CRLF
+	cQueryI += " ISNULL((SELECT X5_DESCRI FROM SX5010 SX5 WHERE X5_TABELA='X4' AND X5_CHAVE=ZC7_CATEGO AND SX5.D_E_L_E_T_=''),'') AS ZC7_CATEGO  " + CRLF 
+	cQueryI += " FROM ZC4010 ZC4 " + CRLF
+	cQueryI += " INNER JOIN ZC7010 ZC7 ON ZC7.D_E_L_E_T_='' AND ZC7_CODCTR=ZC4_CODCON " + CRLF
+	cQueryI += " WHERE ZC4.D_E_L_E_T_='' " + CRLF
+	cQueryI += " ORDER BY ZC4_CODCON,ZC7_BANDEI,ZC7_CODCLI,ZC7_LOJA " + CRLF
+	
+	If Select( "ITEMVER" ) > 0
+		ITEMVER->( dbCloseArea() )
+	EndIf
+
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQueryI), "ITEMVER", .T., .T.)
+	cCatego := ''
+	cCodCon := ITEMVER->ZC4_CODCON
+	cBand	:= ITEMVER->ZC7_BANDEI
+	cCodCli	:= ITEMVER->ZC7_CODCLI
+	cLoja	:= ITEMVER->ZC7_LOJA
+	lNovo := .T.
+	
+	While ITEMVER->( !Eof() )
+			
+			If lNovo
+				cXml += '<Row>' + CRLF
+				cXml += '<Cell ss:StyleID="s20"><Data ss:Type="DateTime">'+ SubStr(ITEMVER->ZC4_DTINI,1,4)+"-"+SubStr(ITEMVER->ZC4_DTINI,5,2)+"-"+SubStr(ITEMVER->ZC4_DTINI,7,2) +'T00:00:00.000</Data></Cell>' + CRLF
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + ITEMVER->ZC4_CODCON + '</Data></Cell>' + CRLF //contrato ativo
+				iF ITEMVER->ZC4_
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String"></Data></Cell>' + CRLF //contrato inativo
+				
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + ITEMVER->(ZC4_FILSEL) + '</Data></Cell>' + CRLF //filials
+			
+				If !Empty(ITEMVER->ZC7_BANDEI)
+					cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String" x:Ticked="1">' + ITEMVER->ZC7_BANDEI +'</Data></Cell>' + CRLF //CLIENTE BANDEIRA
+					cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String"></Data></Cell>' + CRLF				//LOJA
+				End If
+				
+				If !Empty(ITEMVER->ZC7_CODCLI)
+					cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String" x:Ticked="1">' + ITEMVER->ZC7_CODCLI +'</Data></Cell>' + CRLF //CLIENTE BANDEIRA
+					cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + ITEMVER->ZC7_LOJA +'</Data></Cell>' + CRLF				//LOJA
+				End If
+			
+			End If
+						
+			If cCodCon == ITEMVER->ZC4_CODCON .AND. cBand == ITEMVER->ZC7_BANDEI .AND. cCodCli == ITEMVER->ZC7_CODCLI .AND. cLoja == ITEMVER->ZC7_LOJA
+				lNovo := .F.
+				cCatego += Alltrim(ITEMVER->ZC7_CATEGO)+","
+				
+				xCodCon := ITEMVER->ZC4_CODCON
+				xBand	:= ITEMVER->ZC7_BANDEI
+				xCodCli	:= ITEMVER->ZC7_CODCLI
+				xLoja	:= ITEMVER->ZC7_LOJA
+				xRevisa	:= ITEMVER->ZC4_REVISA
+				ITEMVER->( dbSkip())
+				If ITEMVER->( !Eof())
+					loop
+				End If
+
+			Else
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + cCatego + '</Data></Cell>' + CRLF
+				cCodCon := ITEMVER->ZC4_CODCON
+				cBand	:= ITEMVER->ZC7_BANDEI
+				cCodCli	:= ITEMVER->ZC7_CODCLI
+				cLoja	:= ITEMVER->ZC7_LOJA
+				cCatego := ''
+				lNovo := .T.
+			End If
+			
+			If ITEMVER->( Eof())
+			
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + cCatego + '</Data></Cell>' + CRLF
+				cCodCon := xCodcon
+				cBand	:= xBand
+				cCodCli	:= xCodCli
+				cLoja	:= xLoja
+				cCatego := ''
+				lNovo := .T.
+			
+			End If
+			
+			If !Empty(xBand)			
+				nBand := Posicione("SX5",1,xFilial("SX5")+'BA'+xBand,"X5_DESCRI")
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String"> </Data></Cell>' + CRLF //CODPRO
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + nBand + '</Data></Cell>' + CRLF // NOME CLI BANDEIRA
+			End If
+			
+			If !Empty(xCodCli)			
+				nCli := Posicione("SA1",1,xFilial("SA1")+xCodCli,"A1_NOME")
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String"> </Data></Cell>' + CRLF //CODPRO
+				cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + nCli + '</Data></Cell>' + CRLF // NOME CLI BANDEIRA
+			End If
+			
+			cQueryP := "SELECT ZC5_PERCEN,ZC3_PREFIX,ZC3_COD,  " + CRLF 
+			cQueryP += " CASE WHEN ZC5_CALCUL='1' THEN 'TOTAL PRODUTO' ELSE 'TOTAL NOTA ST' END ZC5_CALCUL, " + CRLF
+			cQueryP += " CASE WHEN ZC5_FORMA='1' THEN 'DESCONTO NF' " + CRLF
+			cQueryP += " WHEN ZC5_FORMA='2' THEN 'RETIDO NCC' " + CRLF
+			cQueryP += " WHEN ZC5_FORMA='3' THEN 'RETIDO PAGAR' " + CRLF
+			cQueryP += " WHEN ZC5_FORMA='4' THEN 'DESCONTO DUPL' END AS ZC5_FORMA,ZC5_DEVOLV " + CRLF 
+			cQueryP += " FROM ZC5010 ZC5  " + CRLF
+			cQueryP += " INNER JOIN ZC3010 ZC3 ON ZC3.D_E_L_E_T_='' AND ZC3_COD=ZC5_CODVER " + CRLF
+			cQueryP += " WHERE ZC5_CODCON='" + xCodcon + "' AND ZC5.D_E_L_E_T_='' AND ZC5_REVISA='" + xRevisa + "' " + CRLF
+			cQueryP += " ORDER BY ZC5_CODVER " + CRLF
+			
+			If Select( "PERCEN" ) > 0
+				PERCEN->( dbCloseArea() )
+			EndIf
+		
+			dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQueryP), "PERCEN", .T., .T.)
+			
+			nTotal := 0
+			
+			While PERCEN->( !Eof())
+				nTotal += PERCEN->ZC5_PERCEN		
+				PERCEN->( dbskip() )
+			EndDo
+			
+			cXml += '<Cell ss:StyleID="s23"><Data ss:Type="Number">' + cValToChar(nTotal/100) + '</Data></Cell>' + CRLF
+						
+			
+			For a := 1 to Len(aVerbas)
+				
+				PERCEN->( dbGoTop())
+				nValPer := 0
+				While PERCEN->( !Eof() )
+				
+					cForma 	:= PERCEN->ZC5_FORMA
+					cCalc	:= PERCEN->ZC5_CALCUL
+					cDevol	:= PERCEN->ZC5_DEVOLV
+								
+						If PERCEN->ZC3_COD == aVerbas[a] 
+							nValPer += PERCEN->ZC5_PERCEN
+						End If
+		
+					PERCEN->( dbskip() )
+		
+				EndDo
+				
+				If nValPer > 0
+				cXml += '<Cell ss:StyleID="s23"><Data ss:Type="Number">' + cValToChar(nValPer/100) + '</Data></Cell>' + CRLF
+				Else
+				cXml += '<Cell ss:StyleID="s23"><Data ss:Type="String"> </Data></Cell>' + CRLF	
+				End If
+			Next a
+	
+			cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + cForma + '</Data></Cell>' + CRLF
+			cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + cCalc + '</Data></Cell>' + CRLF
+			cXml += '<Cell ss:StyleID="s21"><Data ss:Type="String">' + cDevol +'</Data></Cell>' + CRLF
+			cXml += '</Row>' + CRLF
+
+	End
+	
+	
+	cXml += '</Table>' + CRLF
+	cXml += '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' + CRLF
+	cXml += '<PageSetup>' + CRLF
+	cXml += '<Header x:Margin="0.31496062000000002"/>' + CRLF
+	cXml += '<Footer x:Margin="0.31496062000000002"/>' + CRLF
+	cXml += '<PageMargins x:Bottom="0.78740157499999996" x:Left="0.511811024"' + CRLF
+	cXml += 'x:Right="0.511811024" x:Top="0.78740157499999996"/>' + CRLF
+	cXml += '</PageSetup>' + CRLF
+	cXml += '<Selected/>' + CRLF
+	cXml += '<DoNotDisplayGridlines/>' + CRLF
+	cXml += '<Panes>' + CRLF
+	cXml += '<Pane>' + CRLF
+	cXml += '<Number>3</Number>' + CRLF
+	cXml += '<ActiveCol>1</ActiveCol>' + CRLF
+	cXml += '</Pane>' + CRLF
+	cXml += '</Panes>' + CRLF
+	cXml += '<ProtectObjects>False</ProtectObjects>' + CRLF
+	cXml += '<ProtectScenarios>False</ProtectScenarios>' + CRLF
+	cXml += '</WorksheetOptions>' + CRLF
+	cXml += '</Worksheet>' + CRLF
+	cXml += '</Workbook>' + CRLF
+	
+
+
+	fWrite(nHdlimp,cXml)
+
+	fClose(nHdlImp)
+
+if MsgYesno("Deseja abrir a planilha?")
+
+	ShellExecute("open", cPath+'/RELATORIO_CONTRATOS.XLS', "", "", 1)
+
+End if
+
+
+
+Return()
+
+     
+//tira espacos dos enderecos de e-mail
+Static Function Limpa(cString)
+
+	Local cRet := ''
+
+	For i := 1 to Len(cString)
+
+		If ISDIGIT(substr(cString,i,1)) .OR. ISALPHA ( substr(cString,i,1) ) .or. substr(cString,i,1) == '@' .or. substr(cString,i,1) == ';' .or. substr(cString,i,1) == '.' .or. substr(cString,i,1) == '-' .or. substr(cString,i,1) == '_'
+			cRet += substr(cString,i,1)
+		End If
+
+
+	Next i
+
+Return cRet
+
+
+Static Function xPMVLVpf(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7		:= ''
+
+//PMV UHT
+	cQuery7 := "SELECT ROUND(SUM(VALORLIQ)/SUM(QTDVENDA),6) AS PMV FROM DC11A WHERE VALORLIQ>0 AND KGS>0"
+	cQuery7 += "AND CATEGORIA in('PASTEURIZADO','FERMENTADOS') AND FILIAL='" + cFil + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
+
+Static Function xPMVLV(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7		:= ''
+
+//PMV UHT
+	cQuery7 := "SELECT ROUND(SUM(VALORLIQ)/SUM(QTDVENDA),6) AS PMV FROM DC11A WHERE VALORLIQ>0 AND KGS>0"
+	cQuery7 += "AND CATEGORIA NOT IN ('QUEIJOS','FERMENTADOS','PASTEURIZADO') AND FILIAL='" + cFil + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
+
+Static Function xPMVLVGeral(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7		:= ''
+
+//PMV QUEIJOS E UHT
+	cQuery7 := "SELECT ROUND(SUM(VALORLIQ)/SUM(QTDVENDA),6) AS PMV FROM DC11A WHERE VALORLIQ>0 AND KGS>0"
+	cQuery7 += "AND FILIAL='" + cFil + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
+
+Static Function xPMVLMpf(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7 := ''
+
+//PMV LEITES META
+	cQuery7 := "SELECT SUM(PB7_PRECO*PB7_NOVCOT)/SUM(PB7_NOVCOT) AS PMV "
+	cQuery7 += "FROM " + RetSqlName("PB7") + " PB7 "
+	cQuery7 += "INNER JOIN " + RetSqlName("SB1") + " SB1 ON SB1.B1_COD=PB7.PB7_CODPRO AND SB1.D_E_L_E_T_='' AND SB1.B1_XCATEGO IN ('100007','100008') "
+	cQuery7 += "WHERE PB7.D_E_L_E_T_='' AND PB7_FILIAL='" + cFil + "' AND PB7_MESANO='" + subStr(cDataIni,5,2)+SubStr(cDataIni,1,4) + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
+
+
+Static Function xPMVLM(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7 := ''
+
+//PMV LEITES META
+	cQuery7 := "SELECT SUM(PB7_PRECO*PB7_NOVCOT)/SUM(PB7_NOVCOT) AS PMV "
+	cQuery7 += "FROM " + RetSqlName("PB7") + " PB7 "
+	cQuery7 += "INNER JOIN " + RetSqlName("SB1") + " SB1 ON SB1.B1_COD=PB7.PB7_CODPRO AND SB1.D_E_L_E_T_='' AND SB1.B1_XCATEGO NOT IN ('100001','100007','100008') "
+	cQuery7 += "WHERE PB7.D_E_L_E_T_='' AND PB7_FILIAL='" + cFil + "' AND PB7_MESANO='" + subStr(cDataIni,5,2)+SubStr(cDataIni,1,4) + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
+
+Static Function xPMVLMGeral(cFil,cDataIni,cDataFim)
+
+	Local nPM := 0
+	Local cQuery7 := ''
+
+//PMV QUEIJOS E LEITES META
+	cQuery7 := "SELECT SUM(PB7_PRECO*PB7_NOVCOT)/SUM(PB7_NOVCOT) AS PMV "
+	cQuery7 += "FROM " + RetSqlName("PB7") + " PB7 "
+	cQuery7 += "INNER JOIN " + RetSqlName("SB1") + " SB1 ON SB1.B1_COD=PB7.PB7_CODPRO AND SB1.D_E_L_E_T_=''  "
+	cQuery7 += "WHERE PB7.D_E_L_E_T_='' AND PB7_FILIAL='" + cFil + "' AND PB7_MESANO='" + subStr(cDataIni,5,2)+SubStr(cDataIni,1,4) + "'"
+
+	If Select( "QUERY7" ) > 0
+		QUERY7->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery7), "QUERY7", .T., .T.)
+
+	nPM := QUERY7->PMV
+
+
+Return nPM
