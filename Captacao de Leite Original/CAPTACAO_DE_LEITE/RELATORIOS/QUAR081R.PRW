@@ -229,17 +229,25 @@ Funcao principal para leitura de planilha base para insercao de dados tabelas de
 /*/ 
 User Function QA081XML()
  
-	Local cAlQry 		:= GetNextAlias()
-	Private cXML 		:= ""
+	Local cAlQry 			:= GetNextAlias()
+	Private cXML 			:= ""
 	Private cArq		:= ""
 	Private oXML
 	Private xRet
 	Private nI 			:= 0, nLen:= 0
 	Private lLoop 		:= .T., lRet1 := .F., lRet2 := .F.
 	Private nOptions	:= GETF_OVERWRITEPROMPT+GETF_LOCALHARD+GETF_NETWORKDRIVE
-  
+   
+	//If !MSGYESNO("ATENCAO !, antes de efetuar essa rotina certifique-se que todo leite esta lancado e todos os tipos de bonificacoes estao criadas, Deseja continuar?")
+	//	Return
+	//EndIf
+
 
 	If Pergunte("QUAR082R",.T.)
+		
+		 //CRIA BASE CASO NAO EXISTA
+		MsAguarde({|| GETDQUA21()},"Aguarde...","Preparando Leitura..aguarde!",.T.)
+		
 		BeginSql Alias cAlQry
 			%noparser%
 			SELECT LJZ_DATCLQ FROM %table:LJZ% LJZ WHERE  LJZ_DATCLQ = %Exp:MV_PAR01% AND LJZ.%notDel% 
@@ -316,23 +324,27 @@ Static Function LerXml()
 	    	If oXML:DOMHasChildNode()
 	    	aChildren := oXML:DOMGetChildArray()
 			    If !Empty(aChildren[1][2])	
-			    	cRet := LerProd(aChildren[1][2],LJZ->LJZ_FILIAL)
+			    	cRet := LerProd(aChildren[1][2],cFilAnt)
 			    	
 			    	For i := 1 To oXML:DOMChildCount()
 			    		If i > 2 
 				    		LJX->(dbSetOrder(2))
 				    		If LJX->(dbSeek(xFilial("LJX")+cValToChar(i-2)))
 				    		
-				    		nResLei := QuaCAL21(Alltrim(LJX->(LJX_CODBON)),,Val(aChildren[i][2]))
-				    			
-					    		cQuery := "UPDATE LJZ010 SET LJZ_QTDLEI=" + cValToChar(aChildren[i][2]) + ", " + CRLF 
-					    		cQuery += "LJZ_RESLEI=" + cValToChar(nResLei) + " " + CRLF
-					    		cQuery += "WHERE LJZ_FILIAL='" + LJZ->LJZ_FILIAL + "' " + CRLF
-					    		cQuery += "AND LJZ_CODPRO='" + cRet + "' AND LJZ_DATCLQ='" + cValToChar(DTOS(MV_PAR01)) + "' " + CRLF
-					    		cQuery += "AND LJZ_CODBON='" + LJX->(LJX_CODBON) + "'  " + CRLF
-					    			
-					    		TcSqlExec(cQuery) 
-						    End If
+				    			nResLei := U_QuaCAL21(Alltrim(LJX->(LJX_CODBON)),,Val(aChildren[i][2]))
+				    			//MSGALERT(CVALTOCHAR(nResLei))
+					    		
+								//If nResLei > 0
+									cQuery := "UPDATE LJZ010 SET LJZ_QTDLEI=" + cValToChar(aChildren[i][2]) + ", " + CRLF 
+						    		cQuery += "LJZ_RESLEI=" + cValToChar(nResLei) + " " + CRLF
+						    		cQuery += "WHERE LJZ_FILIAL='" + cFilAnt + "' " + CRLF
+						    		cQuery += "AND LJZ_CODPRO='" + cRet + "' AND LJZ_DATCLQ='" + cValToChar(DTOS(MV_PAR01)) + "' " + CRLF
+						    		cQuery += "AND LJZ_CODBON='" + LJX->(LJX_CODBON) + "' AND D_E_L_E_T_=' '   " + CRLF
+						    		
+						    		TcSqlExec(cQuery) 
+							    	//MSGALERT(cQuery)
+									//EndIf
+							End If
 			    		End If
 			    		
 			    		If i == 2
@@ -407,7 +419,7 @@ Funcao auxiliar para calculo da valorizacao das bonificacoes de acordo com os pa
 @since 01/02/2020
 =========================================================================================================================================================
 /*/
-Static Function QuaCAL21( cTabQua, cTipoL, nValor)
+User  Function QuaCAL21( cTabQua, cTipoL, nValor)
 
 	Local nResul	:= 0
 	Local aArea		:= GetArea()
@@ -653,3 +665,163 @@ METHOD _CleanLastErr() CLASS QUA81RTXT
 ::cFerrorStr := ''
 ::nOsError := 0
 Return
+
+/*/{Protheus.doc} GETDQUA21() ===========================================================================================================================
+Cria Arquivo Base de coletas do laboratorio caso nao existam                              
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/
+Static Function GETDQUA21()
+	
+	Local cTipoBon		:= ' '
+	Local nResLei 		:= 0
+	Local nLitros			:= 0
+	Local nDistan   	:= 0
+	Private cAliasQry  	:= GetNextAlias()
+	
+	BeginSql Alias cAliasQry
+
+	%noparser%
+			
+		SELECT DISTINCT LBB_CODPRO,LBB_CODTAN,LBB_TIPOL,LBB_LINHA,LJX_CODBON,LJX_DESC,LJX_ORDEM 
+		FROM %table:LBB% LBB (NOLOCK)
+		INNER JOIN %table:LJX% LJX  (NOLOCK) ON LJX_FILIAL=LBB_FILIAL AND LJX.%notDel%
+		WHERE LBB_FILIAL=%Exp:cFilAnt% AND LBB.%notDel%
+		AND LBB_STATUS='S' 
+		AND LBB_CODPRO+LJX_CODBON NOT IN (	
+			SELECT LJZ_CODPRO+LJZ_CODBON 
+			FROM %table:LJZ% LJZ (NOLOCK) 
+			WHERE LJZ_FILIAL=%Exp:cFilAnt% 
+			AND LJZ_DATCLQ=%Exp:DTOS(MV_PAR01)% 
+			AND LJZ.%notDel%)
+		ORDER BY LBB_CODPRO,LJX_ORDEM
+	
+	EndSql
+
+	While (cAliasQry)->( !Eof() ) 
+		
+		MsProcTxt("Incluindo novos Produtores >>> " + (cAliasQry)->(LBB_CODPRO))
+		
+		dbselectArea("LJZ")
+			RecLock("LJZ",.T.)
+					LJZ->LJZ_FILIAL  		:= xFilial("LJZ")
+					LJZ->LJZ_DATCLQ  	:= MV_PAR01
+					LJZ->LJZ_CODPRO    :=  (cAliasQry)->(LBB_CODPRO)
+					LJZ->LJZ_DATCLA  	 := dDataBase
+					LJZ->LJZ_CODBON    := (cAliasQry)->(LJX_CODBON)
+					LJZ->LJZ_DESBON  	:= (cAliasQry)->(LJX_DESC)
+					LJZ->LJZ_QTDLEI       := 0
+					LJZ->LJZ_RESLEI       := 0 
+			MsUnlock()
+
+		(cAliasQry)->(dbSkip())
+
+	Enddo
+
+	DbSelectArea("LJZ") //Historico da classificacao da Qualidade do leite
+	DbSetOrder(1)
+
+	If dbSeek( xFilial("LJZ") + Dtos(MV_PAR01 ))
+		
+		While !Eof() .AND. xFilial("LJZ") == LJZ->LJZ_FILIAL .AND. LJZ->LJZ_DATCLQ == MV_PAR01 
+			
+			// 1-PLANILHA-> Sera usada planilha para entrar com dados no sistema,
+			// 2-VOLUME->Sera usado o volume captado pelo produtor no sistema para calculo,
+			// 3-DISTANCIA->Sera usado o campo distancia do produtor ate o laticinio do cadastro de propriedades,
+			// 4-DIGITADO->No caso de adicional de Mercado para composicao do preco no simulador.     
+			LJZArea := GetArea()
+			
+			cTipoBon     := Posicione("LJX",1,XFILIAL("LJZ")+LJZ->LJZ_CODBON,"LJX_TPBON") 
+
+			If !cTipoBon $ ('2|3') 		
+				RestArea(LJZArea)
+				dbSkip()
+				Loop
+			EndiF
+			
+			If cTipoBon  ==  '2'  // VOLUME
+				
+				nLitrosAtu 	:= LJZ->LJZ_QTDLEI
+				nLitros        := U_RetLitros(LJZ->LJZ_CODPRO)
+				
+				If nLitros <> nLitrosAtu
+					nResLei 	  := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,nLitros)
+				Else
+					nLitros := 0				
+				EndiF
+
+			ElseIf cTipoBon  ==  '3' // DISTANCIA
+				
+				nDistanAt  := LJZ->LJZ_QTDLEI
+				nDistan 	   := Posicione("LBB",1,XFILIAL("LBB")+LJZ->LJZ_CODPRO,"LBB_DISTAN")
+				
+				If nDistan <> nDistanAt 
+					nResLei 	  := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,nDistan)
+				Else
+					nDistan := 0				
+				EndiF
+
+			EndiF	
+			
+			RestArea(LJZArea)
+			
+			MsProcTxt("Recalculando Bonificacoes >>> " + LJZ->LJZ_CODPRO)
+			
+			If (nLitros+nDistan) > 0
+				RecLock("LJZ",.F.)
+					LJZ->LJZ_RESLEI		:= nResLei
+					LJZ->LJZ_QTDLEI 	:= nLitros+nDistan 
+				MsUnlock()
+			EndIf
+			
+			nLitros := 0
+			nDistan := 0
+			nResLei := 0
+			
+			dbSkip()
+			
+		EndDo
+	
+	Endif
+
+Return .T.
+
+/*/{Protheus.doc} RetLitros
+Funcao auxiliar para somar litros do produtor no periodo
+@type function
+@version 
+@author Wilson Davila
+@since 13/05/2020
+@param cCodPro, character, Codigo do Produtor
+@return nLitros numeric, total de litros produtor no periodo
+/*/
+User Function RetLitros(cCodPro)
+
+	Local nLitros := 0
+	Local cAlias := 'QUAR81R'
+
+	BeginSql Alias cAlias
+
+		%noparser%
+
+		SELECT SUM(PC1_QTDLIT) AS PC1_QTDLIT 
+		FROM %table:PC1%  PC1
+		INNER JOIN %table:PC0% PC0 ON PC0_FILIAL=PC1_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC0.%notDel%
+		AND MONTH(PC0_DTENTR)=%Exp:Month(MV_PAR01)% AND YEAR(PC0_DTENTR)=%Exp:Year(MV_PAR01)% 
+		AND PC0_TPENTR='1'
+		WHERE PC1_CODPRO=%exp:cCodPro% AND PC1_FILIAL=%EXP:cFilAnt% AND PC1.%notDel%
+
+
+	EndSql
+
+	If  (cAlias)->(  !Eof() )
+		nLitros := (cAlias)->(PC1_QTDLIT)
+	EndIf
+	
+	(CALIAS)->( dbCloseArea())
+
+Return nLitros
+

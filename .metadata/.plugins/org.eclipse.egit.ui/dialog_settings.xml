@@ -11,6 +11,7 @@
 		<item value="https://bitbucket.org/tiquata/projeto_quata/src/master/"/>
 	</list>
 	<list key="CommitDialog.authorValues">
+		<item value="wilso &lt;ti@quataalimentos.com.br&gt;"/>
 		<item value="wilso &lt;wilso@WilsonD&gt;"/>
 		<item value="Wilson &lt;Wilson@WILSOND&gt;"/>
 		<item value="Wilson &lt;Wilson@192.168.0.106&gt;"/>
@@ -20,9 +21,9 @@
 		<item value="Wilson &lt;Wilson@10.0.0.198&gt;"/>
 		<item value="Wilson &lt;Wilson@10.0.0.104&gt;"/>
 		<item value="Wilson &lt;Wilson@10.0.0.2&gt;"/>
-		<item value="Wilson &lt;Wilson@192.168.0.57&gt;"/>
 	</list>
 	<list key="CommitDialog.committerValues">
+		<item value="wilso &lt;ti@quataalimentos.com.br&gt;"/>
 		<item value="wilso &lt;wilso@WilsonD&gt;"/>
 		<item value="Wilson &lt;Wilson@WILSOND&gt;"/>
 		<item value="Wilson &lt;Wilson@192.168.0.106&gt;"/>
@@ -32,7 +33,6 @@
 		<item value="Wilson &lt;Wilson@10.0.0.198&gt;"/>
 		<item value="Wilson &lt;Wilson@10.0.0.104&gt;"/>
 		<item value="Wilson &lt;Wilson@10.0.0.2&gt;"/>
-		<item value="Wilson &lt;Wilson@192.168.0.57&gt;"/>
 	</list>
 	<section name="org.eclipse.egit.ui.internal.dialogs.RebaseTargetSelectionDialog.dialogBounds">
 		<item value="538" key="DIALOG_WIDTH"/>

@@ -32,17 +32,29 @@ Return (oBrowse)
 // OPERACOES DA ROTINA
 Static Function MenuDef()
     // FUNCAO PARA CRIAR MENUDEF
-    Local aRotina := FwMVCMenu("QUAA015A")
-    ADD OPTION aRotina TITLE 'Ordem' ACTION 'U_QUAA015B' 		OPERATION 7                      ACCESS 0 //OPERATION X
+    Private aRotina := {} //FwMVCMenu("QUAA015A")
+    
+    ADD OPTION aRotina TITLE 'Visualizar' 	ACTION 'VIEWDEF.QUAA015A'    OPERATION 2 ACCESS 0
+    ADD OPTION aRotina TITLE 'Alterar'    ACTION Valid()       OPERATION 4 ACCESS 0
+    //ADD OPTION aRotina TITLE 'Excluir'    ACTION 'VIEWDEF.AXFORMDEV'        OPERATION 5 ACCESS 0
+    //ADD OPTION aRotina TITLE 'Ordem'    ACTION 'U_QUAA015B' 		                OPERATION 7 ACCESS 0  //OPERATION X
+
+    //ADD OPTION aRotina TITLE 'Excluir'    ACTION 'VIEWDEF.AXFORMDEV' OPERATION 5 ACCESS 0
+    //ADD OPTION aRotina TITLE 'Imprimir'   ACTION 'VIEWDEF.AXFORMDEV' OPERATION 8 ACCESS 0
+    //ADD OPTION aRotina TITLE 'Copiar'     ACTION 'VIEWDEF.AXFORMDEV' OPERATION 9 ACCESS 0
+
+
 Return (aRotina)
 
 // REGRAS DE NEGOCIO
 Static Function ModelDef()
     // INSTANCIA O MODELO
     //MPFormModel():new("ID_MODEL",/*bPre*/,/*bPost*/,bCommit)
-    Local bCommit := {|oMld| aOrdLJX(oModel)}
+    Local bCommit   := {|oMld| aOrdLJX(oModel)}
+    //Local bPre          := {|oMld| Valid(oMld)}
+    
     Local oModel := MPFormModel():New("QAA015AM",/*bPre*/,/*bPost*/,bCommit)
-
+    
     // INSTANCIA OS SUBMODELOS
     Local oStruLJX := FwFormStruct(1, "LJX")
     Local oStruLJY := FwFormStruct(1, "LJY")
@@ -85,8 +97,8 @@ Static Function ViewDef()
     oView:AddGrid("VIEW_LJY", oStruLJY, "LJYDETAIL")
 
     // CRIA BOXES HORIZONTAIS
-    oView:CreateHorizontalBox("SUPERIOR", 25)
-    oView:CreateHorizontalBox("INFERIOR", 75)
+    oView:CreateHorizontalBox("SUPERIOR", 35)
+    oView:CreateHorizontalBox("INFERIOR", 65)
 
     // RELACIONA OS BOXES COM AS ESTRUTURAS VISUAIS
     oView:SetOwnerView("VIEW_LJX", "SUPERIOR")
@@ -156,3 +168,19 @@ Static Function aOrdLJX(oModel)
 	
 	End If
 Return lRet
+
+Static Function Valid(oModel)
+
+Local lRet := .T.
+Local nOperation := oModel:GetOperation()
+
+If nOperation == MODEL_OPERATION_UPDATE .OR. nOperation == MODEL_OPERATION_DELETE 
+ 
+   IF LJX->LJX_CODBON $ '000003|000004'
+      Help( ,, 'HELP',, 'Operacao nao pode ser efetuada! Bonificacoes fixas do sistema!', 1, 0)      
+      lRet := .F.
+   EndIf
+End If
+
+Return lRet
+

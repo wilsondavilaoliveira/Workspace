@@ -19,12 +19,13 @@ User Function xGetFrete(aRet)
 Local cAliasQry := ''
 Local nLitros 	:= 0
 Local nKm		:= 0
-Local nFrete	:= 0
-Local nSeq		:= 1
+Local TpBonif	:= ''
 Local TpFrete	:= ''
 Local nValFrt	:= 0 	
 Local nNumDia	:= 0
 Local nVlrFrt	:= 0	
+Local nBonif	:= 0
+Local nTotFrete	:= 0
 	aSort(aRet,,,{ |x, y | x[9]+x[1] < y[9]+y[1] })
 	
 	For _i := 1 To Len(aRet)
@@ -38,7 +39,7 @@ Local nVlrFrt	:= 0
 			%noparser%
 		
 			SELECT ZA1_FILIAL,LBE_CODCAM,LBE_MOTO,ZA1_PLACA,ZA1_NUMDIA,ZA1_CODLIN,PC1_NUMSEQ,ZA1_DTENTR,PC1_CODPRO,LBB_DESC,
-			PC1_QTDLIT,ZA1_KMRAST,ZA1_VLRECE,LBE_TPFRET,LBE_PERC1 
+			PC1_QTDLIT,ZA1_KMRAST,ZA1_KMREAL,ZA1_VLRECE,LBE_TPFRET,LBE_PERC1 
 			FROM %table:ZA1% ZA1 
 			INNER JOIN %table:LBE% LBE ON LBE_FILIAL=ZA1_FILIAL AND ZA1_CODLIN=LBE_CODCAM AND LBE.%notDel% AND LBE_STATUS='S'
 			INNER JOIN %table:PC0% PC0 ON PC0_FILIAL=ZA1_FILIAL AND PC0_NUMDIA=ZA1_NUMDIA AND PC0_TPENTR='1' AND PC0.%notDel%
@@ -49,10 +50,9 @@ Local nVlrFrt	:= 0
 			ORDER BY LBE_CODCAM,ZA1_DTENTR,PC1_CODPRO
 				
 			EndSql
-			//msgalert(cValtochar((cAliasQry)->(ZA1_NUMDIA)+"-"+
-		    
+				    
 		    If (cAliasQry)->( !Eof())
-		    	nKm		:= (cAliasQry)->(ZA1_KMRAST)
+		    	nKm		:= (cAliasQry)->(ZA1_KMREAL)
 		    	TpFrete	:= (cAliasQry)->(LBE_TPFRET)
 		    	nValFrt	:= (cAliasQry)->(LBE_PERC1) 	
 			EndIf
@@ -94,16 +94,16 @@ Local nVlrFrt	:= 0
 			   	PA3->(dbSetOrder(1))
 				If PA3->(dbSeek( (cAliasQry)->(ZA1_FILIAL)+(cAliasQry)->(LBE_CODCAM)+SubStr((cAliasQry)->ZA1_DTENTR,5,2)+SubStr((cAliasQry)->ZA1_DTENTR,1,4)))
 					
-					nLitros += PA3->(PA3_QTDLIT)
-					nKm 	+= PA3->(PA3_TOTKM)
-					nVlrFrt += PA3->(PA3_VLRFRT)
-					
+					nLitros 		+= PA3->(PA3_QTDLIT)
+					nKm 			+= PA3->(PA3_TOTKM)
+					nVlrFrt 		+= PA3->(PA3_VLRFRT)
+								
 					PA3->(RecLock("PA3"),.F.)
 						If 	TpFrete == '1'
 					    	PA3->(PA3_QTDLIT)	:= nLitros
 					    	PA3->(PA3_TOTKM) 	:= nKm
 					    	PA3->(PA3_VLRFRT)	:= (nLitros *  nValFrt) 
-					    ElseIf TpFrete == '2'
+						ElseIf TpFrete == '2'
 					    	PA3->(PA3_QTDLIT) 	:= nLitros
 					    	PA3->(PA3_TOTKM) 	:= nKm
 					    	PA3->(PA3_VLRFRT)	:= nValFrt 
@@ -112,16 +112,48 @@ Local nVlrFrt	:= 0
 					    	PA3->(PA3_TOTKM) 	:= nKm
 					    	PA3->(PA3_VLRFRT)	:= (nKm *  nValFrt) 
 					   	EndIf
+
 				   	PA3->( MsUnlock())
+					
+					nBonif := 0
+					
+					LJW->(dbSetOrder(1))
+					If LJW->(dbSeek(PA3->(PA3_FILIAL)+PA3->(PA3_PERIOD)+PA3->(PA3_CODCAM)))
+						While LJW->( !Eof() ) .AND. LJW->(LJW_FILIAL+LJW_PERIOD+LJW_CODCAR) == PA3->(PA3_FILIAL)+PA3->(PA3_PERIOD)+PA3->(PA3_CODCAM) 
+							
+							TpBonif := POSICIONE("LJS",1,XFILIAL("LJS")+LJW->(LJW_CODBON),"LJS_TPPAGT")
+								If TpBonif == '1'
+									nBonif += (nLitros * LJW->(LJW_VALOR))
+								ElseIf TpBonif =='2'
+									nBonif += LJW->(LJW_VALOR)
+								Else
+									nBonif += (nKm * LJW->(LJW_VALOR))
+								EndIf	
+						
+							LJW->(dbSkip())
+						
+						EndDo
+					EndIf
+				
+				    PA3->(RecLock("PA3"),.F.)
+						PA3->(PA3_VRBON)	:= nBonif
+						PA3->(PA3_VRTOT)	:= PA3->(PA3_VLRFRT) + nBonif
+					PA3->( MsUnlock())
+
 				EndIf
-		   	EndIf
-	   		nNumDia := aRet[_i][1]
-	   	EndIf
+			EndIf
+
+
+
+			nNumDia := aRet[_i][1]
+	   	
+		EndIf
 	   	
 	   	nLitros := 0
 		nKm		:= 0
 		nValFrt	:= 0
 	   	nVlrFrt := 0
+	
 	Next i
 
 Return

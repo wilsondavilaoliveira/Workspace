@@ -1,0 +1,3131 @@
+#INCLUDE "PROTHEUS.CH" 
+#INCLUDE "RWMAKE.CH" 
+#INCLUDE 'COLORS.CH' 
+#INCLUDE "TOPCONN.CH"  
+#INCLUDE "PRCONST.CH"
+#INCLUDE "FONT.CH"
+#INCLUDE "FWMVCDEF.CH"
+
+#Define ENTER Chr(13)+Chr(10)
+
+/*/{Protheus.doc} QUAA040W() ============================================================================================================================
+Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function QUAA040W()
+	Local cExprFilTop := '' 
+	Local oDlg1
+
+	Private aRotina    	:= {}
+	Private aCores	 	:= {}
+	Private cFiltro		:= ""
+	Private bFiltraBrw	:= {|| }
+	Private aIndexZC4	:= {}
+	Private lOdlg		:= .F.
+	DEFINE FONT oFnt NAME "Arial" SIZE 12,14 BOLD
+	
+	aAdd( aRotina ,{"Pesquisar(F3)" 			,"U_GetPesq()"   			,0,1})
+	aAdd( aRotina ,{"Visualiza"					,'U_QA040TELA(,,2,.T.,)'	,0,2})
+	aAdd( aRotina ,{"Incluir"   				,'U_QA040TELA(,,3,.T.,)'	,0,3})
+	aAdd( aRotina ,{"Alt. Cliente x Produto"	,'U_QA040TELA(,,6,.T.,)'	,0,4})
+	aAdd( aRotina ,{"Gerar Revisao"				,'U_QA040TELA(,,4,.T.,)'	,0,4})
+	aAdd( aRotina ,{"Altera Nome Contr."		,'U_xHisZC4()'			,0,4})
+	aAdd( aRotina ,{"Excluir"   				,'U_QW40Exclui'			,0,5})
+	aAdd( aRotina ,{"Legenda"   				,'U_QW40Leg'   			,0,3})
+	
+	AADD(aCores,{"ZC4_OBSOLE == .T. "	,"BR_VERMELHO"		})
+	AADD(aCores,{"ZC4_OBSOLE == .F. "	,"BR_VERDE"  		})
+
+	cFiltro	:="ZC4->ZC4_OBSOLE==.F. .OR. (ZC4->ZC4_OBSOLE==.T. .AND. ZC4->ZC4_USADO=='S') "
+	bFiltraBrw	:= { || FilBrowse( "ZC4" , @aIndexZC4 , @cFiltro ) }
+	Eval( bFiltraBrw )
+	
+	SetKey( VK_F3 , { || U_GetPesq() } )
+	SetKey( VK_F5 , { || ClearFl1() } )
+	
+	mBrowse(,,,,"ZC4",,,,,,aCores)
+
+Return .T.
+
+
+/*/{Protheus.doc} QA040TELA() ============================================================================================================================
+Funcao auxliar abretura Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+User Function QA040TELA(cAlias, nRecNo, nOpc,lBrow,oDlg1)
+
+// nOpc:
+// 2-Visualizar
+// 3-Incluir
+// 4-Gerar Revisao
+// 5-Excluir
+
+	Private aSize    	:= {}
+	Private aObjects 	:= {}
+	Private aInfo    	:= {}
+	Private aPosObj  	:= {}
+	Private aPosGet  	:= {}
+	Private nGetLin		:= 0
+	Private cTotPerc	:= OemToAnsi('TOTAL DE DESCONTO: 0,00%')
+	Private oFnt
+	Private oSay1
+	Private cCadastro  	:= "Cadastro de Contrato"
+	Private cAlias1    	:= "ZC4"
+	Private cAlias2    	:= "ZC5"
+	Private cAlias    	:= "ZC4"
+	Private cAlias4    	:= "ZC7"
+	Private cFilZC4    	:= cFilAnt
+	Private cFilZC5    	:= cFilAnt
+	Private nUsado    		:= 0
+	Private nUsado1    		:= 0
+	Private nUsado2    		:= 0
+	Private nUsado3    		:= 0
+	Private aPos       := {15, 1, 70, 315}
+	Private aAltera  	:= {}
+
+Private oDlgConf
+Private aCoors	:= FWGetDialogSize( oMainWnd )
+Private oFWLayer
+Private oC1W1
+Private oC1W2
+Private oC1W3
+Private oPnl01
+Private oPnl02
+Private oPnl03
+Private oPnl04
+Private oFont1
+Private oSbr
+Private oSbr1
+Private oChk
+Private lChk     := .F.
+Private aGetInfo := {}
+Private nLinInfo := 02
+
+Private nGets
+Private cDescBlock
+Private aLbxPX2   := {}
+Private oLbxPX2
+Private cVarPX2
+Private aLbxPX3   := {}
+Private oLbxPX3
+Private cVarPX3 
+
+Private cmsg := ""
+Private oCodDiver
+Private cCodDiver := Space(TamSX3("CB4_CODDIV")[01])
+Private oDescDiver
+Private cDescDiver := Space(TamSX3("CB4_DESCRI")[01])
+Private aEbmSimul := StrTokArr(GetMV("FS_EMBSIMU"),',')
+
+Private bBlock
+Private bBlock1 := {||''} 
+Private cColor	:= CLR_RED
+Private cFonte	:= oFont1
+
+Private cCarga	:= Space(TamSX3("PX7_CARGA")[01])
+Private oCarga 
+
+Private oEtiqueta
+Private cEtiqueta := Space(40) 
+
+Private lEmbarq := .T. //INDICA EMBARQUE SIMULTANEO	
+Private lAjuAuto:= If(SuperGetMV("FS_AJUAUT")== "S",.T.,.F.)  
+Private nQtdEsp := 0
+Private oQtdEsp
+Private oMens
+Private cOMens
+Private lLib := .F.
+
+//	
+Private aTela    := {}
+Private aGets    := {}
+
+Private aHeader  := {}
+Private aCols    := {}
+Private nCols	 := 0
+
+Private aHeader1 := {}
+Private aCols1   := {}
+Private nCols1	 := 0
+
+Private aHeader2  := {}
+Private aCols2    := {}
+Private nCols2	  := 0
+	
+Private aHeader3  := {}
+Private aCols3    := {}
+Private nOpcA     := 0
+
+Private bCampo   := {|nField| FieldName(nField) }
+Private oEncho
+Private oMsGet		
+Private oMsGet1		
+Private oMsGet2		
+Private aCPOGet  	:= {}
+Private aCPOGet1  	:= {}
+Private cNrev		:= 0
+Private nRecSZ4		:= 0
+
+If Type("aRotina") <> 'A'
+
+	Private aRotina := {}
+	
+	aAdd( aRotina ,{"Pesquisar" 				,"AxPesqui"    			,0,1})
+	aAdd( aRotina ,{"Visualiza"					,'U_QA040TELA(,,2,.T.)'	,0,2})
+	aAdd( aRotina ,{"Incluir"   				,'U_QA040TELA(,,3,.T.)'	,0,3})
+	aAdd( aRotina ,{"Alt. Cliente x Produto"	,'U_QA040TELA(,,6,.T.)'	,0,4})
+	aAdd( aRotina ,{"Gerar Revisao"				,'U_QA040TELA(,,4,.T.)'	,0,4})
+	aAdd( aRotina ,{"Excluir"   				,'U_QW40Exclui'			,0,5})
+	aAdd( aRotina ,{"Legenda"   				,'U_QW40Leg'   			,0,3})
+
+End If
+
+If nOpc == 3
+		INCLUI := .T.
+End If
+
+DEFINE FONT oFont0 	NAME 'Arial' 		SIZE 0, -12 BOLD   
+DEFINE FONT oFont1 	NAME "Courier New" 	SIZE 5,0   //6,15
+DEFINE FONT oFont2	NAME "Arial" 		SIZE 11,15 //BOLD 
+DEFINE FONT oFont3  NAME "Arial" 		SIZE 0,-13 BOLD  
+DEFINE FONT oFont4  NAME "Arial" 	    SIZE 40,70 BOLD
+DEFINE FONT oFont5	NAME "Arial" 		SIZE 10,40 BOLD 
+
+SetKey( VK_F4 , { || ConPad1(,,,"SA1ZC4") } )
+
+If nOpc == 4   .AND. ZC4->ZC4_OBSOLE == .T.
+	MsgStop(OemToAnsi("Contrato Encerrado!, n�o pode ser gerada revis�o !"))
+	Return .F.
+End If
+
+If lBrow
+	If nOpc == 6   .AND. ZC4->ZC4_OBSOLE == .T.
+		MsgStop(OemToAnsi("Contrato Encerrado!, n�o pode ser alterado !"))
+		Return .F.
+	End If
+Else
+	If nOpc == 6   .AND. M->ZC4_OBSOLE == .T.
+		MsgStop(OemToAnsi("Contrato Encerrado!, n�o pode ser alterado !"))
+		Return .F.
+	End If
+End If
+
+
+//----------------------------------------------------------------------------
+aSize := MsAdvSize()
+aInfo := {aSize[1],aSize[2],aSize[3],aSize[4],0,0,0}
+aObjects := {}
+AAdd( aObjects, { 050, 050, .F., .T. } )
+AAdd( aObjects, { 000, 050, .T., .T. } )
+AAdd( aObjects, { 100, 015, .T., .F. } )
+AAdd( aObjects, { 050, 050, .F., .T. } )
+
+aPosObj := MsObjSize( aInfo, aObjects )
+
+aPosGet := MsObjGetPos(aSize[3]-aSize[1],315,{{003,033,160,200,240,263}} )
+//-----------------------------------------------------------------------------
+
+DEFINE MSDIALOG oDlgConf FROM aCoors[1],aCoors[2] TO aCoors[3],aCoors[4] TITLE "CONTRATOS COMERCIAIS" OF oMainWnd COLOR "W+/W" STYLE nOR(WS_VISIBLE,WS_POPUP) PIXEL
+
+oDlgConf:lEscClose	:= .F.
+oDlgConf:lMaximized := .T.	
+
+oFWLayer := FWLayer():New()
+oFWLayer:Init( oDlgConf, .F. ) // Segundo parametro: Cria um botao de fechar utilizado para Dlg sem cabe�alho. Caso for .t.	  
+//oFWLayer:Align := CONTROL_ALIGN_ALLCLIENT
+//------[ Window 01 ]---------------------------------------------------------------------------------------------------------------------------
+IIF(nOpc <> 3,cCadastro += " -> CONTRATO: " + ZC4->ZC4_CODCON+"-"+Alltrim(ZC4->ZC4_DESC),.T.)
+oFWLayer:addCollumn( "Col01", 100, .F. )
+oFWLayer:addWindow( "Col01", "Win01", cCadastro, 26, .T., .F.)
+
+oC1W1 := oFWLayer:getWinPanel( "Col01", "Win01" )  
+
+dbSelectArea(cAlias1)
+For nX := 1 To FCount()
+	M->&(Eval(bCampo,nX)) := CriaVar(FieldName(nX),.T.)
+Next nX
+
+If nOpc == 4
+cNrev := 4
+	nRecSZ4 := ZC4->( Recno() )
+	M->ZC4_CODCON	:= ZC4->ZC4_CODCON
+	M->ZC4_DTINI 	:= dDatabase  	// ZB4_DTINI+1 		// WMS.nn em 14/4/2016 - atendimento do Chamado 4470 
+	M->ZC4_DTFIM	:= CtoD('')
+	M->ZC4_REVISA 	:= RetAsc(Str(Val(RetAsc( ZC4_REVISA,3,.F. ))+1),3,.T.)
+	M->ZC4_DESC 	:= ZC4->ZC4_DESC
+	M->ZC4_FILSEL 	:= ZC4->ZC4_FILSEL
+	M->ZC4_USADO	:= ZC4->ZC4_USADO
+ElseIf nOpc == 6
+	
+	M->ZC4_CODCON	:= ZC4->ZC4_CODCON
+	M->ZC4_DTINI 	:= ZC4->ZC4_DTINI // dDatabase  	// ZB4_DTINI+1 		// WMS.nn em 14/4/2016 - atendimento do Chamado 4470 
+	M->ZC4_DTFIM	:= ZC4->ZC4_DTFIM
+	M->ZC4_REVISA 	:= ZC4->ZC4_REVISA
+	M->ZC4_DESC 	:= ZC4->ZC4_DESC
+	M->ZC4_FILSEL 	:= ZC4->ZC4_FILSEL
+	M->ZC4_USADO	:= ZC4->ZC4_USADO
+
+End If
+
+oEncho := MSMGet():New( cAlias1,, nOpc, , , , , aPosObj[4], ,3,,,,oC1W1,,,.T.)
+oEncho:oBox:Align := CONTROL_ALIGN_ALLCLIENT
+
+//------[ Window 02 ]--------------------------------------------------------------------------------------------------------------------------
+
+oFWLayer:addWindow( "Col01", "Win02", "Itens do Contrato", 27, .T., .F. )
+oC1W2	:= oFWLayer:getWinPanel( "Col01", "Win02")
+
+If nOpc == 3 //INCLUIR
+ 
+	CriaHeader()
+
+	aAdd(aCols,Array(nUsado+1))
+	nUsado := 0
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias2)
+	While !Eof() .And. SX3->X3_ARQUIVO == cAlias2
+		If X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL
+			nUsado++
+			aCols[1][nUsado] := CriaVar(Trim(SX3->X3_CAMPO),.T.)
+		Endif
+		dbSkip()
+	End
+
+	aCols[1][nUsado+1] := .F.
+	aCols[1][aScan(aHeader,{|x| Trim(x[2])=="ZC5_ITEM"})] := "0001"
+	
+	Q040Sum()
+
+ElseIf nOpc == 2 .OR. nOpc == 4 .OR. nOpc == 6 
+	aCols := {}
+	CriaHeader()
+
+	dbSelectArea(cAlias2)
+	dbSetOrder(1)
+	dbSeek(ZC4->ZC4_FILIAL+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA)
+
+	While !Eof() .And. ZC4->ZC4_FILIAL == ZC5->ZC5_FILIAL .And. ZC5->ZC5_CODCON == ZC4->ZC4_CODCON .And. ZC5->ZC5_REVISA == ZC4->ZC4_REVISA
+		aAdd(aCols,Array(nUsado+1))
+		nCols ++
+   
+		For nX := 1 To nUsado
+			If ( aHeader[nX][10] != "V")
+				aCols[nCols][nX] := FieldGet(FieldPos(aHeader[nX][2]))
+			Else
+				aCols[nCols][nX] := CriaVar(aHeader[nX][2],.T.)
+			Endif
+		Next nX
+   
+		aCols[nCols][nUsado+1] := .F.
+		dbSelectArea(cAlias2)
+		aAdd(aAltera,RecNo())
+		dbSkip()
+
+	End
+
+End If	
+	
+	Q040Sum()
+	
+	lDeleta := .T.
+	
+	If nOpc == 2
+		lDeleta := .F.
+	End If
+	oMsGet := MSGetDados():New(000,000,aPosObj[2,3]-200,aPosObj[2,4]-8,nOpc, {|| Q040Sum() } , ,"+ZC5_ITEM",lDeleta,,,,,,,,,oC1W2)
+	oMsGet:oBrowse:Align := CONTROL_ALIGN_ALLCLIENT
+
+//------[ Window 03 ]---------------------------------------------------------------------------------------------------------------------------
+
+oFWLayer:addWindow( "Col01", "Win03", "Cliente x Contrato x Produto", 40, .T., .F. )
+oC1W4	:= oFWLayer:getWinPanel( "Col01", "Win03")
+
+dbSelectArea(cAlias4)
+For nX := 1 To FCount()
+	M->&(Eval(bCampo,nX)) := CriaVar(FieldName(nX),.T.)
+Next nX
+
+nOpcw := nOpc
+If nOpc == 6
+	nOpcw := 3	
+End If
+
+If nOpc == 3 .or. nOpc == 4 
+	oC1W4:hide()
+	oFWLayer:winChgState("Col01","Win03")
+EndIf
+
+
+If nOpc == 3 //INCLUIR	
+
+	CriaHead2()
+
+	aAdd(aCols2,Array(nUsado2+1))
+	nUsado2 := 0
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias4)
+	While !Eof() .And. SX3->X3_ARQUIVO == cAlias4
+		If X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL
+			nUsado2++
+			aCols2[1][nUsado2] := CriaVar(Trim(SX3->X3_CAMPO),.T.)
+		Endif
+		dbSkip()
+	End
+
+	aCols2[1][nUsado2+1] := .F.
+	aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_DTINCL"})] := date()
+	aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] := ZC4->ZC4_CODCON
+	aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})] := 1
+	aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})] := M->ZC4_SETOR
+	//aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] := M->ZC6_LOJACL
+	
+ElseIf nOpc == 2 .OR. nOpc == 6
+	
+	CriaHead2()
+	
+	dbSelectArea(cAlias4)
+	dbSetOrder(3)
+	
+	If DbSeek(xFilial("ZC7") + ZC4->ZC4_CODCON)
+
+		While !Eof() .AND. ZC7->ZC7_CODCTR == ZC4->ZC4_CODCON 
+			aAdd(aCols2,Array(nUsado2+1))
+			nCols2 ++
+	   
+			For nX := 1 To nUsado2
+				If ( aHeader2[nX][10] != "V")
+					aCols2[nCols2][nX] := FieldGet(FieldPos(aHeader2[nX][2]))
+				Else
+					aCols2[nCols2][nX] := CriaVar(aHeader2[nX][2],.T.)
+				Endif
+			Next nX
+	   
+			aCols2[nCols2][nUsado2+1] := .F.
+			//aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_XBAND"})] := SubStr(Posicione("SX5",1,xFilial("SX5")+'BA'+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})],"X5_DESCRI"),1,15)
+			aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_XBAND"})] := SubStr(Posicione("ZAP",1,xFilial("ZAP")+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})],"ZAP_DESCR"),1,15)
+			
+			If !Empty(aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})])
+				aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CLIENT"})] := SubStr(Posicione("SA1",1,xFilial("SA1")+;
+				aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})]+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})],"A1_NOME"),1,25)
+			Else
+				aSA1Area := GetArea()
+				SA1->(dbSetOrder(1))
+				SA1->(dbSeek(xFilial("SA1")+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})]))
+				aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CLIENT"})] := SA1->(A1_NOME)
+				RestArea(aSA1Area)
+			End If
+			aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_PRODUT"})] := SubStr(Posicione("SB1",1,xFilial("SB1")+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODPRO"})],"B1_DESC"),1,25)
+			aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_DESCAT"})] := SubStr(Posicione("SX5",1,xFilial("SX5")+'X4'+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CATEGO"})],"X5_DESCRI"),1,15)
+			aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_DESCMA"})] := SubStr(Posicione("SX5",1,xFilial("SX5")+'X8'+aCols2[nCols2][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_MARCA"})],"X5_DESCRI"),1,15)
+			dbSelectArea(cAlias4)
+			dbSkip()
+	
+		End
+	
+	Else
+	
+		CriaHead2()
+
+		aAdd(aCols2,Array(nUsado2+1))
+		nUsado2 := 0
+		dbSelectArea("SX3")
+		dbSetOrder(1)
+		dbSeek(cAlias4)
+		While !Eof() .And. SX3->X3_ARQUIVO == cAlias4
+			If X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL
+				nUsado2++
+				aCols2[1][nUsado2] := CriaVar(Trim(SX3->X3_CAMPO),.T.)
+			Endif
+			dbSkip()
+		End
+	
+		aCols2[1][nUsado2+1] := .F.
+		aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_DTINCL"})] := date()
+		aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] := ZC4->ZC4_CODCON
+		aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})] := 1
+		aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})] := M->ZC4_SETOR
+		//aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})] := M->ZC6_CODCLI
+		//aCols2[1][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] := M->ZC6_LOJACL
+	
+	End If
+
+End If
+
+If nOpc <> 2
+aCPOGet1 := {"ZC7_BANDEI","ZC7_CODCLI","ZC7_LOJA","ZC7_CODPRO","ZC7_CATEGO","ZC7_MARCA","ZC7_SETOR"}
+Else
+//aCPOGet1 := {}
+End If
+
+
+If  nOpc <> 2 //ZC4->ZC4_OBSOLE == .F. .AND.
+	nO := GD_INSERT + GD_UPDATE + GD_DELETE
+Else
+	nO := 2
+End If
+
+oMsGet2 := MsNewGetDados():New(000,000,aPosObj[2,3]-218,aPosObj[2,4]-8,nO,"U_xLiOkZC7","AllwaysTrue","+ZC7_ITEM",aCPOGet1,;
+000,999,"AllwaysTrue",.T.,, oC1W4, aHeader2, aCols2)
+oMsGet2:oBrowse:Align := CONTROL_ALIGN_ALLCLIENT
+	
+ACTIVATE DIALOG oDlgConf ON INIT EnchoiceBar(oDlgConf,{||nOpcA:=1,;
+IIF(nOpc == 3 .OR. nOpc == 4 ,;
+IIF(Q040Grava(1),OpenZ6Z7(oDlgConf,@nOpc,M->ZC4_CODCON,cAlias,M->ZC4_REVISA,@oDlg1),.F.),;
+IIF(nOpc == 6,IIF(GrvZ6Z7(.F.),oDlgConf:End(),.F.),oDlgConf:End()))},{||oDlgConf:End()}) CENTERED
+//IIF(GrvZ6Z7(.F.),oDlgConf:End(),.F.),.F.))},{||IIF(nOpc == 2,IIF(GrvZ6Z7(.T.),oDlgConf:End(),.F.),oDlgConf:End())}) CENTERED
+
+Return .T. 
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+Static Function OpenZ6Z7(oDlgConf,nOpc,cCodCon,cAlias,cRevisa,oDlg1)
+
+Local xCodCon 	:= ZC4->ZC4_CODCON
+Local xNrevis 	:= ZC4->ZC4_REVISA
+Local aContrato	:= {}
+Local aCategori	:= {}
+Local aTabela	:= {}
+Local nPer1		:= 0
+Local nPer2		:= 0
+Local nDIf		:= 0
+
+Private xUsuario := Alltrim(UsrRetName(__cUserId))
+
+nOpc := 2
+oDlgConf:End()
+cCadastro  	:= "Cadastro de Contrato"
+
+dbSelectArea("ZC4")
+dbSetOrder(1)
+dbSeek(xFilial("ZC4")+cCodCon+cRevisa)
+
+U_QA040TELA(cAlias,Recno(),6,.F.)
+
+OpenZC7 := GetArea()
+
+ZC4->( dbSetOrder(1) )
+If ZC4->(dbSeek(xFilial("ZC4")+cCodCon+cRevisa))
+
+	While ZC4->(!Eof()) .AND. (ZC4->(ZC4_CODCON)+ZC4->(ZC4_REVISA) == cCodCon+cRevisa) 
+		ZC5->(dbSetOrder(1))
+		If ZC5->(dbSeek(xFilial("ZC5")+cCodCon+cRevisa))
+		
+			While ZC5->(!Eof()) .AND. (ZC5->(ZC5_CODCON)+ZC5->(ZC5_REVISA) == cCodCon+cRevisa)	
+				AADD(aContrato,{ZC4->(ZC4_CODCON),;
+								ZC4->(ZC4_DESC),;
+								ZC5->(ZC5_ITEM),;
+								ZC5->(ZC5_CODVER),;
+								ZC5->(ZC5_DESC),;
+								ZC5->(ZC5_PERCEN),;
+								IIF(ZC5->(ZC5_FORMA)=='2','DESC.RETIDO NCC',IIF(ZC5->(ZC5_FORMA)=='3','DESC.RETIDO PAGAR','DESC.DUPLIC. AB-')),;
+								IIF(ZC5->(ZC5_CALCUL)=='1','TOTAL PRODUTO','TOTAL NOTA ST'),;
+								ZC5->(ZC5_DEVOLV)})
+				nPer1 += ZC5->(ZC5_PERCEN)
+				
+				ZC5->(dbSkip())
+			
+			EndDo
+		
+		EndIf
+	
+		ZC4->(dbSkip())
+	EndDo
+End If
+
+//xCodCon
+//xNrevis
+
+//////////////////////////////
+ZC4->( dbSetOrder(1) )
+If ZC4->(dbSeek(xFilial("ZC4")+xCodCon+xNrevis))
+
+	While ZC4->(!Eof()) .AND. (ZC4->(ZC4_CODCON)+ZC4->(ZC4_REVISA) == xCodCon+xNrevis) 
+		ZC5->(dbSetOrder(1))
+		If ZC5->(dbSeek(xFilial("ZC5")+xCodCon+xNrevis))
+		
+			While ZC5->(!Eof()) .AND. (ZC5->(ZC5_CODCON)+ZC5->(ZC5_REVISA) == xCodCon+xNrevis)	
+				nPer2 += ZC5->(ZC5_PERCEN)
+				ZC5->(dbSkip())
+			EndDo
+		
+		EndIf
+	
+		ZC4->(dbSkip())
+	EndDo
+End If
+
+//////////////////////////////
+ZC7->( dbSetOrder(3) )
+If ZC7->(dbSeek(xFilial("ZC7")+cCodCon))
+
+	While ZC7->(!Eof()) .AND. (ZC7->(ZC7_CODCTR) == cCodCon) 
+		AADD(aCategori,;
+		{IIF(!EMPTY(ZC7->(ZC7_BANDEI)),ZC7->(ZC7_BANDEI)+"_"+POSICIONE("ZAP",1,xFilial("ZAP")+ZC7->(ZC7_BANDEI),"ZAP_DESCR"),""),;
+		IIF(!EMPTY(ZC7->(ZC7_CODCLI)),ZC7->(ZC7_CODCLI)+"_"+POSICIONE("SA1",1,xFilial("SA1")+ZC7->(ZC7_CODCLI),"A1_NOME"),""),;
+		IIF(!EMPTY(ZC7->(ZC7_CODPRO)),ZC7->(ZC7_CODPRO)+"_"+POSICIONE("SB1",1,xFilial("SB1")+ZC7->(ZC7_CODPRO),"B1_DESC"),""),;
+		ZC7->(ZC7_CATEGO)+"_"+POSICIONE("SX5",1,xFilial("SX5")+'X4'+ZC7->(ZC7_CATEGO),"X5_DESCRI")})
+		
+		ZC7->(dbSkip())
+	
+	EndDo
+End If
+
+	xCli 	:= ""
+	xBand	:= ""
+	For c := 1 To Len(aCategori)
+		If !Empty(aCategori[c][1])
+			xBand += SubStr(aCategori[c][1],1,6)+"','"
+		ElseIf !Empty(aCategori[c][2])
+			xCli += SubStr(aCategori[c][2],1,6)+"','"
+		EndIf
+	Next c
+
+	cAliasQry := GetNextAlias()
+	BeginSql Alias cAliasQry
+	
+	%noparser%
+	SELECT DISTINCT A1_TABELA+'_'+(SELECT DA0_DESCRI FROM %table:DA0% DA0 WHERE DA0_CODTAB=A1_TABELA AND DA0.%notDel%) AS A1_TABELA
+	FROM %table:SA1% SA1
+	WHERE (A1_XBAND IN(%Exp:Iif(!empty(xBand),SubStr(xBand,1,len(xBand)-3),Space(3))%)) OR (A1_COD IN (%Exp:iif(!empty(xCli),SubStr(xCli,1,len(xCli)-3),Space(3))%))
+	AND SA1.%notDel% AND A1_MSBLQL='2'
+				
+	EndSql
+	
+	aRet := GetLastQuery()
+	MemoWrite("C:\HD\QUERYS\QUAA40_TABELA.SQL",aRet[2])
+	
+	
+	While (cAliasQry)->( !Eof())
+		AADD(aTabela,{(cAliasQry)->(A1_TABELA)})
+		(cAliasQry)->( dbSkip() )
+	EndDo
+
+
+If nPer1 <> nPer2
+
+	aAreaQA := GetArea()
+		
+		//QUAA081W(aContrato,nDe,nPara,cEmpDoc,cFilDoc)
+		StartJob("U_QUAA081W",GetEnvServer(),.F.,aContrato,nPer2,nPer1,FwCodEmp(),FwFilial(),xUsuario,aCategori,aTabela)
+		//U_QUAA081W(aContrato,nPer2,nPer1)
+	
+	
+	RestArea(aAreaQA)
+
+End If
+
+RestArea(OpenZC7)
+
+dbSelectArea("ZC4")
+dbSetOrder(1)
+dbSeek(xFilial("ZC4")+cCodCon+cRevisa)
+
+Return oDlg1
+
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
+
+Static Function Q040Grava(nOpc,aAltera)
+Local lRet := .F.	
+	Begin Transaction
+	lRet := _Q040Grava(nOpc,aAltera)
+	End Transaction
+Return lRet 
+
+Static Function GrvZ6Z7(lCan)
+Local lRet := .F.
+	Begin Transaction
+	lRet := _GrvZ6Z7(lCan)
+	End Transaction
+Return lRet
+
+
+/*/{Protheus.doc} QW40Visual() ============================================================================================================================
+Funcao auxiliar para visualizacao da Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function QW40Visual( cAlias, nRecNo, nOpc )
+
+	Local nX				:= 0
+	Local nCols     		:= 0
+	Local nOpcA     		:= 0
+	Local oDlg      	:= Nil
+	Local oGet      	:= Nil
+	Local oMainWnd  		:= Nil
+
+	Private aTela   		:= {}
+	Private aGets   		:= {}
+	Private aHeader 		:= {}
+	Private aCols   		:= {}
+	
+	Private bCampo  		:= { |nField| Field(nField) }
+
+//+----------------------------------
+//| Inicia as variaveis para Enchoice
+//+----------------------------------
+	dbSelectArea(cAlias1)
+	dbSetOrder(1)
+	dbGoTo(nRecNo)
+	For nX:= 1 To FCount()
+		M->&(Eval(bCampo,nX)) := FieldGet(nX)
+	Next nX
+
+//+----------------
+//| Monta o aHeader
+//+----------------
+	CriaHeader()
+
+//+--------------
+//| Monta o aCols
+//+--------------
+	dbSelectArea(cAlias2)
+	dbSetOrder(1)
+	dbSeek(ZC4->ZC4_FILIAL+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA)
+
+	While !Eof() .And. ZC4->ZC4_FILIAL == ZC5->ZC5_FILIAL .And. ZC5->ZC5_CODCON == ZC4->ZC4_CODCON .And. ZC5->ZC5_REVISA == ZC4->ZC4_REVISA
+		aAdd(aCols,Array(nUsado+1))
+		nCols ++
+   
+		For nX := 1 To nUsado
+			If ( aHeader[nX][10] != "V")
+				aCols[nCols][nX] := FieldGet(FieldPos(aHeader[nX][2]))
+			Else
+				aCols[nCols][nX] := CriaVar(aHeader[nX][2],.T.)
+			Endif
+		Next nX
+   
+		aCols[nCols][nUsado+1] := .F.
+		dbSelectArea(cAlias2)
+		dbSkip()
+	End
+
+
+	DEFINE MSDIALOG oDlg TITLE cCadastro From aSize[7],aSize[1] TO aSize[6],aSize[5]  OF oMainWnd PIXEL
+
+	@ aPosObj[3,1],aPosGet[1,1]  SAY oSay1 Var cTotPerc FONT oFnt COLOR CLR_HBLUE SIZE  220,09 PIXEL
+	
+	Q040Sum()
+	//oC1W3 := MsNewGetDados():New(018,005 ,179,316,GD_INSERT+GD_DELETE+GD_UPDATE,"AllwaysTrue","AllwaysTrue","",{"ZC5_CODVER"},000,999,"AllwaysTrue","","", oC1W3, aHeader1, aCols1)
+	EnChoice(cAlias, nRecNo, nOpc,,,,, aPosObj[1],, 3)
+	oGet := MSGetDados():New(aPosObj[2,1],aPosObj[2,2],aPosObj[2,3]-10,aPosObj[2,4],nOpc,{|| Q040Sum() } , ,"+ZC5_ITEM",.T.)
+    
+	ACTIVATE MSDIALOG oDlg ON INIT EnchoiceBar(oDlg,{||nOpcA:=1},{||oDlg:End()})
+
+Return .T.
+
+
+/*/{Protheus.doc} QW40Inclui() ============================================================================================================================
+Funcao auxiliar para Inclusao da Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function QW40Inclui( cAlias, nRecNo, nOpc )
+
+	Local nOpcA      := 0
+	Local nX         := 0
+	Local oDlg       := Nil
+
+	Private aTela    := {}
+	Private aGets    := {}
+	Private aHeader  := {}
+	Private aCols    := {}
+	Private bCampo   := {|nField| FieldName(nField) }
+
+//+--------------------------------------
+//| Cria Variaveis de Memoria da Enchoice
+//+--------------------------------------
+	dbSelectArea(cAlias1)
+	For nX := 1 To FCount()
+		M->&(Eval(bCampo,nX)) := CriaVar(FieldName(nX),.T.)
+	Next nX
+
+//+----------------
+//| Monta o aHeader
+//+----------------
+	CriaHeader()
+
+//+--------------
+//| Monta o aCols
+//+--------------
+	aAdd(aCols,Array(nUsado+1))
+	nUsado := 0
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias2)
+	While !Eof() .And. SX3->X3_ARQUIVO == cAlias2
+		If X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL
+			nUsado++
+			aCols[1][nUsado] := CriaVar(Trim(SX3->X3_CAMPO),.T.)
+		Endif
+		dbSkip()
+	End
+
+	aCols[1][nUsado+1] := .F.
+	aCols[1][aScan(aHeader,{|x| Trim(x[2])=="ZC5_ITEM"})] := "0001"
+
+	If nOpcA == 1
+//	Begin Transaction
+		If Q040Grava(1)
+			EvalTrigger()
+			If __lSX8
+				ConfirmSX8()
+			Endif
+		EndIf
+	//End Transaction
+	Else
+		If __lSX8
+			RollBackSX8()
+		Endif
+	Endif
+
+Return .T.
+
+
+
+/*/{Protheus.doc} QW40Copia() ============================================================================================================================
+Funcao auxiliar para Copia da Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+User Function QW40Copia( cAlias, nRecNo, nOpc )
+
+	Local nOpcA     	:= 0
+	Local nX      	:= 0
+	Local nCols     := 0
+	Local cContrato	:= ""
+	
+	Private lTok			:= .T.
+	Private oDlg     	:= Nil
+	Private aTela    	:= {}
+	Private aGets    	:= {}
+	Private aHeader  	:= {}
+	Private aCols    	:= {}
+	Private aAltera  	:= {}
+	Private bCampo   	:= {|nField| FieldName(nField) }
+
+//+----------------------------------
+//| Inicia as variaveis para Enchoice
+//+----------------------------------
+
+	dbSelectArea(cAlias1)
+	dbSetOrder(1)//ZC4_FILIAL+ZC4_CODCON+ZC4_REVISA
+	dbGoTo(nRecNo)
+	RegToMemory("ZC4")
+
+	cContrato := ZC4_CODCON
+
+	While ZC4->( !Eof() ) .and. ZC4->ZC4_CODCON == cContrato
+		ZC4->(DbSkip())
+	EndDo
+
+	ZC4->(DbSkip(-1))
+
+	RegToMemory( 'ZC4' )
+
+	M->ZC4_CODCON	:= ZC4_CODCON
+	M->ZC4_DTINI 	:= dDatabase  	// ZC4_DTINI+1 		// WMS.nn em 14/4/2016 - atendimento do Chamado 4470 
+	M->ZC4_DTFIM	:= CtoD('')
+	M->ZC4_REVISA 	:= RetAsc(Str(Val(RetAsc( ZC4_REVISA,3,.F. ))+1),3,.T.)
+
+//+----------------
+//| Monta o aHeader
+//+----------------
+	CriaHeader()
+
+//+--------------
+//| Monta o aCols
+//+--------------
+	dbSelectArea(cAlias2)
+	dbSetOrder(1)
+	dbSeek(cFilZC5+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA)
+
+	While !Eof() .And. cFilZC5 == ZC5->ZC5_FILIAL .And. ZC5->ZC5_CODCON == ZC4->ZC4_CODCON .And. ZC5->ZC5_REVISA == ZC4->ZC4_REVISA
+		aAdd(aCols,Array(nUsado+1))
+		nCols ++
+   
+		For nX := 1 To nUsado
+			If ( aHeader[nX][10] != "V")
+				aCols[nCols][nX] := FieldGet(FieldPos(aHeader[nX][2]))
+			Else
+				aCols[nCols][nX] := CriaVar(aHeader[nX][2],.T.)
+			Endif
+		Next nX
+   
+		aCols[nCols][nUsado+1] := .F.
+		dbSelectArea(cAlias2)
+		aAdd(aAltera,RecNo())
+		dbSkip()
+	End
+//+----------------------------------
+//| Envia para processamento dos Gets
+//+----------------------------------
+	DEFINE MSDIALOG oDlg TITLE cCadastro FROM aSize[7],aSize[1] TO aSize[6],aSize[5] OF oMainWnd PIXEL
+
+	@ aPosObj[3,1],aPosGet[1,1]  SAY oSay1 Var cTotPerc FONT oFnt COLOR CLR_HBLUE SIZE  220,09 PIXEL
+	Q040Sum()
+
+	EnChoice( cAlias, nRecNo, nOpc, , , , , aPosObj[1], , 3)
+	oGet := MSGetDados():New(aPosObj[2,1],aPosObj[2,2],aPosObj[2,3]-10,aPosObj[2,4],nOpc, {|| Q040Sum() } , ,"+ZC5_ITEM",.T.)
+
+	ACTIVATE MSDIALOG oDlg ON INIT ;
+	EnchoiceBar(oDlg,{|| nOpca:=1,If(Obrigatorio(aGets,aTela),oDlg:End(),nOpca:=0)},{||nOpca:=0,oDlg:End()})
+	If nOpcA == 1
+	
+	//EnchoiceBar(oDlg,{|| nOpca:=1,If(If(msg(lTok),Obrigatorio(aGets,aTela),.F.),oDlg:End(),nOpca:=0)},{||nOpca:=0,oDlg:End()})
+	
+	//	Begin Transaction
+	//Grava Data Final no Contrato Anterior
+	
+		Reclock("ZC4",.F.)
+		ZC4->ZC4_DTFIM := M->ZC4_DTINI -1
+		ZC4->(MsUnlock())
+	
+		If Q040Grava(1)
+			EvalTrigger()
+			If __lSX8
+				ConfirmSX8()
+			Endif
+		EndIf
+	
+	//End Transaction
+	
+	Else
+	
+		If __lSX8
+			RollBackSX8()
+		Endif
+	Endif
+
+Return
+
+
+/*/{Protheus.doc} QW40Exclui() ============================================================================================================================
+Funcao auxiliar para Exlcusao da Tela Contratos Comerciais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+User Function QW40Exclui( cAlias, nRecNo, nOpc )
+
+Local lDel := .T.
+cAlias1 := "ZC4"
+cAlias4 := "ZC7"
+cAlias2	:= "ZC5"
+
+If !MsgYesNo(OemToAnsi("Deseja excluir contrato?"))
+	Return .F.
+End If	
+	
+	If ZC4->ZC4_OBSOLE == .T.
+		lDel := .F.
+	Else
+		If ZC4->ZC4_ATIVO == "S" .And. ZC4->ZC4_OBSOLE == .F.
+		//Se existe Titulos a Receber para o Contrato
+			DbSelectArea("SE1")
+			DbOrderNickName("CONTRATO")
+			If DbSeek(ZC4->ZC4_FILIAL+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA)
+				lDel := .F.
+			Else
+			//Se existe Titulos a Pagar para o Contrato
+				DbSelectArea("SE2")
+				DbOrderNickName("CONTRATO1")
+				If DbSeek(ZC4->ZC4_FILIAL+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA)
+					lDel := .F.
+				Else
+					lDel := .T.
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+
+
+	If lDel
+
+
+		dbSelectArea(cAlias4) // DELETE ZC7
+		dbSetOrder(3)
+		dbSeek(XFilial("ZC4")+ZC4->ZC4_CODCON,.T.)
+		While !Eof() .And. xFilial("ZC4") == ZC7->ZC7_FILIAL .And. ZC4->ZC4_CODCON == ZC7->ZC7_CODCTR
+			RecLock(cAlias4)
+				dbDelete()
+			MsUnLock()
+			dbSkip()
+		End
+		
+
+		dbSelectArea(cAlias2) //DELETE ZC5
+		dbSetOrder(1)
+		dbSeek(XFilial("ZC5")+ZC4->ZC4_CODCON+ZC4->ZC4_REVISA,.T.)
+		While !Eof() .And. xFilial("ZC5") == ZC4->ZC4_FILIAL .And. ZC5->ZC5_CODCON == ZC4->ZC4_CODCON .And. ZC4->ZC4_REVISA == ZC5->ZC5_REVISA
+			RecLock(cAlias2)
+				dbDelete()
+			MsUnLock()
+			dbSkip()
+		End
+   
+		dbSelectArea(cAlias1) // DELETE ZC4
+		RecLock(cAlias1)
+			dbDelete()
+		MsUnLock()
+		
+		lGravou := .T.
+	
+		MsgInfo(OemToAnsi("Contrato Exclu�do !"))	
+	Else
+		MsgStop(OemToAnsi("Contrato NAO PODE ser Exclu�do !"))
+	End If
+
+Return lDel
+
+
+/*/{Protheus.doc} CriaHeader() ============================================================================================================================
+Funcao auxiliar aHeader
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function CriaHeader()
+
+	nUsado  := 0
+	aHeader := {}
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias2)
+
+	While ( !Eof() .And. SX3->X3_ARQUIVO == cAlias2 )
+		If ( X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL )
+			aAdd(aHeader,{ Trim(X3Titulo()), ;
+				SX3->X3_CAMPO   , ;
+				SX3->X3_PICTURE , ;
+				SX3->X3_TAMANHO , ;
+				SX3->X3_DECIMAL , ;
+				SX3->X3_VALID   , ;
+				SX3->X3_USADO   , ;
+				SX3->X3_TIPO    , ;
+				SX3->X3_ARQUIVO , ;
+				SX3->X3_CONTEXT } )
+			nUsado++
+		Endif
+		dbSkip()
+	End
+
+Return
+
+/*/{Protheus.doc} CriaHeader(1) ============================================================================================================================
+Funcao auxiliar aHeader1
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function CriaHead1()
+
+	nUsado1  := 0
+	aHeader1 := {}
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias3)
+
+	While ( !Eof() .And. SX3->X3_ARQUIVO == cAlias3 )
+		If ( X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL )
+			aAdd(aHeader1,{ Trim(X3Titulo()), ;
+				SX3->X3_CAMPO   , ;
+				SX3->X3_PICTURE , ;
+				SX3->X3_TAMANHO , ;
+				SX3->X3_DECIMAL , ;
+				SX3->X3_VALID   , ;
+				SX3->X3_USADO   , ;
+				SX3->X3_TIPO    , ;
+				SX3->X3_F3 		, ;
+				SX3->X3_CBOX } )
+				
+			nUsado1++
+		Endif
+		dbSkip()
+	End
+
+Return
+
+/*/{Protheus.doc} CriaHead2============================================================================================================================
+Funcao auxiliar aHeader2
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function CriaHead2()
+
+	nUsado2  := 0
+	aHeader2 := {}
+	dbSelectArea("SX3")
+	dbSetOrder(1)
+	dbSeek(cAlias4)
+
+	While ( !Eof() .And. SX3->X3_ARQUIVO == cAlias4 )
+		If ( X3USO(SX3->X3_USADO) .And. cNivel >= SX3->X3_NIVEL )
+			aAdd(aHeader2,{ Trim(X3Titulo()), ;
+				SX3->X3_CAMPO   , ;
+				SX3->X3_PICTURE , ;
+				SX3->X3_TAMANHO , ;
+				SX3->X3_DECIMAL , ;
+				SX3->X3_VALID   , ;
+				SX3->X3_USADO   , ;
+				SX3->X3_TIPO    , ;
+				SX3->X3_F3 		, ;
+				SX3->X3_CBOX } )
+			nUsado2++
+		Endif
+		dbSkip()
+	End
+
+Return
+
+/*/{Protheus.doc} _Q040Grava============================================================================================================================
+Funcao auxiliar Gravacao contrato
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function _Q040Grava(nOpc,aAltera)
+
+	Local lGravou  := .F.
+	Local nUsado   := 0
+	Local nSeq     := 1
+	Local nX       := 0
+	Local nI       := 0
+	Local nPosVerba:= aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_CODVER' } )
+	Local nPosDesc := aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_DESC' } )
+	Local nPosForma:= aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_FORMA' } )
+	Local nPosPerc := aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_PERCEN' } )
+	Local nPosCalc := aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_CALCUL' } )
+	Local nPosDev  := aScan( aHeader, {|x|  Upper(AllTrim(x[2])) == 'ZC5_DEVOLV' } )
+		
+	Private bCampo := { |nField| FieldName(nField) }
+	
+	If cNrev == 4
+		M->ZC4_CODCON := M->ZC4_CODCON
+	Else
+		M->ZC4_CODCON := GetSx8Num("ZC4","ZC4_CODCON")
+	End If
+	//BEGIN TRANSACTION
+	
+	nUsado := Len(aHeader) + 1
+
+//+----------------
+//| Se for inclusao
+//+----------------
+If nOpc == 1
+     
+   If !Obrigatorio(aGets,aTela)
+   	 //End Transaction
+   	 Return .F.
+   End If
+   //+--------------------------
+   //| Colocar os itens em ordem
+   //+--------------------------
+		If Len(aCols) > 1
+		aSort(aCols,,,{|x,y| x[1] < y[2] })
+		End If
+   //+---------------
+   //| Grava os itens
+   //+---------------
+		dbSelectArea(cAlias2)
+		dbSetOrder(1)
+		lGravou := .T.
+		
+		For nX := 1 To Len(aCols)
+			
+			If !aCols[nX][nUsado]					
+				
+				//If !aCols[nX][nUsado] 			.AND. ;
+				If !Empty(aCols[nX][nPosVerba])	.AND. ;
+				!Empty(aCols[nX][nPosDesc])  	.AND. ;
+				!Empty(aCols[nX][nPosForma]) 	.AND. ;
+				aCols[nX][nPosPerc]>= 0		.AND. ;
+				!Empty(aCols[nX][nPosCalc]) 	.AND. ;
+				!Empty(aCols[nX][nPosDev]) 
+					
+						RecLock(cAlias2,.T.)
+				
+						For nI := 1 To Len(aHeader)
+							FieldPut(FieldPos(Trim(aHeader[nI,2])),aCols[nX,nI])
+						Next nI
+				
+						ZC5->ZC5_CODCON := M->ZC4_CODCON
+						ZC5->ZC5_REVISA := M->ZC4_REVISA
+						ZC5->ZC5_ITEM   := aCols[nX,1]
+	  
+						MsUnLock()
+				Else
+					lGravou := .F.
+				End If
+			
+			End If
+		
+		Next nX
+	
+	If !lGravou
+		MsgStop(OemToAnsi("Devem ser incluido(s) iten(s) ao contrato ou algum campos obriga�rio n�o foi preenchido"))
+		//End Transaction
+		Return lGravou
+	End If
+	
+   //+------------------
+   //| Grava o Cabecalho
+   //+------------------
+		If lGravou
+			dbSelectArea(cAlias1)
+			RecLock(cAlias1,.T.)
+			For nX := 1 To FCount()
+				If "FILIAL" $ FieldName(nX)
+					FieldPut(nX,"")
+				Else
+					FieldPut(nX,M->&(Eval(bCampo,nX)))
+				Endif
+			Next nX
+			MsUnLock()
+			MsgAlert(OemToAnsi("Inclu�do com sucesso, inclua a amara��o <Contrato x Cliente X Produto> !"))
+			
+			ConfirmSX8()
+			
+			If cNrev == 4
+
+				ZC4->( dbGoto(nRecSZ4) )
+					
+				ZC4->(RecLock("ZC4",.F.))
+					If Empty(ZC4->ZC4_DTFIM)
+						ZC4->ZC4_DTFIM := dDatabase
+					End If
+					ZC4->ZC4_DTREVI := dDatabase
+					ZC4->ZC4_OBSOLE	:= .T.
+				ZC4->(MsUnlock())
+			
+			End If
+		Endif
+		
+Endif
+
+//+-----------------
+//| Se for alteracao
+//+-----------------
+	If nOpc == 2
+   //+--------------------------------------
+   //| Grava os itens conforme as alteracoes
+   //+--------------------------------------
+		dbSelectArea(cAlias2)
+		dbSetOrder(1)
+		For nX := 1 To Len(aCols)
+
+			If nX <= Len(aAltera)
+				dbGoto(aAltera[nX])
+				RecLock(cAlias2,.F.)
+				If aCols[nX][nUsado]
+					dbDelete()
+				EndIf
+			Else
+				If !aCols[nX][nUsado]
+					RecLock(cAlias2,.T.)
+				Endif
+			Endif
+      
+			If !aCols[nX][nUsado] .and. !Empty(aCols[nX][nPosVerba])
+				For nI := 1 To Len(aHeader)
+					FieldPut(FieldPos(Trim(aHeader[nI,2])),aCols[nX,nI])
+				Next nI
+				//ZC5->ZC5_FILIAL := cFilZC5
+				ZC5->ZC5_CODCON := M->ZC4_CODCON
+				ZC5->ZC5_REVISA := M->ZC4_REVISA
+				ZC5->ZC5_ITEM   := StrZero(nSeq,3)
+				nSeq ++
+				lGravou := .T.
+			EndIf
+			MsUnLock()
+		Next nX
+
+   //+----------------------------------------------------
+   //| Aqui eu reordeno a sequencia gravada fora de ordem.
+   //+----------------------------------------------------
+		If lGravou
+			nSeq := 1
+			dbSelectArea(cAlias2)
+			dbSetOrder(1)
+			dbSeek(cFilZC5+M->ZC4_CODCON,.F.)
+			While !Eof() .And. cFilZC5 == ZC4->ZC4_FILIAL .And. ZC5->ZC5_CODCON == M->ZC4_CODCON
+				RecLock(cAlias2,.F.)
+				ZC5->ZC5_ITEM := StrZero(nSeq,3)
+				MsUnLock()
+				nSeq++
+				lGravou := .T.
+				dbSkip()
+			End
+		EndIf
+	
+   //+------------------
+   //| Grava o Cabecalho
+   //+------------------
+		If lGravou
+			dbSelectArea(cAlias1)
+			RecLock(cAlias1,.F.)
+			For nX := 1 To FCount()
+				If "FILIAL" $ FieldName(nX)
+					FieldPut(nX,cFilZC4)
+				Else
+					FieldPut(nX,M->&(Eval(bCampo,nX)))
+				Endif
+			Next
+			MsUnLock()
+		Else
+			dbSelectArea(cAlias1)
+			RecLock(cAlias1,.F.)
+			dbDelete()
+			MsUnLock()
+		Endif
+	Endif
+
+//+----------------
+//| Se for exclucao
+//+----------------
+	If nOpc == 3
+   //+----------------
+   //| Deleta os Itens
+   //+----------------
+		dbSelectArea(cAlias2)
+		dbSetOrder(1)
+		dbSeek(cFilZC5+M->ZC4_CODCON,.T.)
+		While !Eof() .And. cFilZC5 == ZC4->ZC4_FILIAL .And. ZC5->ZC5_CODCON == M->ZC4_CODCON
+			RecLock(cAlias2)
+			dbDelete()
+			MsUnLock()
+			dbSkip()
+		End
+   
+   //+-------------------
+   //| Deleta o Cabecalho
+   //+-------------------
+		dbSelectArea(cAlias1)
+		RecLock(cAlias1)
+		dbDelete()
+		MsUnLock()
+		lGravou := .T.
+	EndIf
+//END TRANSACTION
+	//If lGravou
+	
+		ConfirmSX8()
+	//End If
+	
+	
+Return( lGravou )
+
+/*/{Protheus.doc} QW40Leg============================================================================================================================
+Funcao auxiliar Legenda
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+User Function QW40Leg()
+
+	Local aCor := {}
+	aAdd(aCor,{"BR_VERDE"		,"Contrato Ativo"		})
+	aAdd(aCor,{"BR_VERMELHO"	,"Contrato Obsoleto"    })
+	aAdd(aCor,{"BR_AMARELO"		,"Ctr. s/ amarracao de ClientexProduto"    })
+
+	BrwLegenda(cCadastro,OemToAnsi("Status do Contrato"),aCor)
+Return
+
+/*/{Protheus.doc} Q040Sum============================================================================================================================
+Funcao auxiliar Soma percentuais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+Static Function Q040Sum()
+
+	Local nRet 		:= 0
+	Local nPosPer	:= aScan( aHeader, {|x| Upper(AllTrim(x[2])) == 'ZC5_PERCEN'} )
+
+	aEval( aCols, {|x| nRet += If(!x[Len(x)],x[nPosPer],0 ) } )
+
+	If ReadVar() == 'M->ZC5_PERCEN'
+		nRet -= aCols[n, nPosPer]
+		nRet += M->ZC5_PERCEN    `
+		If ValType( oDlg ) == 'O'
+			oDlg:Refresh()
+		EndIf
+	EndIf
+
+	cTotPerc := 'TOTAL DE DESCONTO: ' + AllTrim(Str( nRet, 6, 2)) + "%"
+	
+	oFWLayer:setWinTitle("Col01","Win02", "Itens do Contrato >>>> " + cTotPerc)
+	oFWLayer:Refresh()
+	//oSay1:SetText( cTotPerc )
+	//oSay1:Refresh()
+	//oPanB1a:Refresh()
+
+Return(.T.)
+
+
+/*/{Protheus.doc} xxLinOkW============================================================================================================================
+Funcao auxiliar Linha OK
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function xxLinOkW()
+
+	Local lRet := .T.
+	   	
+    //VALIDA SE REPRESENTANTE FOI DIGITADO 	
+	
+	If !aCols[len(aCols)][len(aHeader)+1]
+	
+		For i:= 1 to len(aCols)
+		
+			If !aCols[i][len(aHeader)+1] .AND. GDFIELDGET("ZC5_ITEM", i) <> GDFIELDGET("ZC5_ITEM") .AND. !EMPTY(GDFIELDGET("ZC5_CODPRO"))
+		
+			//VALIDA SE JA EXISTE PRODUTO AMARRADO NO CLIENTE ZC5_CODVER / ZC5_FORMA / ZC5_PERCEN
+				If GDFIELDGET("ZC5_CODPRO", i) == GDFIELDGET("ZC5_CODPRO") .AND.;
+						GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN")
+		    
+					lRet := .F.
+		       		    
+					//aAdd(aSay,"Ja existe amarracao para esse PRODUTO no CONTRATO !")
+	    		   MsgAlert("Ja existe amarracao para esse PRODUTO no CONTRATO !")     
+					//FormBatch("Contrato x Produto",aSay,aButton)
+					//aSay := {}
+	        
+				End If
+	    
+			End If
+	   	
+		Next i
+	
+		If lRet
+		
+		For i:= 1 to len(aCols) //CATEGORIA
+					
+			If !aCols[i][len(aHeader)+1] .AND. !EMPTY(GDFIELDGET("ZC5_CATEGO")) .AND. !EMPTY(GDFIELDGET("ZC5_MARCA"))
+			
+				//VERIFICA SE JA EXISTE CATEGORIA E MARCA(TODAS) AMARRADA EM ALGUM LINHA DO CLIENTE
+				If ( GDFIELDGET("ZC5_ITEM", i) <> GDFIELDGET("ZC5_ITEM") ) .AND. ;
+						( ( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == GDFIELDGET("ZC5_CATEGO")+'999999';
+						.AND. GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR. ;
+						( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == GDFIELDGET("ZC5_CATEGO")+GDFIELDGET("ZC5_MARCA");
+						.AND.  GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR.;
+						( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == "999999999999";
+						.AND.  GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")))
+			    		    
+					lRet := .F.
+			       		    
+					MsgAlert("Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+					//aAdd(aSay,"Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+					//FormBatch("Contrato x Produto",aSay,aButton)
+		   	   	
+				End If
+			
+			End if
+			
+		Next i
+	
+   		End If
+		
+		If lRet
+   		
+			For i:= 1 to len(aCols) //MARCA
+		
+			//
+			
+				If !aCols[i][len(aHeader)+1] .AND. !EMPTY(GDFIELDGET("ZC5_CATEGO")) .AND. !EMPTY(GDFIELDGET("ZC5_MARCA"))
+			
+					If ( GDFIELDGET("ZC5_ITEM", i) <> GDFIELDGET("ZC5_ITEM") ) .AND. ;
+							( ( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == '999999'+GDFIELDGET("ZC5_MARCA");
+							.AND. GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+							GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+							GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+							GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+							GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR.;
+							( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == GDFIELDGET("ZC5_CATEGO")+GDFIELDGET("ZC5_MARCA");
+							.AND. GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+							GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+							GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+							GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+							GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR. ;
+							( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == "999999999999";
+							.AND. GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+							GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+							GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+							GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+							GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")))
+			    		    
+						lRet := .F.
+			       		    
+						//aAdd(aSay,"Ja existe amarracao para essa MARCA e CATEGORIA no CONTRATO !")
+		    		   msgalert("Ja existe amarracao para essa MARCA e CATEGORIA no CONTRATO !")     
+						//FormBatch("Contrato x Produto",aSay,aButton)
+			
+					End if
+		
+				End If
+
+			Next i
+     	
+		End If
+    	
+    	//VALIDA AO MENOS UMA AMARRACAO FOI FEITA 	
+		IF lRet .AND. ( EMPTY(GDFIELDGET("ZC5_CODPRO"))  .AND. (EMPTY(GDFIELDGET("ZC5_MARCA")) .OR. EMPTY(GDFIELDGET("ZC5_CATEGO"))))
+		
+		
+			lRet := .F.
+		     		    
+			//aAdd(aSay,"Uma amarracao obrigatoriamente deve ser feita,")
+			//aAdd(aSay,"PRODUTO OU MARCA E CATEGORIA!")
+	    	MsgAlert("Uma amarracao obrigatoriamente deve ser feita,PRODUTO OU MARCA E CATEGORIA!")
+			///FormBatch("Cliente x Contrato",aSay,aButton)
+			//aSay := {}
+		End If
+	
+	End If
+	
+	
+Return lRet
+
+/*/{Protheus.doc} xValRep============================================================================================================================
+Funcao auxiliar Valida represetante
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+Static Function xValRep()
+
+
+	Local nRet := GDFIELDGET("ZZD_ITEM")
+	
+	If GDFIELDGET("ZZD_ITEM") == 0
+	
+		GDFIELDPUT("ZZD_ITEM",GDFIELDGET("ZZD_ITEM",len(aCols)-1)+1)
+		nRet := GDFIELDGET("ZZD_ITEM",len(aCols)-1)+1
+	End If
+
+
+Return(nRet)
+
+
+/*/{Protheus.doc} BuscaCtW============================================================================================================================
+Funcao auxiliar Busca Contrato
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+User Function BuscaCtW(prod,codcli,lojcli)
+
+
+	Local cQuery 	:= ''
+	Local cRet		:= ''
+	Local aArea	:= GetArea()
+
+//PRIMEIRO VERIFICA SE EXISTE PRODUTO X VENDEDOR X CLIENTE
+	cQuery := "SELECT DISTINCT CASE WHEN " + CRLF
+	cQuery += "(SELECT ZZD_CODREP FROM " + RetSqlName("ZZD") + " WHERE ZZD_CODPRO='" + prod + "' AND ZZD_CODCLI='" + codcli + "' " + CRLF
+	cQuery += "AND ZZD_LOJCLI='" + lojcli + "' AND D_E_L_E_T_='') <> '' " + CRLF
+	cQuery += "THEN (SELECT ZZD_CODREP FROM " + RetSqlName("ZZD") + " WHERE ZZD_CODPRO='" + prod + "' AND ZZD_CODCLI='" + codcli + "' " + CRLF
+	cQuery += "AND ZZD_LOJCLI='" + lojcli + "' AND D_E_L_E_T_='') " + CRLF
+	cQuery += "ELSE " + CRLF
+//BUSCA CATEGORIAxMARCA
+	cQuery += "(SELECT ZZD_CODREP FROM " + RetSqlName("ZZD") + " " + CRLF
+	cQuery += "WHERE ZZD_CODCLI='" + codcli + "' AND ZZD_LOJCLI='" + lojcli + "' " + CRLF
+	cQuery += "AND (ZZD_CATEGO='999999' OR ZZD_CATEGO=(SELECT B1_XCATEGO FROM " + RetSqlName("SB1") + " WHERE B1_COD='" + prod + "' AND B1_TIPO='PA' AND D_E_L_E_T_='')) " + CRLF
+	cQuery += "AND (ZZD_MARCA='999999' OR ZZD_MARCA=(SELECT B1_XMARCA FROM " + RetSqlName("SB1") + " WHERE B1_COD='" + prod + "' AND B1_TIPO='PA' AND D_E_L_E_T_='')) " + CRLF
+	cQuery += "AND D_E_L_E_T_='') END AS 'CODREP' " + CRLF
+	cQuery += "FROM " + RetSqlName("ZZD") + " WHERE D_E_L_E_T_='' " + CRLF
+
+	Memowrite("C:\BUSCAVEND.SQL",cQuery)
+
+	If Select( "QUERY601" ) > 0
+		QUERY601->( dbCloseArea() )
+	EndIf
+   			                                                                                                                                                                                       
+	dbUseArea( .T., "TOPCONN", TCGENQRY(,,cQuery), "QUERY601", .F., .T.)
+
+	QUERY601->( dbGoTop() )
+
+	If QUERY601->( !EOF() )
+
+		cRet := QUERY601->CODREP
+
+	End If
+
+	RestArea(aArea)
+
+Return cRet
+
+/*/{Protheus.doc} xVldCpoW============================================================================================================================
+Funcao auxiliar valida amarracoes existentes
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function xVldCpoW(nOpc)
+
+
+	Local lRet := .T.
+	Local aSay	:= {}
+	Local aButton := {}
+	
+	aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK
+	
+	If nOpc == 1 //ZC5_CODPRO
+	
+		For i:= 1 to len(aCols)
+		
+			If !aCols[i][len(aHeader)+1]
+		
+			//VALIDA SE JA EXISTE PRODUTO AMARRADO NO CLIENTE ZC5_CODVER / ZC5_FORMA / ZC5_PERCEN / ZC5_CALCUL / ZC5_DEVOLV
+				If GDFIELDGET("ZC5_CODPRO", i) == M->ZC5_CODPRO .AND.;
+						GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")
+		    
+					lRet := .F.
+		       		    
+					aAdd(aSay,"Ja existe amarracao para esse PRODUTO no CONTRATO !")
+	    		        
+					FormBatch("Contrato x Produto",aSay,aButton)
+	
+	        
+				End If
+	    
+			End If
+	        
+		Next i
+
+		//VALIDA SE EXISTE MARCA OU CATEGORIA JA ESXISTENTE NA CLIENTE
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC5_MARCA")) .OR. !EMPTY(GDFIELDGET("ZC5_CATEGO")) )
+			lRet := .F.
+			aAdd(aSay,"Ja existe alguma amarracao para esse CONTRATO de MARCA OU CATEGORIA,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Contrato x Produto",aSay,aButton)
+		End If
+  	
+		
+	
+	ElseIf nOpc == 2 //ZC5_CATEGO
+     
+		For i:= 1 to len(aCols)
+					
+			If !aCols[i][len(aHeader)+1]
+			
+				//VERIFICA SE JA EXISTE CATEGORIA E MARCA(TODAS) AMARRADA EM ALGUM LINHA DO CLIENTE
+				If ( GDFIELDGET("ZC5_ITEM", i) <> GDFIELDGET("ZC5_ITEM") ) .AND. ;
+						( ( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == M->ZC5_CATEGO+'999999';
+						.AND. GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR. ;
+						( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == M->ZC5_CATEGO+GDFIELDGET("ZC5_MARCA")) .AND.;
+						GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV"))
+			    		    
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+		    		        
+					FormBatch("Contrato x Produto",aSay,aButton)
+		        
+				End If
+			
+			End if
+			
+		Next i
+	     
+	     
+	     
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC5_CODPRO")) )
+			lRet := .F.
+			aAdd(aSay,"Ja existe amarracao para esse CONTRATO com PRODUTO,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Contrato x Produto",aSay,aButton)
+		End If
+	    
+		
+          
+	ElseIf nOpc == 3 //ZC5_MARCA
+     
+		For i:= 1 to len(aCols)
+		
+			//
+			
+			If !aCols[i][len(aHeader)+1]
+			
+				If ( GDFIELDGET("ZC5_ITEM", i) <> GDFIELDGET("ZC5_ITEM") ) .AND. ;
+						( ( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == '999999'+M->ZC5_MARCA .AND. ;
+						GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV")) .OR.;
+						( GDFIELDGET("ZC5_CATEGO", i)+GDFIELDGET("ZC5_MARCA", i) == GDFIELDGET("ZC5_CATEGO")+M->ZC5_MARCA) .AND. ;
+						GDFIELDGET("ZC5_CODVER", i) == GDFIELDGET("ZC5_CODVER") .AND.;
+						GDFIELDGET("ZC5_FORMA", i) == GDFIELDGET("ZC5_FORMA") .AND.;
+						GDFIELDGET("ZC5_PERCEN", i) == GDFIELDGET("ZC5_PERCEN") .AND.;
+						GDFIELDGET("ZC5_CALCUL", i) == GDFIELDGET("ZC5_CALCUL") .AND.;
+						GDFIELDGET("ZC5_DEVOLV", i) == GDFIELDGET("ZC5_DEVOLV"))
+			    		    
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa MARCA e CATEGORIA no CONTRATO !")
+		    		        
+					FormBatch("Contrato x Produto",aSay,aButton)
+		        
+				End if
+		
+			End If
+
+		Next i
+     
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC5_CODPRO")) )
+			lRet := .F.
+			aAdd(aSay,"Ja existe amarracao para esse CONTRATO  com PRODUTO,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Contrato x Produto",aSay,aButton)
+		End If
+    
+			
+	End If
+
+                    
+Return (lRet)
+
+/*/{Protheus.doc} ZC5CATEGO============================================================================================================================
+Funcao auxiliar Busca categoria
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function ZC5CATEGO() //CATEGORIA
+
+	Local cRet := ''
+
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+	dbGotop()
+
+	dbSeek(xFilial("SX5")+"X4")
+
+	While SX5->X5_TABELA == "X4" 
+
+		If SX5->X5_CHAVE # '999999'
+			cRet += SX5->X5_CHAVE+"="+SX5->X5_DESCRI+";"
+		End If
+		
+		dbskip()
+
+	End While
+
+
+Return cRet
+
+/*/{Protheus.doc} ZC5MARCA============================================================================================================================
+Funcao auxiliar Busca Marca
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function ZC5MARCA() //marca
+
+	Local cRet := ''
+
+
+	dbSelectArea("SX5")
+	dbSetOrder(1)
+	dbGotop()
+
+	dbSeek(xFilial("SX5")+"X8")
+	
+
+	While SX5->X5_TABELA == "X8"
+
+		cRet += SX5->X5_CHAVE+"="+SX5->X5_DESCRI+";"
+
+		dbskip()
+
+	End While
+
+
+Return cRet
+
+Static Function msg(lOk)
+
+Local lOk1 := lok
+
+If !lok1
+MsgAlert("Ja existe essa verba cadastrada no contrato, verifique!")
+End If
+
+
+Return lOk1
+
+/*/{Protheus.doc} _GrvZ6Z7============================================================================================================================
+Funcao auxiliar Grava ZC7 cliente/redes/categorias
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+Static Function _GrvZ6Z7(lCancela)
+                                                                                               
+Local lRet := .T.				
+		For _i := 1 To Len(oMsGet2:aCols)
+		
+		If !oMsGet2:aCols[_i][Len(aHeader2) + 1]
+		
+			IF  ( EMPTY(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODPRO"})]) ;
+			 .AND. (EMPTY(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_MARCA"})]) ;
+			 .OR. EMPTY(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CATEGO"})])))
+			
+			 	MsgStop(OemToAnsi("Uma amarracao obrigatoriamente deve ser feita,PRODUTO OU MARCA E CATEGORIA!"))
+	 		 	lRet := .F.	
+				Return .F.
+		
+			End If
+		
+		End If
+		
+		Next _i
+		//If lCancela .AND. lRet
+		//	Return .T.
+		//End If
+		
+		For _i := 1 To Len(oMsGet2:aCols)
+		
+		// Verifica linha deletada 
+		If oMsGet2:aCols[_i][Len(aHeader2) + 1]
+		
+			If Empty(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})])
+				
+				dbSelectArea("ZC7")
+				dbSetOrder(1)
+				
+				If DbSeek(xFilial("ZC7") + oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})] + ;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] + ;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] +;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})] + ;
+				cValToChar(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})]),.F.)
+					RecLock("ZC7",.F.)
+					DbDelete()
+					MsUnLock()
+				EndIf
+			Else
+				dbSelectArea("ZC7")
+				dbSetOrder(5)
+				//ZC7_FILIAL+ZC7_BANDEI+ZC7_CODCTR+ZC7_ITEM       
+				
+				If DbSeek(xFilial("ZC7") + oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})] +;
+				 oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] + ;
+				 cValToChar(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})]),.F.)
+				 	RecLock("ZC7",.F.)
+					DbDelete()
+					MsUnLock()
+				EndIf
+			
+			
+			End If
+		
+		Else
+		//Alteracao e caso inclua ou copie algo que ja existe
+			
+			If Empty(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})])
+				dbSelectArea("ZC7")
+				dbSetOrder(1)
+	
+				If DbSeek(xFilial("ZC7") + oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})] + ;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] +;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] +;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})] +;
+				cValToChar(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})]),.F.)
+					RecLock("ZC7",.F.)
+					
+					For _j := 1 To Len(aHeader2)
+						Field->&(aHeader2[_j][2]) := oMsGet2:aCols[_i][_j]
+					Next
+								
+			
+					MsUnlock()
+				
+				//Inclusao
+				Else
+					
+					RecLock("ZC7",.T.)
+					
+					For _j := 1 To Len(aHeader2)//Inclusao
+						Field->&(aHeader2[_j][2]) := oMsGet2:aCols[_i][_j]
+					Next
+				
+						
+					MsUnlock()
+	
+					EndIf
+			
+			Else
+				dbSelectArea("ZC7")
+				dbSetOrder(5)
+	
+				If DbSeek(xFilial("ZC7") + oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})]  +;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCTR"})] + ;
+				cValToChar(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_ITEM"})]),.F.)
+					
+					RecLock("ZC7",.F.)
+					
+					For _j := 1 To Len(aHeader2)
+						Field->&(aHeader2[_j][2]) := oMsGet2:aCols[_i][_j]
+					Next
+								
+					
+					MsUnlock()
+				
+				//Inclusao
+				Else
+					
+					RecLock("ZC7",.T.)
+					
+					For _j := 1 To Len(aHeader2)//Inclusao
+						Field->&(aHeader2[_j][2]) := oMsGet2:aCols[_i][_j]
+					Next
+				
+					
+					MsUnlock()
+	
+					EndIf
+				
+			End If
+		Endif
+	
+		Next _i
+		
+		MsgInfo("Itens Salvos com sucesso!")
+	
+	
+Return .T.
+
+/*/{Protheus.doc} xLiOkZC7============================================================================================================================
+Funcao auxiliar Valida linhas detalhe cliente/categorias
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function xLiOkZC7()
+
+
+	Local lRet := .T.
+	Local aSay	:= {}
+	Local aButton := {}
+	
+	aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK
+	     	
+    //VALIDA SE REPRESENTANTE FOI DIGITADO 	
+	
+
+	If !aCols[len(aCols)][Len(aHeader) + 1]
+	
+		If EMPTY(GDFIELDGET("ZC7_CODCLI")) .AND. EMPTY(GDFIELDGET("ZC7_BANDEI"))
+	     	   
+			lRet := .F.
+			aAdd(aSay,"O codigo do Cliente OU Codigo da Bandeira deve ser preenchido !")
+		    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		
+		End If
+     	
+    //VALIDA AO MENOS UMA AMARRACAO FOI FEITA 	
+		IF  lRet .AND. ( EMPTY(GDFIELDGET("ZC7_CODPRO"))  .AND. (EMPTY(GDFIELDGET("ZC7_MARCA")) .OR. EMPTY(GDFIELDGET("ZC7_CATEGO"))))
+		
+		
+			lRet := .F.
+		     		    
+			aAdd(aSay,"Uma amarracao obrigatoriamente deve ser feita,")
+			aAdd(aSay,"PRODUTO OU MARCA E CATEGORIA!")
+	    		        
+			FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+	
+		End If
+	
+	End If
+
+	/*
+	If lRet .AND. !aCols[len(aCols)][Len(aHeader) + 1]
+	
+	//ZC7_FILIAL+ZC7_CODCLI+ZC7_LOJA+ZC7_CODPRO+ZC7_CATEGO+ZC7_MARCA+ZC7_SETOR    	                                                                                                                                                                                        
+	
+	
+	
+		If !Empty(oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})])
+				ZC7->( dbSetOrder(2) )
+					
+				If ZC7->( dbSeek(xFilial("ZC7")+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})]	+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})]		+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODPRO"})]	+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CATEGO"})]	+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_MARCA"})]	+;
+				oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})])) 
+				
+					While ZC7->( !Eof() ) .AND. (;
+						oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODCLI"})] 	== ZC7->(ZC7_CODCLI)	.AND.;
+						oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] 	== ZC7->(ZC7_LOJA)	.AND.;
+						oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_SETOR"})]	== ZC7->(ZC7_SETOR)	.AND.;
+						oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CODPRO"})] 	== 	ZC7->(ZC7_CODPRO) .AND.;
+						oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_CATEGO"})] 	== 	ZC7->(ZC7_CATEGO) .AND.;
+				   		oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_MARCA"})] 	== 	ZC7->(ZC7_MARCA))
+					
+						IF ZC7->(ZC7_CODCTR) <> ZC4->ZC4_CODCON .AND. ZC7->(ZC7_LOJA) == oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] 
+							
+							lRet := .F.
+							aAdd(aSay,"Ja existe amarracao para esse cliente com")
+							aAdd(aSay,"as mesmas caractaristicas no CONTRATO:"+ZC7->(ZC7_CODCTR))
+							aAdd(aSay,"so e permitido um tipo de amarracao de produto por contrato!")
+							FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+							
+						End If
+					
+						ZC7->( dbSkip() )
+						
+					End While
+				
+				End If
+				
+		Else
+					ZC7->( dbSetOrder(4) )
+					
+					If ZC7->( dbSeek(xFilial("ZC7")+oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})] ) ) 
+					
+						While ZC7->( !Eof() ) .AND. (oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_BANDEI"})] == ZC7->(ZC7_BANDEI))
+						
+							If ZC7->ZC7_CODCTR <> ZC4->ZC4_CODCON .AND. ZC7->(ZC7_LOJA) == oMsGet2:aCols[_i][aScan(aHeader2,{|x| Trim(x[2])=="ZC7_LOJA"})] 
+								
+								lRet := .F.
+								aAdd(aSay,"Ja existe amarracao para essa BANDEIRA com")
+								aAdd(aSay,"as mesmas caractaristicas no CONTRATO:"+ZC7->(ZC7_CODCTR))
+								aAdd(aSay,"so e permitido um tipo de amarracao de produto por contrato!")
+								FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+								
+							End If
+						
+							ZC7->(dbSkip())
+							
+						End While
+				
+	`				End If			
+			
+		End If
+	
+	End If
+	*/
+	
+Return lRet
+
+
+User Function QW40()
+
+
+AxCadastro("ZC6")
+
+
+Return
+
+/*/{Protheus.doc} QA040CMB============================================================================================================================
+Funcao auxiliar Combo filiais
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/  
+
+User Function QA040CMB()
+
+Local cRet := ''
+
+If alltrim(M->ZC4_CMBFIL) == "SELECIONE FILIAL" 
+
+	cRet := Alltrim(M->ZC4_FILSEL) 
+
+	Return cRet
+
+End If
+
+
+If Empty(Alltrim(M->ZC4_FILSEL))
+
+	cRet := alltrim(M->ZC4_CMBFIL)+";"
+
+ElseIf !alltrim(M->ZC4_CMBFIL) $ Alltrim(M->ZC4_FILSEL) .AND. !"00-TODAS AS FILIAIS" $ Alltrim(M->ZC4_FILSEL) .AND. alltrim(M->ZC4_CMBFIL) <> "00-TODAS AS FILIAIS"  
+
+	cRet := Alltrim(M->ZC4_FILSEL)+alltrim(M->ZC4_CMBFIL)+";"
+
+ElseIf alltrim(M->ZC4_CMBFIL) == "00-TODAS AS FILIAIS"
+	
+	If !"00-TODAS AS FILIAIS" $ Alltrim(M->ZC4_FILSEL)  
+		cRet := alltrim(M->ZC4_CMBFIL)
+	ElseIf "00-TODAS AS FILIAIS" $ Alltrim(M->ZC4_FILSEL)
+		cRet := ""
+	End If
+
+Else
+
+	cRet := STRTRAN ( Alltrim(M->ZC4_FILSEL) , alltrim(M->ZC4_CMBFIL)+";","")
+
+End If
+
+
+
+Return cRet
+
+/*/{Protheus.doc} xValidZC7============================================================================================================================
+Funcao auxiliar  Valida ZC7 
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/ 
+
+User Function xValidZC7(nOpc)
+
+
+	Local lRet := .T.
+	Local aSay	:= {}
+	Local aButton := {}
+	
+	aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK
+	
+	If nOpc == 1 //ZC7_CODPRO ********************************************************************************************************************************************************
+	
+		For i:= 1 to len(aCols)
+		
+			// VALIDO DENTRO DO GRID SE JA EXISTE ALGUMA AMARRACAO ////
+			If !aCols[i][Len(aHeader) + 1] .AND. i <> n 
+		
+			//VALIDA SE JA EXISTE PRODUTO AMARRADO NO CLIENTE
+					
+				If 	GDFIELDGET("ZC7_CODPRO", i,.T.) == GDFIELDGET("ZC7_CODPRO",,.T.) .AND. ;
+					GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.) .AND. ;
+					GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.) .AND. ;
+					GDFIELDGET("ZC7_LOJA", i,.T.) == GDFIELDGET("ZC7_LOJA",,.T.) 
+					 
+					lRet := .F.
+		       		    
+					aAdd(aSay,"Ja existe amarracao para esse PRODUTO no CONTRATO !")
+	    		        
+					FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+	
+	        
+				End If
+				
+				
+			End If
+	        
+		Next i
+
+		//VALIDA SE EXISTE MARCA OU CATEGORIA JA ESXISTENTE NA CLIENTE
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC7_MARCA")) .OR. !EMPTY(GDFIELDGET("ZC7_CATEGO")) )
+			lRet := .F.
+			aAdd(aSay,"Ja existe alguma amarracao para esse CONTRATO de MARCA OU CATEGORIA,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+		
+		
+		// VALIDO EM OUTROS CONTRATOS SE JA EXISTE ALGUMA AMARRACAO //// NOVO //////////////////////////////////////////////////////////////////////
+		
+		If lRet
+					
+			cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_OBSOLE<>'T' AND ZC4_CODCON IN(" + CRLF
+			cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF
+			cQuery += " AND ZC7_BANDEI='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "'" + CRLF
+			cQuery += " AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_CODPRO='" + Alltrim(GDFIELDGET("ZC7_CODPRO",,.T.))+ "'" + CRLF
+			cQuery += " AND ZC7.D_E_L_E_T_='')" + CRLF
+			
+			
+			MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\xValidZC7_PRODUTO.SQL",cQuery)
+			
+			If Select("ZC7VLCLI") > 0
+				ZC7VLCLI->(DbCloseArea())
+			Endif
+			
+			TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+			
+			If ZC7VLCLI->( !Eof() )
+				If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+						lRet := .F.
+				EndIf 
+	
+			EndIf
+			
+			If !lRet
+				aSay := {}
+				aAdd(aSay,"Ja existe amarracao desse do PRODUTO>" + Alltrim(GDFIELDGET("ZC7_CODPRO",,.T.)) + " no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " para!")
+			    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+			End If
+		
+		End If 
+  	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  	
+		
+	
+	ElseIf nOpc == 2 //ZC7_CATEGO ***************************************************************************************************************************************************
+     
+		For i:= 1 to len(aCols)
+			
+			If !aCols[i][Len(aHeader) + 1]
+			
+				//VERIFICA SE JA EXISTE CATEGORIA E MARCA(TODAS) AMARRADA EM ALGUM LINHA DO CLIENTE
+				If GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.) .AND. GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.) .AND. GDFIELDGET("ZC7_LOJA", i,.T.)   == GDFIELDGET("ZC7_LOJA",,.T.) .AND. GDFIELDGET("ZC7_ITEM", i)<>GDFIELDGET("ZC7_ITEM") .AND. ((GDFIELDGET("ZC7_CATEGO", i)+GDFIELDGET("ZC7_MARCA", i) == M->ZC7_CATEGO+'999999') .OR. (GDFIELDGET("ZC7_CATEGO", i)+GDFIELDGET("ZC7_MARCA", i) == M->ZC7_CATEGO+GDFIELDGET("ZC7_MARCA")))
+			    		    
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto-1",aSay,aButton)
+		        
+		        
+				ElseIf lRet .AND. GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.);
+				.AND. GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.);
+				.AND. GDFIELDGET("ZC7_LOJA", i,.T.) == GDFIELDGET("ZC7_LOJA",,.T.);  
+				.AND. ( GDFIELDGET("ZC7_ITEM", i) <> GDFIELDGET("ZC7_ITEM") ) .AND. M->ZC7_CATEGORI='999999' .AND. !EMPTY( GDFIELDGET("ZC7_CATEGO", i) ) 
+		        	
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto-2",aSay,aButton)
+				
+				
+				ElseIf lRet .AND. GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.);
+				.AND. GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.);
+				.AND. GDFIELDGET("ZC7_LOJA", i,.T.) == GDFIELDGET("ZC7_LOJA",,.T.);  
+				.AND. GDFIELDGET("ZC7_ITEM", i) <> GDFIELDGET("ZC7_ITEM");
+				.AND. GDFIELDGET("ZC7_CATEGO", i) == '999999' .AND. GDFIELDGET("ZC7_MARCA", i) == '999999' 
+					
+					lRet := .F.
+				       		    
+					aAdd(aSay,"Ja existe amarracao para essa CATEGORIA (TODAS) e MARCA (TODAS) no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto-3",aSay,aButton)
+				
+								
+				
+				End If
+			
+			End if
+		
+		Next i
+	     
+	       
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC7_CODPRO")) ) 
+			lRet := .F.
+			aAdd(aSay,"Ja existe amarracao para esse CONTRATO com PRODUTO,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+		// VALIDO EM OUTROS CONTRATOS SE JA EXISTE ALGUMA AMARRACAO //// NOVO //////////////////////////////////////////////////////////////////////
+		
+		If lRet
+					
+			cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_OBSOLE<>'T' AND ZC4_CODCON IN(" + CRLF
+			cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF
+			cQuery += " AND ZC7_BANDEI='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "'" + CRLF
+			cQuery += " AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_CODPRO='" + Alltrim(GDFIELDGET("ZC7_CODPRO",,.T.))+ "'" + CRLF
+		
+			If Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.)) <> '999999' .AND. Alltrim(GDFIELDGET("ZC7_MARCA",,.T.)) <> '999999'
+				cQuery += " AND ZC7_CATEGO='" + Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.))+ "'" + CRLF
+				cQuery += " AND ZC7_MARCA='999999'" + CRLF
+			End If
+			
+			If Alltrim(GDFIELDGET("ZC7_MARCA",,.T.)) == '999999' .AND. Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.)) <> '999999' 
+				cQuery += " AND ZC7_CATEGO='" + Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.))+ "'" + CRLF
+			End If
+
+			cQuery += " AND ZC7.D_E_L_E_T_='')" + CRLF
+						
+			MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\xValidZC7_CATEGORIA.SQL",cQuery)
+			
+			
+			If Select("ZC7VLCLI") > 0
+				ZC7VLCLI->(DbCloseArea())
+			Endif
+			
+			TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+			
+			If ZC7VLCLI->( !Eof() )
+				If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+						lRet := .F.
+				EndIf 
+	
+			EndIf
+			
+			If !lRet
+				aSay := {}
+				aAdd(aSay,"Ja existe amarracao dessa do CATEGORIA>" + Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.)) + " no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " para!")
+			    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+			End If
+		
+		End If 
+  	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+	ElseIf nOpc == 3 //ZC7_MARCA
+     
+		For i:= 1 to len(aCols)
+		
+			//
+			
+			If !aCols[i][Len(aHeader) + 1]
+			
+				If (  GDFIELDGET("ZC7_BANDEI", i,.T.) 	== GDFIELDGET("ZC7_BANDEI",,.T.);
+				.AND. GDFIELDGET("ZC7_CODCLI", i,.T.) 	== GDFIELDGET("ZC7_CODCLI",,.T.);
+				.AND. GDFIELDGET("ZC7_LOJA", i,.T.) 	== GDFIELDGET("ZC7_LOJA",,.T.);  
+				.AND. GDFIELDGET("ZC7_ITEM", i) 		<> GDFIELDGET("ZC7_ITEM") .AND.;
+				( (   GDFIELDGET("ZC7_CATEGO", i)+GDFIELDGET("ZC7_MARCA", i) == '999999'+M->ZC7_MARCA) .OR.;
+				  (   GDFIELDGET("ZC7_CATEGO", i)+GDFIELDGET("ZC7_MARCA", i) == GDFIELDGET("ZC7_CATEGO")+M->ZC7_MARCA)))
+			    		    
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa MARCA e CATEGORIA no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		        
+			
+					ElseIf lRet .AND. (GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.);
+					.AND. GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.);
+					.AND. GDFIELDGET("ZC7_LOJA", i,.T.) == GDFIELDGET("ZC7_LOJA",,.T.);  
+					.AND. GDFIELDGET("ZC7_ITEM", i) <> GDFIELDGET("ZC7_ITEM") .AND. M->ZC7_MARCA=='999999' .AND.;
+					 ( (GDFIELDGET("ZC7_CATEGO", i) == GDFIELDGET("ZC7_CATEGO")) .OR. (GDFIELDGET("ZC7_CATEGO", i) == '999999' ) )) 
+		        	
+					lRet := .F.
+			       		    
+					aAdd(aSay,"Ja existe amarracao para essa CATEGORIA e MARCA no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto-4",aSay,aButton)
+			
+					ElseIf lRet .AND. GDFIELDGET("ZC7_BANDEI", i,.T.) == GDFIELDGET("ZC7_BANDEI",,.T.);
+					.AND. GDFIELDGET("ZC7_CODCLI", i,.T.) == GDFIELDGET("ZC7_CODCLI",,.T.);
+					.AND. GDFIELDGET("ZC7_LOJA", i,.T.) == GDFIELDGET("ZC7_LOJA",,.T.);  
+					.AND. GDFIELDGET("ZC7_ITEM", i) <> GDFIELDGET("ZC7_ITEM");
+					.AND. GDFIELDGET("ZC7_CATEGO", i) == '999999' .AND. GDFIELDGET("ZC7_MARCA", i) == '999999' 
+					
+					lRet := .F.
+				 
+				   aAdd(aSay,"Ja existe amarracao para essa CATEGORIA (TODAS) e MARCA (TODAS) no CONTRATO !")
+		    		        
+					FormBatch("Cliente x Contrato x Produto-5",aSay,aButton)
+				    		 
+					End if
+		
+			End If
+
+		Next i
+     
+		If lRet .AND. ( !EMPTY(GDFIELDGET("ZC7_CODPRO")) )
+			lRet := .F.
+			aAdd(aSay,"Ja existe amarracao para esse CONTRATO  com PRODUTO,")
+			aAdd(aSay,"so e permitido um tipo de amaracao por linha!")
+			FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+				// VALIDO EM OUTROS CONTRATOS SE JA EXISTE ALGUMA AMARRACAO //// NOVO //////////////////////////////////////////////////////////////////////
+		
+		If lRet
+					
+			cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_OBSOLE<>'T' AND ZC4_CODCON IN(" + CRLF
+			cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF
+			cQuery += " AND ZC7_BANDEI='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "'" + CRLF
+			cQuery += " AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' " + CRLF
+			cQuery += " AND ZC7_CODPRO='" + Alltrim(GDFIELDGET("ZC7_CODPRO",,.T.))+ "'" + CRLF
+			
+			If Alltrim(GDFIELDGET("ZC7_MARCA",,.T.)) <> '999999'
+				cQuery += " AND (ZC7_MARCA='" + Alltrim(GDFIELDGET("ZC7_MARCA",,.T.))+ "' OR ZC7_MARCA='999999')" + CRLF
+			End If
+		
+			If Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.)) <> '999999'
+				cQuery += " AND (ZC7_CATEGO='999999' OR ZC7_CATEGO='" + Alltrim(GDFIELDGET("ZC7_CATEGO",,.T.))+ "')" + CRLF
+			end If
+			
+			cQuery += " AND ZC7.D_E_L_E_T_='')" + CRLF
+			
+			
+			MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\xValidZC7_MARCA.SQL",cQuery)
+			
+			If Select("ZC7VLCLI") > 0
+				ZC7VLCLI->(DbCloseArea())
+			Endif
+			
+			TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+			
+			If ZC7VLCLI->( !Eof() )
+				If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+						lRet := .F.
+				EndIf 
+	
+			EndIf
+			
+			If !lRet
+				aSay := {}
+				aAdd(aSay,"Ja existe amarracao desse do MARCA>" + Alltrim(GDFIELDGET("ZC7_MARCA",,.T.)) + " no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " para!")
+			    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+			End If
+		
+		End If 
+  	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	End If
+	
+                    
+Return (lRet)
+
+/*/{Protheus.doc} ValZC7LJ============================================================================================================================
+Funcao auxiliar  Valida ZC7 loja
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/ 
+
+User Function ValZC7LJ(xOpc)
+
+Local lRet := .T.
+Local i
+Local aSay := {}
+Local aButton :=  {}	
+
+aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK
+SA1->(dbSetOrder(1))
+If xOpc == 1 //Cliente
+	If !SA1->( dbSeek(xFilial("SA1")+M->ZC7_CODCLI) )
+		lRet := .F.
+		MsgStop(OemToAnsi("Cliente n�o existe!"))
+	End If
+Else //CLIENTE+LOJA
+	
+	If !SA1->( dbSeek(xFilial("SA1")+M->ZC7_CODCLI+M->ZC7_LOJA) )
+		lRet := .F.
+		MsgStop(OemToAnsi("Cliente n�o existe!"))
+	End If
+	/*
+	If lRet  
+	
+		cQuery := "SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " WHERE ZC7_CODCTR<>'"+  ZC4->ZC4_CODCON + "' "
+		cQuery += "AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' AND D_E_L_E_T_='' "
+		
+		
+		cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_CODCON IN(" + CRLF
+		cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF  
+		cQuery += " AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' AND ZC7.D_E_L_E_T_='' )" + CRLF
+		cQuery += " AND ZC4_OBSOLE='F' AND ZC4.D_E_L_E_T_=''"  + CRLF
+	
+		
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI1.SQL",cQuery)
+		
+		If Select("ZC7VLCLI") > 0
+			ZC7VLCLI->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+		
+		If ZC7VLCLI->( !Eof() )
+			If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+					lRet := .F.
+			EndIf 
+
+		EndIf
+		
+		If !lRet
+			aSay := {}
+			aAdd(aSay,"Ja existe amarracao desse CLIENTE no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " !")
+		    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+	
+	End If
+*/
+
+End If
+
+
+Return lRet
+
+
+User Function ZC7CODCLI()
+
+Local lRet := .F.
+
+
+If 		EMPTY(GDFIELDGET("ZC7_BANDEI",,.T.)) 	;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_CODPRO",,.T.))	;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_CATEGO",,.T.))	;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_MARCA",,.T.))   
+	lRet := .T.
+End If
+
+
+Return lRet
+
+
+
+
+User Function ZC7LOJA()
+
+Local lRet := .F.
+
+
+If EMPTY(GDFIELDGET("ZC7_BANDEI",,.T.)) .AND. !EMPTY(GDFIELDGET("ZC7_CODCLI",,.T.)) ;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_CODPRO",,.T.))	;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_CATEGO",,.T.))	;
+ .AND. 	EMPTY(GDFIELDGET("ZC7_MARCA",,.T.))   
+
+	lRet := .T.
+End If
+
+
+Return lRet       
+
+User Function ZC7BAND()
+
+Local lRet := .F.
+
+
+If 		EMPTY(GDFIELDGET("ZC7_CODCLI",,.T.)) //; 
+// .AND. 	EMPTY(GDFIELDGET("ZC7_CODPRO",,.T.)) ;
+// .AND. 	EMPTY(GDFIELDGET("ZC7_CATEGO",,.T.)) ;
+// .AND. 	EMPTY(GDFIELDGET("ZC7_MARCA",,.T.))   
+	
+	lRet := .T.
+End If
+
+
+Return lRet  
+                            
+User Function ZC7VLBAN()
+
+Local i
+Local lRet := .T.
+Local aSay := {}
+Local aButton :=  {}	
+
+aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK		
+
+		cQuery := "SELECT DISTINCT A1_COD FROM " + RetSqlName("SA1") + " WHERE A1_XBAND='" + AllTrim(GDFIELDGET("ZC7_BANDEI",,.T.)) + "' AND D_E_L_E_T_=''"
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_BAN.SQL",cQuery)
+		If Select("ZC7VLBAN") > 0
+			ZC7VLBAN->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "ZC7VLBAN"
+	
+		For i := 1 to len(aCols)
+		
+			If !aCols[i][Len(aHeader) + 1] .AND. i <> n 
+
+				//VALIDA SE JA EXISTE PRODUTO AMARRADO NO CLIENTE
+				If Alltrim(GDFIELDGET("ZC7_CODCLI", i,.T.)) ==  Alltrim(ZC7VLBAN->A1_COD)  
+						
+						lRet := .F.
+			       		    
+						aAdd(aSay,"Ja existe amarracao para de algum CLIENTE dessa BANDEIRA!")
+		    		        
+						FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		        
+				End If
+	    
+			End If
+
+		Next i
+		
+		//cQuery := "SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " WHERE ZC7_CODCTR<>'"+  ZC4->ZC4_CODCON + "'" 
+		//cQuery += " AND '" + ZC4->ZC4_FILSEL + "' LIKE ZC4_FILSEL "
+		//cQuery += " AND ZC7_BANDEI='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "' AND D_E_L_E_T_='' "
+		
+		cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_OBSOLE<>'T' AND ZC4_CODCON IN(" + CRLF
+		cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF  
+		cQuery += " AND ZC7_BANDEI='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "' AND ZC7.D_E_L_E_T_='' )" + CRLF
+		cQuery += " AND ZC4_OBSOLE='F' AND ZC4.D_E_L_E_T_=''"  + CRLF
+			
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_BAN1.SQL",cQuery)
+		
+		If Select("ZC7VLBAN") > 0
+			ZC7VLBAN->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "ZC7VLBAN"
+		
+		If ZC7VLBAN->( !Eof() )
+			If 		Alltrim(ZC7VLBAN->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	Alltrim(ZC7VLBAN->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+					lRet := .F.
+			EndIf 
+
+		EndIf
+		
+		
+		If !lRet
+			aSay := {}
+			aAdd(aSay,"Ja existe amarracao dessa bandeira no CONTRATO>" + ZC7VLBAN->(ZC4_CODCON) + " !")
+		    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+		/*
+		If lRet
+		
+			//verifica se o cliente ja foi amarrado pela bandeira em algum contrato
+			cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_CODCON IN(" + CRLF
+			cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF  
+			cQuery += " AND ZC7_CODCLI=(SELECT DISTINCT TOP 1 A1_COD FROM " + RetSqlName("SA1") + " SA1 WHERE A1_XBAND='" + Alltrim(GDFIELDGET("ZC7_BANDEI",,.T.))+ "' AND SA1.D_E_L_E_T_='') AND ZC7.D_E_L_E_T_='' )" + CRLF
+			cQuery += " AND ZC4_OBSOLE='F' AND ZC4.D_E_L_E_T_=''"  + CRLF
+				
+			MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI1.SQL",cQuery)
+			
+			If Select("ZC7VLCLI") > 0
+				ZC7VLCLI->(DbCloseArea())
+			Endif
+			
+			TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+			
+			If ZC7VLCLI->( !Eof() )
+				If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+						lRet := .F.
+				EndIf 
+	
+			EndIf
+			
+			If !lRet
+				aSay := {}
+				//cQuery := "SELECT DISTINCT A1_XBAND FROM " + RetSqlName("SA1") + "  SA1 WHERE A1_COD='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.)) +  "' AND SA1.D_E_L_E_T_=''"
+				aAdd(aSay,"Ja existe amarracao de CLIENTE dessa BANDEIRA no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " !")
+			    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+			End If
+		
+		End if
+		*/
+Return lRet
+
+/*/{Protheus.doc} ZC7VLCLI============================================================================================================================
+Funcao auxiliar  Valida ZC7 CLiente
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 01/02/2020
+=========================================================================================================================================================
+/*/ 
+User Function ZC7VLCLI()
+
+Local i
+Local lRet := .T.
+Local aSay := {}
+Local aButton :=  {}	
+
+aAdd(aButton, { 1,.T.,{|| FechaBatch() }}) //OK		
+
+		cQuery := "SELECT DISTINCT A1_XBAND FROM " + RetSqlName("SA1") + " WHERE A1_COD='" + AllTrim(GDFIELDGET("ZC7_CODCLI",,.T.)) + "' AND D_E_L_E_T_='' ORDER BY A1_XBAND"
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI.SQL",cQuery)
+		If Select("ZC7VLCLI") > 0
+			ZC7VLCLI->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+		
+		ZC7VLCLI->( dbGoTop())
+		
+		If ZC7VLCLI->( !Eof() )
+		
+		While ZC7VLCLI->( !Eof() )
+		
+			For i := 1 to len(aCols)
+				
+				If !aCols[i][Len(aHeader) + 1] .AND. i <> n 
+					
+					//VALIDA SE JA EXISTE PRODUTO AMARRADO NO CLIENTE
+					If Alltrim(GDFIELDGET("ZC7_BANDEI", i,.T.)) ==  Alltrim(ZC7VLCLI->A1_XBAND)  
+							
+							lRet := .F.
+				       		    
+							aAdd(aSay,"Ja existe amarracao para de alguma BANDEIRA desse CLIENTE!")
+			    		        
+							FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+							Return lRet 
+					End If
+		    
+				End If
+	
+			Next i
+		
+		ZC7VLCLI->( dbskip() )
+		
+		EndDo
+		
+		End If
+		
+		/*
+		//cQuery := "SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " WHERE ZC7_CODCTR<>'"+  ZC4->ZC4_CODCON + "' "
+		//cQuery += "AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' AND D_E_L_E_T_='' "
+		//MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI1.SQL",cQuery)
+		
+		cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_CODCON IN(" + CRLF
+		cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF  
+		cQuery += " AND ZC7_CODCLI='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' AND ZC7_LOJA='" + Alltrim(GDFIELDGET("ZC7_LOJA",,.T.))+ "' AND ZC7.D_E_L_E_T_='' )" + CRLF
+		cQuery += " AND ZC4_OBSOLE='F' AND ZC4.D_E_L_E_T_=''"  + CRLF
+		
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI1.SQL",cQuery)
+		
+		If Select("ZC7VLCLI") > 0
+			ZC7VLCLI->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+
+		If ZC7VLCLI->( !Eof() )
+			If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+					lRet := .F.
+			ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+					lRet := .F.
+			EndIf 
+		EndIf
+			
+		If !lRet
+			aSay := {}
+			aAdd(aSay,"Ja existe amarracao desse CLIENTE no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " !")
+		    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+		End If
+		*/
+		/*
+		If lRet
+		
+			//verifica se o cliente ja foi amarrado pela bandeira em algum contrato
+			cQuery := "SELECT ZC4_FILSEL,ZC4_CODCON FROM " + RetSqlName("ZC4") + " ZC4 WHERE ZC4_CODCON IN(" + CRLF
+			cQuery += " SELECT DISTINCT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " ZC7 WHERE ZC7_CODCTR<>'" +  ZC4->ZC4_CODCON + "'" + CRLF  
+			cQuery += " AND ZC7_BANDEI=(SELECT DISTINCT TOP 1 A1_XBAND FROM " + RetSqlName("SA1") + " SA1 WHERE A1_COD='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.))+ "' AND SA1.D_E_L_E_T_='') AND ZC7.D_E_L_E_T_='' )" + CRLF
+			cQuery += " AND ZC4_OBSOLE='F' AND ZC4.D_E_L_E_T_=''"  + CRLF
+				
+			MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_CLI1.SQL",cQuery)
+			
+			If Select("ZC7VLCLI") > 0
+				ZC7VLCLI->(DbCloseArea())
+			Endif
+			
+			TCQUERY cQuery NEW ALIAS "ZC7VLCLI"
+			
+			If ZC7VLCLI->( !Eof() )
+				If 		Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	AllTrim(ZC4->ZC4_FILSEL) $ '00-TODAS AS FILIAIS;'
+						lRet := .F.
+				ElseIf 	Alltrim(ZC7VLCLI->(ZC4_FILSEL)) $ Alltrim(ZC4->ZC4_FILSEL) 
+						lRet := .F.
+				EndIf 
+	
+			EndIf
+			
+			If !lRet
+				aSay := {}
+				//cQuery := "SELECT DISTINCT A1_XBAND FROM " + RetSqlName("SA1") + "  SA1 WHERE A1_COD='" + Alltrim(GDFIELDGET("ZC7_CODCLI",,.T.)) +  "' AND SA1.D_E_L_E_T_=''"
+				aAdd(aSay,"Ja existe amarracao desse CLIENTE no CONTRATO>" + ZC7VLCLI->(ZC4_CODCON) + " !")
+			    FormBatch("Cliente x Contrato x Produto",aSay,aButton)
+			End If
+		
+		End if
+		*/
+
+Return lRet
+
+
+
+
+User Function xZC4()
+
+Local cRet := ''
+		
+		cQuery := "SELECT ISNULL(MAX(ZC4_CODCON)+1,1) AS COD FROM " + RetSqlName("ZC4") + " WHERE D_E_L_E_T_=''"
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_ZC4.SQL",cQuery)
+		
+		If Select("xZC4") > 0
+			xZC4->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "xZC4"
+
+		If xZC4->( !Eof() )
+			cRet := StrZero(xZC4->COD,6)
+		Else
+			cRet := '000001'
+		End If
+		
+Return cRet
+
+Static Function zc7suatus(codcon)
+
+Local lRet := .F.
+		
+		cQuery := "SELECT ZC7_CODCTR FROM " + RetSqlName("ZC7") + " WHERE ZC7_CODCTR='" + codcon + "' AND D_E_L_E_T_=''"
+		MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\QUAA040W_ZC7.SQL",cQuery)
+		
+		If Select("xZC7") > 0
+			xZC7->(DbCloseArea())
+		Endif
+		
+		TCQUERY cQuery NEW ALIAS "xZC7"
+
+		If xZC7->( Eof() )
+			
+			lRet := .T.
+		
+		End If
+
+Return lRet
+
+
+User Function xHisZC4()
+
+	// Variaveis Locais da Funcao
+	Local cEdit1	 := ZC4->ZC4_DESC
+	Local oEdit1
+	
+	// Variaveis da Funcao de Controle e GertArea/RestArea
+	Local _aArea   		:= {}
+	Local _aAlias  		:= {}
+	// Variaveis Private da Funcao
+	Private _oDlg				// Dialog Principal
+	// Variaveis que definem a Acao do Formulario
+	Private VISUAL := .F.                        
+	Private INCLUI := .F.                        
+	Private ALTERA := .F.                        
+	Private DELETA := .F.                        
+	//variavel declarada desta maneira para ser utilizada dentro do ponto de entrada depois da gravacao do titulo
+	//MT100GE2
+	Public x_cHist  := ''
+	
+
+//If type("lMsErroAuto") <> 'L'	
+	
+	DEFINE MSDIALOG _oDlg TITLE "Descricao Contratos" FROM C(228),C(186) TO C(272),C(546) PIXEL
+	
+	// Defina aqui a chamada dos Aliases para o GetArea
+	//CtrlArea(1,@_aArea,@_aAlias,{"SA1","SA2"}) // GetArea
+	
+		// Cria Componentes Padroes do Sistema
+		@ C(004),C(136) Button "Grava" Size C(037),C(012) PIXEL OF _oDlg Action(u_GravaZC4(cEdit1))
+		@ C(005),C(002) MsGet oEdit1 Var cEdit1 Size C(130),C(009) COLOR CLR_BLACK PICTURE "@!" PIXEL OF _oDlg
+	
+	//CtrlArea(2,_aArea,_aAlias) // RestArea
+	
+	ACTIVATE MSDIALOG _oDlg CENTERED 
+	
+//End If
+
+Return(.T.)
+
+
+User Function GravaZC4(cHistPar)
+
+
+If !Empty(Alltrim(cHistPar))
+	TcSqlExec("UPDATE " + RetSqlName("ZC4") + " SET ZC4_DESC='" + cHistPar + "' WHERE ZC4_CODCON = '" + ZC4->ZC4_CODCON + "'")
+	MsgAlert("Alterado com sucesso!")
+	_oDlg:end()
+Else
+	MsgStop("Descricao precisa ser preenchida!")
+End If
+
+Return
+
+//--------------------------------------------------------------
+/*/{Protheus.doc} GetPesq
+Description
+
+@param xParam Parameter Description
+@return xRet Return Description
+@author  -
+@since 14/02/2019
+/*/
+//--------------------------------------------------------------
+User Function GetPesq()
+
+Local oSButton1
+Local oSButton2
+
+Private oGet1
+Private cGet1 := Space(6)//"Define variable value"
+Private oGet2
+Private cGet2 := Space(4)//"Define variable value"
+Private oGet3
+Private cGet3 := Space(6)//"Define variable value"
+Private oDlg
+
+If lOdlg
+	Return
+End If 
+
+lOdlg := .T.
+
+  DEFINE MSDIALOG oDlg TITLE "Pesquisa" FROM 000, 000  TO 100, 360 COLORS 0, 16777215 PIXEL
+
+    @ 008, 004 MSGET oGet1 VAR cGet1 SIZE 060, 010 OF oDlg COLORS 0, 16777215 PIXEL F3 "SA1" ON CHANGE cGet3 := Space(6);
+    Valid IIF(Empty(cGet1),.T.,ExistA1(cGet1))
+    //Valid IIF(Empty(cGet1),.T.,ExistCpo("SA1",cGet1)) 
+    
+    @ 008, 071 MSGET oGet2 VAR cGet2 SIZE 036, 010 OF oDlg COLORS 0, 16777215 PIXEL;
+    Valid IIF(Empty(cGet2),.T.,ExistA1(cGet1+cGet2))
+    //Valid IIF(Empty(cGet2),.T.,ExistCpo("SA1",cGet1+cGet2))
+    
+    //@ 009, 114 MSGET oGet3 VAR cGet3 SIZE 060, 010 OF oDlg COLORS 0, 16777215 PIXEL F3 "BA" ON CHANGE {||cGet1:=Space(6),cGet2:= Space(4)};
+    //Valid IIF(Empty(cGet3),.T.,ExistCpo("SX5","BA"+cGet3)) 
+    @ 009, 114 MSGET oGet3 VAR cGet3 SIZE 060, 010 OF oDlg COLORS 0, 16777215 PIXEL F3 "ZAP" ON CHANGE {||cGet1:=Space(6),cGet2:= Space(4)};
+    Valid IIF(Empty(cGet3),.T.,ExistCpo("ZAP",cGet3)) 
+
+    @ 001, 004 SAY oSay1 PROMPT "Cliente" 	SIZE 025, 007 OF oDlg COLORS 0, 16777215 PIXEL
+    @ 001, 073 SAY oSay2 PROMPT "Loja:" 	SIZE 025, 007 OF oDlg COLORS 0, 16777215 PIXEL
+    @ 001, 115 SAY oSay3 PROMPT "Bandeira:" SIZE 025, 007 OF oDlg COLORS 0, 16777215 PIXEL
+    
+    DEFINE SBUTTON oSButton1 FROM 030, 005 TYPE 17 OF oDlg ENABLE ACTION FilBrw()
+    DEFINE SBUTTON oSButton2 FROM 030, 036 TYPE 02 OF oDlg ENABLE ACTION ClearFl()
+            
+  ACTIVATE MSDIALOG oDlg CENTERED
+
+Return
+
+//--------------------------------------------------------------
+/*/{Protheus.doc} FilBrw
+Description
+
+@param xParam Parameter Description
+@return xRet Return Description
+@author  -
+@since 14/02/2019
+/*/
+//--------------------------------------------------------------
+Static Function FilBrw()
+
+Local oBrow 	:= GetMbrowse()
+Local cQuery 	:= ''
+Local cContr	:= ''
+
+		cQuery := "SELECT DISTINCT ZC4_CODCON " + CRLF
+		cQuery += " FROM " + RetSqlName("ZC4") + " ZC4 " + CRLF
+		cQuery += " INNER JOIN " + RetSqlName("ZC7") + " ZC7 ON ZC7_CODCTR=ZC4_CODCON AND ZC7.D_E_L_E_T_=''
+		cQuery += " WHERE ZC4.D_E_L_E_T_=''   " + CRLF
+		
+	If Empty(cGet3) .AND. Empty(cGet2)
+		cQuery += " AND ZC7_CODCLI='" + cGet1 + "'" + CRLF
+		cQuery += " OR ZC7_BANDEI IN (SELECT A1_XBAND FROM " + RetSqlName("SA1") + " WHERE A1_COD='" + cGet1 + "' AND D_E_L_E_T_='')" + CRLF
+	End If
+	
+	If !Empty(cGet2) .AND. Empty(cGet3)
+		cQuery += " AND ZC7_CODCLI='" + cGet1 + "'" + CRLF
+		cQuery += " AND ZC7_LOJA='" + cGet2 + "'" + CRLF
+	End If
+
+	If !Empty(cGet3)
+		cQuery += " AND ZC7_BANDEI='" + cGet3 + "'" + CRLF
+		cQuery += " OR ZC7_CODCLI IN (SELECT A1_COD FROM  " + RetSqlName("SA1") + " WHERE A1_XBAND = '" + cGet3 + "' AND D_E_L_E_T_='')" + CRLF
+	End If
+	
+	MemoWrite("C:\HD\Arq Trabalho\NOVAMIX\ACD\QUERYS\CONTRATOS_FILTRO.SQL",cQuery)
+	
+	IF Select("QUAA040W") > 0
+		QUAA040W->(dbCloseArea())
+	EndIf
+	
+	TCQUERY cQuery NEW ALIAS "QUAA040W" 
+		
+	While QUAA040W->(!Eof())
+		cContr += QUAA040W->ZC4_CODCON+"|"
+		QUAA040W->( dbSkip() )
+	End
+
+QUAA040W->( dbgotop() )
+
+If QUAA040W->(!Eof())
+	cFiltro	:="ZC4_CODCON $ '" + cContr +"' .AND. ZC4->ZC4_OBSOLE==.F. .OR. (ZC4->ZC4_OBSOLE==.T. .AND. ZC4->ZC4_USADO=='S')"
+	oDlg:end()
+	oBrow:SetFilterDefault(cFiltro)
+Else
+	MsgStop(OemToAnsi("N�o existe retorno para o filtro solicitado!"))
+End If
+
+SetKey( VK_F3 , { || U_GetPesq() } )
+SetKey( VK_F5 , { || ClearFl1() } )
+
+lOdlg := .F.
+
+Return 
+
+//--------------------------------------------------------------
+/*/{Protheus.doc} ClearFl
+Description
+
+@param xParam Parameter Description
+@return xRet Return Description
+@author  -
+@since 14/02/2019
+/*/
+//--------------------------------------------------------------
+
+Static Function ClearFl()
+
+Local oBrow := GetMbrowse()
+
+cFiltro	:="ZC4->ZC4_OBSOLE==.F. .OR. (ZC4->ZC4_OBSOLE==.T. .AND. ZC4->ZC4_USADO=='S') "
+
+oDlg:End()
+
+oBrow:SetFilterDefault(cFiltro)
+
+SetKey( VK_F3 , { || U_GetPesq() } )
+SetKey( VK_F5 , { || ClearFl1() } )
+
+lOdlg := .F.
+
+Return
+
+//--------------------------------------------------------------
+/*/{Protheus.doc} ClearFl1
+Description
+
+@param xParam Parameter Description
+@return xRet Return Description
+@author  -
+@since 14/02/2019
+/*/
+//--------------------------------------------------------------
+
+Static Function ClearFl1()
+
+Local oBrow := GetMbrowse()
+
+cFiltro	:="ZC4->ZC4_OBSOLE==.F. .OR. (ZC4->ZC4_OBSOLE==.T. .AND. ZC4->ZC4_USADO=='S') "
+
+//oDlg:End()
+
+oBrow:SetFilterDefault(cFiltro)
+
+SetKey( VK_F3 , { || U_GetPesq() } )
+SetKey( VK_F5 , { || ClearFl1() } )
+
+Return
+
+
+Static Function ExistA1(cCliLoja)
+
+Local lRet := .T.
+Local aArea := GetArea()
+
+dbSelectArea("SA1")
+dbSetOrder(1)
+
+If !dbSeek(xFilial("SA1")+cCliLoja)
+	lRet := .F.
+	MsgStop(OemToAnsi("Cliente Inv�lido"))
+End If
+
+RestArea(aArea)
+
+Return lRet

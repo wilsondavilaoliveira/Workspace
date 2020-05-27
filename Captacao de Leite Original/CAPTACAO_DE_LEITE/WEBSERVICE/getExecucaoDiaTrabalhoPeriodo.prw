@@ -955,14 +955,16 @@ aSort(aRet,,,{ |x, y | x[1]+x[7]+x[2] < y[1]+y[7]+y[2] })
 	  			ZA1->ZA1_FILIAL := Pad(aRet[_i][9],TamSX3("ZA1_FILIAL")[1])
 	  			ZA1->ZA1_NUMDIA := Val(aRet[_i][1]) // Numero da Viagem
 	  			ZA1->ZA1_CODLIN := aRet[_i][10] // Codigo da linha
-	  		EndIf
+	  			ZA1->ZA1_PERIOD	:= SubStr(aRet[_i][6],6,2)+SubStr(aRet[_i][6],1,4)
+			  EndIf
 	  		ZA1->ZA1_DTENTR := ctod(SubStr(aRet[_i][6],9,2)+"/"+SubStr(aRet[_i][6],6,2)+"/"+SubStr(aRet[_i][6],1,4)) // Data da Viagem
 	  		ZA1->ZA1_PLACA  := aRet[_i][14] // Placa do Veiculo
 	  		ZA1->ZA1_VLRECE := Val(aRet[_i][8]) // Volume em Litros Recebido
 	  		ZA1->ZA1_KMRAST := Abs(Val(aRet[_i][11]))// KM Rastreado
 	  		ZA1->ZA1_ODOINI := Abs(Val(aRet[_i][12]))// KM Inicio dia Odometro
 	  		ZA1->ZA1_ODOFIM := Abs(Val(aRet[_i][13]))// KM Fim dia Odometro
-	  		ZA1->(MsUnlock())
+	  		ZA1->ZA1_KMREAL := ( Abs(Val(aRet[_i][13])))-(Abs(Val(aRet[_i][12])))
+			  ZA1->(MsUnlock())
 	  	EndIf	
   			
   	Next _i

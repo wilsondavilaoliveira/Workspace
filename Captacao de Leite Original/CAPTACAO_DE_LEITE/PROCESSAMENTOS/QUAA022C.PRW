@@ -16,10 +16,10 @@ Simulador de preco de leite produtor
 /*/
 User Function QUAA022C() 
 
-	Local aCoors		:= FWGetDialogSize( oMainWnd )
+	Local aCoors		  := FWGetDialogSize( oMainWnd )
 	Local cCadastro		:= "SIMULADOR PRECOS LEITE PRODUTOR"  
-	Local aSize     	:= ''
-	Local aInfo     	:= ''
+	Local aSize     	  	:= ''
+	Local aInfo     		:= ''
 	Local oC1W1 		   
 	Local oButt1   		
 	Local oPanPri
@@ -56,9 +56,7 @@ User Function QUAA022C()
 		Return
 	EndIf
 
-	DEFINE FONT oFont4	NAME "Arial" SIZE 08,10	BOLD 
 	DEFINE FONT oFont2	NAME "Arial" SIZE 11,17 BOLD 
-	DEFINE FONT oFont5	NAME "Arial" SIZE 9,12  BOLD  
 	
 	DEFINE MSDIALOG oDlg1 FROM aCoors[1],aCoors[2] TO aCoors[3],aCoors[4] TITLE cCadastro OF oMainWnd COLOR "W+/W" STYLE nOR(WS_VISIBLE,WS_POPUP) PIXEL 
 	
@@ -96,10 +94,10 @@ User Function QUAA022C()
 	@2.0	,203 MSGET oPerRur 	VAR nPerFun	SIZE 040,10 OF oPanped 	PIXEL FONT oFont2 WHEN .F. PICTURE "@E 99.99%" 
 	
 	@004.3	,260 SAY "$ MEDIO META:"	SIZE 080,10 OF oPanped 	PIXEL FONT oFont2 COLOR CLR_BLUE  
-	@2.0	,335 MSGET oPrMedFL VAR nPrMdFl	SIZE 060,10 OF oPanped 	PIXEL FONT oFont2 When .F.  PICTURE "@E 99.99" 
+	@2.0	,335 MSGET oPrMedFL VAR nPrMdFl	SIZE 060,10 OF oPanped 	PIXEL FONT oFont2 When .F.  PICTURE "@E 99.999" 
 	
 	@004.3	,404 SAY "$ MEDIO REAL:"	SIZE 080,10 OF oPanped 	PIXEL FONT oFont2 COLOR CLR_GREEN  
-	@2.0	,480 MSGET oPrReal 	VAR nPrReal	SIZE 060,10 OF oPanped 	PIXEL FONT oFont2 WHEN .F. PICTURE "@E 99.99" 
+	@2.0	,480 MSGET oPrReal 	VAR nPrReal	SIZE 060,10 OF oPanped 	PIXEL FONT oFont2 WHEN .F. PICTURE "@E 99.999" 
 
 	//BOTOES
 	oButt1:= FWButtonBar():new()											
@@ -195,20 +193,34 @@ Static Function LoadOrdem (oPrcLeite,lAjusta)
 			
 			%noparser%
 			
-			SELECT DISTINCT PC1_CODPRO,A2_NOME,LBB_DESC,LBB_NOMFOR,ROUND(AVG(PC1_QTDLIT),0) AS PC1_QTDLIT, 
-			ROUND(AVG(PC1_VLRLIT),2) AS PC1_VLRLIT,LJX_CODBON,LJX_DESC,LJX_ORDEM,ISNULL(ROUND(AVG(LJZ_RESLEI),3),0) AS LJZ_RESLEI 
-			FROM %table:PC0% PC0  
-			INNER JOIN %table:PC1% PC1 ON PC1_FILIAL=PC0_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1.%notDel% 
-			INNER JOIN %table:LBB% LBB ON LBB_FILIAL=PC0_FILIAL AND LBB_CODPRO=PC1_CODPRO AND LBB.%notDel% 
-			INNER JOIN %table:SA2% SA2 ON A2_COD=LBB_CODFOR AND A2_LOJA=LBB_LOJA AND SA2.%notDel% 
-			INNER JOIN %table:LJX% LJX ON LJX_FILIAL=PC1_FILIAL AND LJX_PAGA='S' AND LJX.%notDel%  
-			LEFT  JOIN %table:LJZ% LJZ ON LJZ_FILIAL=LJX_FILIAL AND LJZ_CODBON=LJX_CODBON AND LJZ_CODPRO=LBB_CODPRO 
-			AND LJZ_DATCLQ=%EXP:MV_PAR01% AND LJZ.%notDel% 
-			WHERE PC0_FILIAL=%EXP:cFilAnt% AND PC0.%notDel% 
-			AND MONTH(PC0_DTENTR)=%Exp:Month(MV_PAR01)% AND YEAR(PC0_DTENTR)=%Exp:Year(MV_PAR01)%
-			GROUP BY PC1_CODPRO,A2_NOME,LBB_DESC,LBB_NOMFOR,LJX_CODBON,LJX_DESC,LJX_ORDEM 
-			ORDER BY PC1_CODPRO,LJX_ORDEM 
-			
+				SELECT DISTINCT PC1_CODPRO,A2_NOME,LBB_DESC,LBB_NOMFOR,ROUND(SUM(PC1_QTDLIT),0) AS PC1_QTDLIT, 
+				ROUND(AVG(PC1_VLRLIT),2) AS PC1_VLRLIT,LJX_CODBON,LJX_DESC,LJX_ORDEM,ISNULL(ROUND(AVG(LJZ_RESLEI),3),0) AS LJZ_RESLEI 
+				FROM %table:PC0% PC0  
+				INNER JOIN %table:PC1% PC1 ON PC1_FILIAL=PC0_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1.%notDel% 
+				INNER JOIN %table:LBB% LBB ON LBB_FILIAL=PC0_FILIAL AND LBB_CODPRO=PC1_CODPRO AND LBB.%notDel% 
+				INNER JOIN %table:SA2% SA2 ON A2_COD=LBB_CODFOR AND A2_LOJA=LBB_LOJA AND SA2.%notDel% 
+				INNER JOIN %table:LJX% LJX ON LJX_FILIAL=PC1_FILIAL AND LJX_PAGA='S' AND LJX.%notDel%  
+				LEFT  JOIN %table:LJZ% LJZ ON LJZ_FILIAL=LJX_FILIAL AND LJZ_CODBON=LJX_CODBON AND LJZ_CODPRO=LBB_CODPRO 
+				AND LJZ_DATCLQ=%EXP:MV_PAR01% AND LJZ.%notDel% 
+				WHERE PC0_FILIAL=%EXP:cFilAnt% AND PC0.%notDel%  AND PC0_TPENTR='1'
+				AND MONTH(PC0_DTENTR)=%Exp:Month(MV_PAR01)% AND YEAR(PC0_DTENTR)=%Exp:Year(MV_PAR01)%
+				GROUP BY PC1_CODPRO,A2_NOME,LBB_DESC,LBB_NOMFOR,LJX_CODBON,LJX_DESC,LJX_ORDEM 
+				UNION ALL
+				SELECT PC1_CODPRO,LBB_NOMFOR  AS  A2_NOME,LBB_DESC,LBB_NOMFOR,ROUND(SUM(PC1_QTDLIT),0) AS PC1_QTDLIT, 
+				ROUND(AVG(PC1_VLRLIT),2) AS PC1_VLRLIT,
+				'999999'  AS  LJX_CODBON, 'BONIF.FIXA'  AS  LJX_DESC,99  AS  LJX_ORDEM,ISNULL(AVG(LJU_VALOR)/AVG(PC1_QTDLIT),0)  AS  LJZ_RESLEI 
+				FROM  %table:PC0% PC0 
+				INNER JOIN  %table:PC1% PC1 ON PC1_FILIAL=PC0_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1.%notDel%
+				INNER JOIN  %table:LBB% LBB ON LBB_FILIAL=PC0_FILIAL AND LBB_CODPRO=PC1_CODPRO AND LBB.%notDel% 
+				INNER JOIN  %table:SA2% SA2 ON A2_COD=LBB_CODFOR AND A2_LOJA=LBB_LOJA AND SA2.%notDel%
+				LEFT JOIN %table:LJU% LJU ON LJU_FILIAL=PC0_FILIAL AND LJU_CODPRO=PC1_CODPRO 
+				AND LJU_PERIOD= %EXP:SubStr(dtoc(MV_PAR01),4,2)+SubStr(dtoc(MV_PAR01),7,4)% 
+				AND LJU.%notDel%
+				WHERE PC0_FILIAL=%EXP:cFilAnt%AND PC0.D_E_L_E_T_= ' ' AND MONTH(PC0_DTENTR)=%Exp:Month(MV_PAR01)% AND YEAR(PC0_DTENTR)=%Exp:Year(MV_PAR01)%  
+				AND PC0_TPENTR='1'
+				GROUP BY PC1_CODPRO,LBB_NOMFOR,LBB_DESC
+				ORDER BY PC1_CODPRO,LJX_ORDEM	
+
 			EndSql
 			
 			aRet := GetLastQuery()
@@ -323,7 +335,7 @@ Static Function LoadOrdem (oPrcLeite,lAjusta)
 		EndIf
 	
 	oPrcLeite:aCols := aPrcLeite
-	nPrReal := Round(nTotal/Len(aPrcLeite),2)
+	nPrReal := Round(nTotal/Len(aPrcLeite),3)
 	oPrReal:Refresh()
 	oPrcLeite:Refresh()
 	oPrcLeite:ForceRefresh()
@@ -340,10 +352,10 @@ Carrega descricao do cabecaho da grid
 /*/
 Static Function cHead()
 
-	Local cRet :=  '"'
-	Local aRet	:= {}
-	Local cAl022C :=  GetNextAlias()
-	
+	Local cRet 			:=  '"'
+	Local aRet			:= {}
+	Local cAl022C 	:=  GetNextAlias()
+	Local cAl022C1 :=  GetNextAlias()
 		Beginsql Alias cAl022C
 				
 				%NOPARSER%
@@ -351,6 +363,15 @@ Static Function cHead()
 				SELECT LJX_DESC,LJX_EDITA,LJX_CODBON FROM %table:LJX% LJX WHERE LJX_FILIAL=%Exp:cFilAnt% AND LJX_PAGA='S' AND LJX.%notDel% ORDER BY LJX_ORDEM
 		Endsql
 	
+		Beginsql Alias cAl022C1
+				
+				%NOPARSER%
+				
+				SELECT LJU_CODPRO,LJU_CODBON,LJU_PERIOD,LJU_VALOR,LJU_OBS FROM %table:LJU% LJU 
+				WHERE LJU_FILIAL=%Exp:cFilAnt% AND LJU.%notDel% AND LJU_PERIOD=%Exp:SUBSTR(dtoc(MV_PAR01),4,2)+SUBSTR(dtoc(MV_PAR01),7,4)%
+
+		EndSql
+
 		aRet := {} 
 		
 		(cAl022C)->(dbGoTop())
@@ -360,7 +381,12 @@ Static Function cHead()
 			(cAl022C)->( dbSkip() )
 			nHead ++
 		EndDo
-		
+
+		iF (cAl022C1)->( !Eof() )	
+			AADD(aRet,{"BONIF.FIXA", "N","999999"})
+			nHead ++
+		EndiF
+	
 Return aRet
 
 /*/{Protheus.doc} xCabLJX()==============================================================================================================================
@@ -544,7 +570,7 @@ User Function RetCampo()
 		nTotal += aCols[x][6]
 	Next x
 	
-	nPrReal := Round(nTotal/Len(aCols),2)
+	nPrReal := Round(nTotal/Len(aCols),3)
 	oPrReal:Refresh()
 	oPrcLeite:Refresh()
 	
@@ -565,29 +591,42 @@ Static Function nFrete(cCodPro)
 	Local cAliasPA4 := 'PA4QRY'
 	Local cAliasPA3 := 'PA3QRY'
 	Local aRet1		:= {}	
+			
 			BeginSql Alias cAliasPA4
-			%noparser%
-			SELECT ISNULL(SUM(PA4_QTDLIT),0) AS PA4_QTDLIT,PA4_CODCAM 
-			FROM %table:PA4% PA4 
-			WHERE PA4_PERIOD=%Exp:SubStr(DTOC(MV_PAR01),4,2)+SubStr(DTOC(MV_PAR01),7,4)% 
-			AND PA4_CODPRO=%Exp:cCodPro% AND PA4.%notDel%
-			GROUP BY PA4_CODCAM
-			EndSql
-			aRet := GetLastQuery()
-			If (cAliasPA4)->( !Eof() )
-				BeginSql Alias cAliasPA3
+			
 				%noparser%
-				SELECT PA3_VLRFRT,PA3_QTDLIT FROM %table:PA3% PA3 WHERE 
-				PA3_PERIOD=%Exp:SubStr(DTOC(MV_PAR01),4,2)+SubStr(DTOC(MV_PAR01),7,4)% 
-				AND PA3_CODCAM=%Exp:(cAliasPA4)->(PA4_CODCAM)% AND PA3.%notDel%
+				
+				SELECT ISNULL(SUM(PA4_QTDLIT),0) AS PA4_QTDLIT,PA4_CODCAM 
+				FROM %table:PA4% PA4 
+				WHERE PA4_PERIOD=%Exp:SubStr(DTOC(MV_PAR01),4,2)+SubStr(DTOC(MV_PAR01),7,4)% 
+				AND PA4_CODPRO=%Exp:cCodPro% AND PA4.%notDel%
+				GROUP BY PA4_CODCAM
+				
+			EndSql
+			
+			aRet := GetLastQuery()
+			
+			If (cAliasPA4)->( !Eof() )
+			
+				BeginSql Alias cAliasPA3
+			
+					%noparser%
+				
+					SELECT PA3_VRTOT,PA3_QTDLIT FROM %table:PA3% PA3 WHERE 
+					PA3_PERIOD=%Exp:SubStr(DTOC(MV_PAR01),4,2)+SubStr(DTOC(MV_PAR01),7,4)% 
+					AND PA3_CODCAM=%Exp:(cAliasPA4)->(PA4_CODCAM)% AND PA3.%notDel%
+				
 				EndSql
+			
 				aRet1 := GetLastQuery()
+			
 			    If (cAliasPA4)->(PA4_QTDLIT) > 0
-			    	nRet := ( (cAliasPA3)->(PA3_VLRFRT)/(cAliasPA3)->(PA3_QTDLIT) )
+			    	nRet := ( (cAliasPA3)->(PA3_VRTOT)/(cAliasPA3)->(PA3_QTDLIT) )
 			    End If
 			    
 		    (cAliasPA3)->( dbCloseArea())
-		    End IF
+		    
+			End IF
 		    
 		    (cAliasPA4)->( dbCloseArea())
 		    

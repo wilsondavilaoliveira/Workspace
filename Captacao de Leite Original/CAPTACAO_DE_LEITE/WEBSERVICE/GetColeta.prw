@@ -1,24 +1,26 @@
 #INCLUDE "PROTHEUS.CH"
 #INCLUDE "TOPCONN.CH" 
 
-/*
-ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄ¿±±
-±±³Program   ³ ColetaSQ ³ Autor ³Wilson Davila            ³ Data ³ 02/04/2018 ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Descri‡…o ³ Leitura Coleta de Leite SmartQuestion x Protheus               ³±±
-±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
-*/
+/*/{Protheus.doc} ColetaSQ()
+ Leitura Coleta de Leite SmartQuestion x Protheus
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 02/04/2018
+/*/
 User Function ColetaSQ()
 	Processa()
 Return
 
-//CHKTEMPLATE("COL")
+/*/{Protheus.doc} Processa()
+Funcao auxiliar processa
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 02/04/2018
+/*/
 Static Function Processa()
-//Variaveis privadas usadas no modelo 3
+
 Private AROTINA
 Private CCADASTRO
 Private CALIAS
@@ -33,33 +35,38 @@ Private CFIELDOK
 Private NREG
 Private NOPC
 Private aCores
-Private cFiltro		:= ""
-Private bFiltraBrw	:= {|| }
-Private aIndexZZS	:= {}
+Private cFiltro				:= ""
+Private bFiltraBrw		:= {|| }
+Private aIndexZZS		:= {}
+
+cCadastro 	:= OemToAnsi("Pré-Lancamento de Leite. - Leituras Recebidas do SmartQuestion") 
+
+aRotina := { { OemToAnsi("Pesquisar")						,"axPesqui"	   		, 0 , 1	},;     
+									{ OemToAnsi("Visualizar")						,'U_ColLei(2)'		, 0 , 2	},; 
+									{ OemToAnsi("Excluir"	)						  ,'U_ExcLei()'		  , 0 , 5 },;
+									{ OemToAnsi("Efetivar Lancamento")		,'U_ColLei(4)'	    , 0 , 4	},;
+									{ OemToAnsi("Importar")				             ,'U_Import()'		 , 0 , 3 },;
+									{ OemToAnsi("Legenda")				           ,"U_LgColeta()"	, 0	, 2 }}
 
 nOpc:=0
 
-aRotina := {{ OemToAnsi("Pesquisar")			,"axPesqui"	   	, 0 , 1	},;     
-			{ OemToAnsi("Visualizar")			,'U_ColLei(2)'	, 0 , 2	},; 
-			{ OemToAnsi("Excluir"	)			,'U_ExcLei()'	, 0 , 5	},;
-			{ OemToAnsi("Efetivar Lancamento")	,'U_ColLei(4)'	, 0 , 4	},;
-			{ OemToAnsi("Importar")				,'U_Import()'	, 0 , 3	},;
-			{ OemToAnsi("Legenda")				,"U_LgColeta()"	, 0	, 2 }}
 
-aCores := {	{ "ZZS->ZZS_STATUS == '1' ","BR_VERDE"},; 
-			{ "ZZS->ZZS_STATUS == '2'", "BR_VERMELHO"}} 
+aCores := {	 { "ZZS->ZZS_STATUS == '1' "	 ,"BR_VERDE"			  },; 
+					{ "ZZS->ZZS_STATUS == '2'"		, "BR_VERMELHO"		}} 
 
 
-//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-//³ Define o cabecalho da tela de atualizacoes                   ³
-//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
-cCadastro := OemToAnsi("Pré-Lancamento de Leite. - Leituras Recebidas do SmartQuestion") //
-cAlias    := "ZZS"
+//==========================================*
+// Define o cabecalho da tela de atualizacoes                   |
+//==========================================*
+
+
+cAlias    		:= "ZZS"
+
 dbSelectArea(cAlias)
 dbSetOrder(2)
-//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-//³ Endereca a funcao de BROWSE                                  ³
-//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+//=============================*
+// Endereca a funcao de BROWSE         |
+//=============================*
 
 	cFiltro	:="ZZS_FILIAL == '" + cFilAnt + "'"
 	bFiltraBrw	:= { || FilBrowse( "ZZS" , @aIndexZZS , @cFiltro ) }
@@ -69,19 +76,14 @@ mBrowse( 6, 1,22,75,cAlias, , , , , , aCores)
 
 Return
 
-/*
-ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
-±±³Fun‡„o    ³ ColLei   ³ Autor ³  Wilson Davila        ³ Data ³02/04/2018³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Descri‡„o ³ Funcao de Tratamento do Leitursa Leite SmartQuestion       ³±±
-±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
-±±³Uso       ³                                                            ³±±
-±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
-±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
-*/
+/*/{Protheus.doc} ColLei()
+ Funcao de Tratamento do Leitursa Leite SmartQuestion 
+@param xParam Parameter Description
+@return xRet Return Description
+@author  Wilson Davila
+@since 02/04/2018
+/*/
+
 User Function ColLei(nOpc)
 
 Local nCntFor, _ni, i, nX
@@ -116,9 +118,6 @@ else             // Excluir
 	nOpcG := 5
 endif
 
-//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-//³ Cria variaveis M->????? da Enchoice                          ³
-//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 aCpoEnchoice  :={}
 dbSelectArea("SX3")
 dbSetOrder(1)
@@ -139,9 +138,6 @@ If nOpc != 3 // se nao for inclusao
 	Next nCntFor
 Endif
 
-//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-//³ Cria aHeader e aCols da GetDados                             ³
-//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 nUsado:=0
 dbSelectArea("SX3")
 dbSetOrder(1)
@@ -340,7 +336,7 @@ Static Function GrvEnt()
 	
 	Begin Transaction
 	
-	RecLock("PC0",.F.)
+	RecLock("ZZS",.F.)
 		ZZS->ZZS_DTENTR := M->ZZS_DTENTR
 	MsUnlock("ZZS")
 	
@@ -511,9 +507,10 @@ BEGIN TRANSACTION
 									cChvPA4 := PA4->(PA4_FILIAL)+PA4->(PA4_CODCAM)+PA4->(PA4_PERIOD)
 									
 									nQtdLit	:= 0
-									nKM		:= Posicione("ZA1",1,xFilial("ZA1")+cValToChar(PA4->(PA4_NUMDIA)),"ZA1_KMRAST")
+									nKM		:= Posicione("ZA1",1,xFilial("ZA1")+cValToChar(PA4->(PA4_NUMDIA)),"ZA1_KMREAL")
 									cTpFrt	:= Posicione("LBE",2,xFilial("LBE")+PA4->(PA4_CODCAM),"LBE_TPFRET")
 									nValFrt := Posicione("LBE",2,xFilial("LBE")+PA4->(PA4_CODCAM),"LBE_PERC1")
+									TpBonif := POSICIONE("LJS",1,XFILIAL("LJS")+LJW->(LJW_CODBON),"LJS_TPPAGT")
 									
 									While PA4->( !Eof() ) .AND. PA4->(PA4_FILIAL)+cValToCHar(PA4->(PA4_NUMDIA)) == ZZS->ZZS_FILIAL+cValToChar(ZZS->ZZS_NUMDIA)
 										nQtdLit += PA4->(PA4_QTDLIT)
@@ -525,11 +522,12 @@ BEGIN TRANSACTION
 									
 									PA3->(dbSetOrder(1))
 									If PA3->( dbSeek(cChvPA4) )
+
 										PA3->(RecLock("PA3"),.F.)
 											
-											PA3->PA3_QTDLIT -= nQtdLit 
-											PA3->PA3_TOTKM	-= nKM
-											
+											PA3->(PA3_QTDLIT) 	-= nQtdLit 
+											PA3->(PA3_TOTKM)	-= nKM
+																							
 											If 	cTpFrt == '1'
 										    	PA3->(PA3_VLRFRT)	:= (PA3->PA3_QTDLIT *  nValFrt) 
 										    ElseIf cTpFrt == '2'
@@ -538,7 +536,35 @@ BEGIN TRANSACTION
 										    	PA3->(PA3_VLRFRT)	:= (PA3->PA3_TOTKM *  nValFrt) 
 										   	EndIf
 							
+											
 										PA3->(MsUnlock())
+									
+										nLitros   := PA3->(PA3_QTDLIT) 
+										nKm1 	:= PA3->(PA3_TOTKM)
+										nBonif   := 0
+										
+										LJW->(dbSetOrder(1))
+										If LJW->(dbSeek(PA3->(PA3_FILIAL)+PA3->(PA3_PERIOD)+PA3->(PA3_CODCAM)))
+											While LJW->( !Eof() ) .AND. LJW->(LJW_FILIAL+LJW_PERIOD+LJW_CODCAR) == PA3->(PA3_FILIAL)+PA3->(PA3_PERIOD)+PA3->(PA3_CODCAM) 
+												
+												TpBonif := POSICIONE("LJS",1,XFILIAL("LJS")+LJW->(LJW_CODBON),"LJS_TPPAGT")
+													If TpBonif == '1'
+														nBonif += (nLitros * LJW->(LJW_VALOR))
+													ElseIf TpBonif =='2'
+														nBonif += LJW->(LJW_VALOR)
+													Else
+														nBonif += (nKm1 * LJW->(LJW_VALOR))
+													EndIf	
+											
+												LJW->(dbSkip())
+											EndDo
+										EndIf 
+										
+										PA3->(RecLock("PA3"),.F.)
+											PA3->(PA3_VRBON)  := nBonif
+											PA3->PA3_VRTOT	:= ( PA3->(PA3_VLRFRT)+nBonif )
+										PA3->(MsUnlock())
+									
 									EndIf
 								EndIf
 							
@@ -563,6 +589,8 @@ BEGIN TRANSACTION
 			cQry := "DELETE " + RetSqlName("ZZS") + " WHERE ZZS_FILIAL='" + cFilAnt + "' AND ZZS_NUMDIA=" + cValToChar(cNumDia)
 			TcSqlExec(cQry)
 			
+			cQry := "DELETE " + RetSqlName("ZA1") + " WHERE ZA1_FILIAL='" + cFilAnt + "' AND ZA1_NUMDIA=" + cValToChar(cNumDia)
+			TcSqlExec(cQry)
 			
 		
 		MsgStop("Lancamento Excluido com sucesso !")
