@@ -5,7 +5,7 @@
 #include "TBICONN.CH"
 #include "TOPCONN.CH"
 #include "FILEIO.CH"
-#Include 'Totvs.ch' 
+#Include 'Totvs.ch'
 #INCLUDE 'COLORS.CH'
 #INCLUDE "PRCONST.CH"
 #INCLUDE "FONT.CH"
@@ -16,8 +16,8 @@ Controle de formulario de autorizacao de devolucao enviados pelo Tablet AFV
 @author Wilson Oliveira
 @since 06/01/2020
 @version 1.0
-@param                                    
-@type          
+@param
+@type          -
 /*/
 //-------------------------------------------------------------------
 User Function AXFORMDEV
@@ -55,7 +55,7 @@ Static Function BrowseDef()
    oBrowse:AddLegend("ZXO->ZXO_STATUS=='2'","GREEN","Liberado")
    oBrowse:SetAmbiente(.F.)        //Desabilita opcao Ambiente do menu Acoes Relacionadas
    oBrowse:SetWalkThru(.F.)        //Desabilita opcao WalkThru do menu Acoes Relacionadas
-   
+
 Return (oBrowse)
 
 //----------------------------------------------------------
@@ -75,7 +75,7 @@ Static Function ModelDef()
 
     // Chave Primaria
     oModel:SetPrimaryKey( {'ZXO_NUMDEV'} )
-    
+
     // DEFINE A RELACAO ENTRE OS SUBMODELOS
     oModel:SetRelation("ZXQDETAIL", {{"ZXQ_NUMDEV", "ZXO_NUMDEV"}}, ZXQ->(IndexKey( 1 )))
 
@@ -137,27 +137,27 @@ Local cAliasA1  := GetNextAlias()
 //-- QUERY
 BeginSql alias cAliasA1
 	%noparser%
-	
+
 	SELECT ZXO_NUMDEV,ZXO_DATA,ZXO_CODCLI+'-'+
 	(SELECT A1_NOME FROM %table:SA1% SA1 WHERE A1_COD+'.'+A1_LOJA=ZXO_CODCLI AND SA1.%notDel%) AS CLIENTE,
 	ZXO_CODREP+'-'+(SELECT A3_NOME FROM %table:SA3% SA3 WHERE A3_COD=ZXO_CODREP AND SA3.%notDel%) AS REPRE,
 	ZXO_OBSERV,ZXQ_CODPRO+'-'+(SELECT B1_DESC FROM %table:SB1% SB1 WHERE B1_COD=ZXQ_CODPRO AND SB1.%notDel%) AS ZXQ_CODPRO,
 	ZXQ_QTD,ZXQ_VALOR,LTRIM(RTRIM(STR(ZXQ_CODMOT)+'-'+(SELECT X5_DESCRI FROM %table:SX5% SX5 WHERE X5_TABELA='ZG' AND SX5.%notDel%
-	AND X5_CHAVE=ZXQ_CODMOT))) AS ZXQ_CODMOT,ZXQ_LOTE,ZXQ_OBSERV 
-	FROM %table:ZXQ% ZXQ 
+	AND X5_CHAVE=ZXQ_CODMOT))) AS ZXQ_CODMOT,ZXQ_LOTE,ZXQ_OBSERV
+	FROM %table:ZXQ% ZXQ
 	INNER JOIN %table:ZXO% ZXO ON ZXO_NUMDEV=ZXQ_NUMDEV AND ZXO.%notDel%
 	WHERE ZXQ.%notDel% AND ZXQ_NUMDEV=%exp:cNumDev%
-	
 
-EndSql	
 
-	
+EndSql
+
+
 	cMailAdm  := ''//SuperGetMv('ES_QUAA081',.F.,'') // e-mails
-	
+
 	oProcWF := TWFProcess():New("FORDEV","Formulario Devolucoes")
 	oProcWF:NewTask("FORDEV","\workflow\WFFormularioDev.html",.T.)
 	oProcWF:cSubject := 'Formulario de Devolucoes: '
-	
+
 
 	// E-Mail ADM
 	If ! Empty(cMailAdm)
@@ -179,22 +179,22 @@ If (cAliasA1)->(!EOF())
 
 	// Itens
 	nTotDe 		:= 0
-	nTotPara 	:= 0 
-	
+	nTotPara 	:= 0
+
 	Do While (cAliasA1)->(! Eof())
-	
+
 	    AAdd(oProcWF:oHTML:ValByName("it.cProd")	, AllTrim((cAliasA1)->ZXQ_CODPRO))
 	    AAdd(oProcWF:oHTML:ValByName("it.Qtd")		, Transform((cAliasA1)->ZXQ_QTD,"@E 99,999.99"))
 	    AAdd(oProcWF:oHTML:ValByName("it.Valor")	, Transform((cAliasA1)->ZXQ_VALOR,"@E 99,999.99"))
 	    AAdd(oProcWF:oHTML:ValByName("it.Motivo")	, AllTrim((cAliasA1)->ZXQ_CODMOT))
 	    AAdd(oProcWF:oHTML:ValByName("it.Lote")		, AllTrim((cAliasA1)->ZXQ_LOTE))
 	    AAdd(oProcWF:oHTML:ValByName("it.Obs")		, AllTrim((cAliasA1)->ZXQ_OBSERV))
-	
+
 	   	(cAliasA1)->(dbSkip())
 	EndDo
-	
-End If	
-	
+
+End If
+
 	// Adiciona e-mail
 	oProcWF:cTo := cTo
 
@@ -210,26 +210,43 @@ Return lRet
 
 User Function xBdAfv()
 
-Local cQuery := ''
+Local cQuery    := ''
+Local cXml      := '<img src="data:image/PNG;base64,'
+Local cAlias    := GetNextAlias()
 
 
 
-cQuery := "SELECT TOP 1 OBSERVACAO AS OBS FROM [192.168.20.10].AFVServer_20180730.dbo.TESP_DEVOLUCAO"
+//cQuery := "SELECT CONVERT(VARCHAR(MAX),FOTO) AS FOTO FROM [192.168.20.10].AFVServer_20180730.dbo.T_RETORNOFOTO WHERE SEQUENCIA=27"
 
 
-If Select( "BDAFV" ) > 0
-	BDAFV->( dbCloseArea() )
-EndIf
+BEGINSQL alias cAlias
 
-	dbUseArea( .T., "TOPCONN", TCGenQry( ,,cQuery ), "BDAFV", .F., .F. )
-	BDAFV->( dbGoTop() )
+%noparser%
 
-	While BDAFV->(!Eof())
-		MsgAlert(BDAFV->(OBS))
-		BDAFV->(dbSkip())
+SELECT CONVERT(VARCHAR(MAX),FOTO) AS FOTO FROM [192.168.20.10].AFVServer_20180730.dbo.T_RETORNOFOTO WHERE SEQUENCIA=27
+
+endsql
+
+//If Select( "BDAFV" ) > 0
+	//BDAFV->( dbCloseArea() )
+//EndIf
+
+	//dbUseArea( .T., "TOPCONN", TCGenQry( ,,cQuery ), "BDAFV", .F., .F. )
+	//BDAFV->( dbGoTop() )
+
+	While (cAlias)->(!Eof())
+		cXml += SubStr((cAlias)->(FOTO),1,Len(AllTrim((cAlias)->(FOTO)))-1)
+		(cAlias)->(dbSkip())
 	EndDo
+
+cXml += '" width="1280" />''
+
+
+U_QUTSMAIL("Teste Imagem",cXml,,'wilson.oliveira@wdonet.com.br')
 
 
 Return
+
+
 
 
