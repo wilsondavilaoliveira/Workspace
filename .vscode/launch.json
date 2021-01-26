@@ -7,7 +7,7 @@
 			"name": "Totvs Language Debug",
 			"program": "${command:AskForProgramName}",
 			"cwb": "${workspaceFolder}",
-			"smartclientBin": "C:\\HD\\Arq Trabalho\\NOVAMIX\\smartclient_TESTE\\smartclient.exe",
+			"smartclientBin": "C:\\HD\\Arq Trabalho\\NOVAMIX\\smartclient\\smartclient.exe",
 			"isMultiSession": true,
 			"enableTableSync": true
 		}
@@ -41,7 +41,12 @@
 			"args": [],
 			"label": "u_QUAR022F",
 			"description": ""
+		},
+		{
+			"args": [],
+			"label": "sigamdi",
+			"description": ""
 		}
 	],
-	"lastProgramExecuted": "SIGAADV"
+	"lastProgramExecuted": "sigaadv"
 }
