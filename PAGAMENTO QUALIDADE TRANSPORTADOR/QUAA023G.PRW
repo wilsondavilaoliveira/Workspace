@@ -233,12 +233,11 @@ ElseIf cTipo == 'V'
 
         %noparser%
 
-        SELECT PC5_CODVEI AS 'COD',PC5_DTAPON,PC5_USRAPO,PC5_STATUS,LTRIM(RTRIM(PBJ_DESCRI))+'-'+
-        ISNULL((SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE SA2.%notDel%  AND  A2_COD = PBC_CODTRA),'') AS 'DESC',
+        SELECT PC5_CODVEI AS 'COD',PC5_DTAPON,PC5_USRAPO,PC5_STATUS,LTRIM(RTRIM(PBJ_PLACA))+'-'+
+        ISNULL((SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE SA2.%notDel%  AND  A2_COD = PC5_CODTRA),'') AS 'DESC',
         PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,PC5.R_E_C_N_O_ AS 'REG',PC5_ITAPON,PC5_TPAPOM
         FROM %Table:PC5% PC5
         INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=PC5_FILIAL AND PBD_TIPO=%Exp:cTipo% AND PBD.%notDel% AND PBD_CODTIP+'.'+PBD_CODIGO=PC5_CODBON
-        INNER JOIN %Table:PBC% PBC ON PBC_FILIAL=PC5_FILIAL AND PBC_CODMOT=PC5_CODVEI AND PBC.%notDel%
         INNER JOIN %Table:PBJ% PBJ ON PBJ_FILIAL=PC5_FILIAL AND PBJ_CODIGO=PC5_CODVEI AND PBJ.%notDel% AND PBJ_STATUS='A'
         WHERE PC5_FILIAL=%Exp:cFilAnt% AND PC5.%notDel% AND PC5_PERIOD=%Exp:MV_PAR01%
         ORDER BY PBJ_CODIGO,PBD_CODTIP+'.'+PBD_CODIGO,PC5_ITAPON
@@ -258,6 +257,8 @@ ElseIf cTipo == 'T'
         INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=%Exp:cFilAnt% AND PBD_TIPO=%Exp:cTipo% AND PBD.%notDel%
         AND PBD_CODTIP+'.'+PBD_CODIGO=PC5_CODBON
         WHERE PC5.%notDel% AND PC5_PERIOD=%Exp:MV_PAR01%
+        AND
+        (SELECT A2_MSBLQL FROM %Table:SA2% SA2 WHERE SA2.%notDel% AND A2_COD=PC5_CODTRA AND A2_LOJA='0001')='2'
         ORDER BY PC5_CODTRA,PBD_CODTIP+'.'+PBD_CODIGO,PC5_ITAPON
 
     EndSql
@@ -293,7 +294,6 @@ Return aRet
 Static Function CriaTab(oProcess,lEnd)
 
 Local cAlias    := GetNextAlias()
-Local aRet      := {}
 Local a         := 0
 
     PC5->( dbSetOrder(1) )
@@ -311,13 +311,15 @@ Local a         := 0
             INNER JOIN %Table:PBC% PBC ON PBC_FILIAL=PBB_FILIAL AND PBC_CODMOT=PBB_CODIGO AND PBC.%notDel%
             WHERE PBB_FILIAL=%Exp:cFilAnt% AND PBB.%notDel% AND PBB_STATUS='A'
             UNION ALL
-            SELECT '' AS 'CODM',LTRIM(RTRIM(PBJ_DESCRI))+'-'+
-            ISNULL((SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE SA2.%notDel%  AND  A2_COD = PBC_CODTRA),'') AS 'DESC',
-            PBJ_CODIGO AS 'CODV',PBC_CODTRA AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'V' AS 'TIPO',PBD_TPAPOM
+
+            SELECT DISTINCT '' AS 'CODM',LTRIM(RTRIM(PBJ_PLACA))+'-'+
+            ISNULL((SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE SA2.%notDel%  AND  A2_COD = LBE_FORNEC),'') AS 'DESC',
+            PBJ_CODIGO AS 'CODV',LBE_FORNEC AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'V' AS 'TIPO',PBD_TPAPOM
             FROM %Table:PBJ% PBJ
+            INNER JOIN %Table:LBE% LBE ON LBE_FILIAL=PBJ_FILIAL AND LBE_CODVEI=PBJ_CODIGO AND LBE.%notDel%
             INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=PBJ_FILIAL AND PBD_TIPO='V' AND PBD.%notDel%
-            INNER JOIN %Table:PBC% PBC ON PBC_FILIAL=PBJ_FILIAL AND PBC_CODMOT=PBJ_CODIGO AND PBC.%notDel%
             WHERE PBJ_STATUS='A' AND PBJ_FILIAL=%Exp:cFilAnt% AND PBJ.%notDel%
+
             UNION ALL
             SELECT DISTINCT '' AS 'CODM',A2_NOME 'DESC',
             '' AS 'CODV',A2_COD AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'T' AS 'TIPO',PBD_TPAPOM
@@ -351,7 +353,15 @@ Local a         := 0
                             PC5->PC5_ITAPON := IIF((cAlias)->(PBD_TPAPOM)=='M',0,a)
                             PC5->PC5_TIPO   := (cAlias)->(TIPO)
                             PC5->PC5_TPAPOM := (cAlias)->(PBD_TPAPOM)
-                            PC5->PC5_STATUS := 'A'
+
+                            If (cAlias)->(PBD_TPAPOM) $ 'D|M'
+                                PC5->PC5_STATUS := 'A'
+                            Else
+                                PC5->PC5_DTAPON := dDataBase
+                                PC5->PC5_USRAPO := cNomeUsu
+                                PC5->PC5_STATUS := 'C'
+                            EndIf
+
                         MsUnlock()
                     EndIf
                 Else
@@ -367,7 +377,15 @@ Local a         := 0
                             PC5->PC5_ITAPON := IIF((cAlias)->(PBD_TPAPOM)=='M',0,a)
                             PC5->PC5_TIPO   := (cAlias)->(TIPO)
                             PC5->PC5_TPAPOM := (cAlias)->(PBD_TPAPOM)
-                            PC5->PC5_STATUS := 'A'
+
+                            If (cAlias)->(PBD_TPAPOM) $ 'D|M'
+                                PC5->PC5_STATUS := 'A'
+                            Else
+                                PC5->PC5_DTAPON := dDataBase
+                                PC5->PC5_USRAPO := cNomeUsu
+                                PC5->PC5_STATUS := 'C'
+                            EndIf
+
                         MsUnlock()
                     EndIf
                 End If
@@ -476,6 +494,8 @@ Return
 
 
 Static Function CriaTree()
+
+Local i := 0
 
 CriaTab()
 Verif_doc()

@@ -58,9 +58,9 @@ Static Function MenuDef()
 
     Local aRotina := {} //FwMVCMenu("QUAA023E")
 
-    ADD OPTION aRotina TITLE 'Visualizar'   ACTION 'U_QUA23EAV(2)'   OPERATION 2 ACCESS 0
-    ADD OPTION aRotina TITLE 'Alterar'      ACTION 'U_QUA23EAV(4)'   OPERATION 4 ACCESS 0
-
+    //ADD OPTION aRotina TITLE 'Visualizar'   ACTION 'U_QUA23EAV(2)'   OPERATION 2 ACCESS 0
+    ADD OPTION aRotina TITLE 'Alterar'      ACTION 'U_QUA23EAV(4)'      OPERATION 4 ACCESS 0
+    ADD OPTION aRotina TITLE 'Bloqueio/Desbloqueio'      ACTION 'U_QUA23EB()'       OPERATION 4 ACCESS 0
 
 Return (aRotina)
 
@@ -74,8 +74,8 @@ Regra de Negocio
 /*/
 Static Function ModelDef()
 
-    Local bCommit   := {||GravaLog(oModel)}
-    Local oModel 	:= MPFormModel():New("QAA023EM",,,bCommit)
+    Local bCommit   := {||} //{||GravaLog(oModel)}
+    Local oModel 	:= MPFormModel():New("QAA023EM",,,)
 
     Local oStruSA2 	:= FwFormStruct(1, "SA2")
     Local oStruPBG 	:= FwFormStruct(1, "PBG")
@@ -402,3 +402,26 @@ Local aCodCam   := {}
     EndDo
 
 Return aCodCam
+
+
+User Function QUA23EB()
+
+Local oModel := FWLoadModel("QUAA023E")
+
+    If SA2->A2_MSBLQL == '2'
+        If MsgYesNo("Deseja Bloquear Transportadora?")
+            RecLock("SA2",.F.)
+                SA2->A2_MSBLQL := '1'
+            MsUnlock()
+            GravaLog(oModel)
+        EndIf
+    Else
+        If MsgYesNo("Deseja Desbloquear Transportadora?")
+            RecLock("SA2",.F.)
+                SA2->A2_MSBLQL := '2'
+            MsUnlock()
+            GravaLog(oModel)
+        EndIf
+    EndIf
+
+Return

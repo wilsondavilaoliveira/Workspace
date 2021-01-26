@@ -152,6 +152,10 @@ User Function QUAA022C()
     oButt1:addBtnImage( "LINE"      ,"Planilha"          ,{|| ReportExcel(oPrcLeite)}                                                   ,,.T.,CONTROL_ALIGN_LEFT)
     oButt1:addBtnImage( "BMPCONS"   ,"Busca"             ,{|| xBusca()}                                                   ,,.T.,CONTROL_ALIGN_LEFT)
 
+    oButt1:addBtnImage( "AUTOM"   ,"Processa todos os meses"             ,{|| Processa({||RclBnToT()},"Aguarde...","Carregando. . . ",.F.)}                                                   ,,.T.,CONTROL_ALIGN_LEFT)
+
+
+
     /////////////////////////
 
     aHead := xCabLJX()
@@ -996,6 +1000,7 @@ Static Function RecalBon()
     Local dData 		:= dtos(MV_PAR01)
 	Local nItem         := 0
     Local dDtAtu        := MV_PAR01
+    Local nArred        := 0
     Private cAliasQry  	:= GetNextAlias()
 
 	DbSelectArea("LJZ") //Historico da classificacao da Qualidade do leite
@@ -1018,6 +1023,12 @@ Static Function RecalBon()
             // Tipo Calculo
             //1=Mensal;2=Aritmetica;3=Geometrica
             IncProc("Recalc. Bonif." + AllTrim(LJZ->LJZ_CODPRO)+"-"+Alltrim(LJZ->LJZ_DESBON)+" "+DTOC(LJZ->LJZ_DATCLQ))
+
+            LJX->( dbSetOrder(1) )
+
+            If LJX->( dbSeek(cFilAnt+LJZ->(LJZ_CODBON)))
+                nArred := LJX->(LJX_ARRED)
+            EndIf
 
             LJZArea := GetArea()
             //MV_PAR01 := LJZ->LJZ_DATCLQ
@@ -1073,12 +1084,11 @@ Static Function RecalBon()
                     nSoma1 := LJZ->(LJZ_QTDMES)
                 EndIf
 
-                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma1,0))
+                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma1,nArred))
                 nResLei := aRet[1][1]
                 nFxINI  := aRet[1][2]
                 nFxFIM  := aRet[1][3]
                 nItem   := aRet[1][4]
-
 
             ElseIf !cTipoBon $ '2|3' .AND. cTipoCal == '3' //geometrica
 
@@ -1099,7 +1109,7 @@ Static Function RecalBon()
                     nSoma2 := LJZ->(LJZ_QTDMES)
                 EndIf
 
-                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma2,0))
+                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma2,nArred))
                 nResLei := aRet[1][1]
                 nFxINI  := aRet[1][2]
                 nFxFIM  := aRet[1][3]
@@ -2261,7 +2271,13 @@ Static Function RclBnToT()
 			cTipoBon := LJZ->LJZ_TPBON
             cTipoCal := LJZ->LJZ_METCLA
 
-			If cTipoBon  ==  '2'  // VOLUME
+            LJX->( dbSetOrder(1) )
+
+            If LJX->( dbSeek(cFilAnt+LJZ->(LJZ_CODBON)))
+                nArred := LJX->(LJX_ARRED)
+            EndIf
+
+				If cTipoBon  ==  '2'  // VOLUME
                 //IncProc("Recalc. Bonif." + AllTrim(LJZ->LJZ_CODPRO)+"-"+Alltrim(LJZ->LJZ_DESBON))
 				nLitrosAtu 	:= LJZ->LJZ_QTDLEI
 				nLitros     := U_RetLitros(LJZ->LJZ_CODPRO)
@@ -2308,12 +2324,11 @@ Static Function RclBnToT()
                     nSoma1 := LJZ->(LJZ_QTDMES)
                 EndIf
 
-                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma1,0))
+                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma1,nArred))
                 nResLei := aRet[1][1]
                 nFxINI  := aRet[1][2]
                 nFxFIM  := aRet[1][3]
                 nItem   := aRet[1][4]
-
 
             ElseIf !cTipoBon $ '2|3' .AND. cTipoCal == '3' //geometrica
 
@@ -2334,7 +2349,7 @@ Static Function RclBnToT()
                     nSoma2 := LJZ->(LJZ_QTDMES)
                 EndIf
 
-                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma2,0))
+                aRet    := U_QuaCAL21(Alltrim(LJZ->(LJZ_CODBON)),,Round(nSoma2,nArred))
                 nResLei := aRet[1][1]
                 nFxINI  := aRet[1][2]
                 nFxFIM  := aRet[1][3]
@@ -2376,7 +2391,10 @@ Static Function RclBnToT()
 			dbSkip()
 
 		EndDo
-	//End If
+
+    //End If
+
 MV_PAR01 := dDtAtu
 dTFechto := MV_PAR01
+
 Return
