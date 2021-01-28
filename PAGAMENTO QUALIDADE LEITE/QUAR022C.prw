@@ -1425,7 +1425,9 @@ Cabec1 := ""
 Cabec2 := ""
 
 Cabec1 := ""
-Cabec1 := Padr("Codigo" , 7)
+Cabec1 += Padr("CodPro" , 7)
+Cabec1 += Padr("CodFor" , 7)
+Cabec1 += Padr("Loja" , 5)
 Cabec1 += Padr("Fornecedor" , 30)
 Cabec1 += PadL("Volume" , 15)
 Cabec1 += PadL("Vlr.Comb." , 11)
@@ -1437,8 +1439,8 @@ Cabec1 += Padl("Tot.+Incent." , 14)
 Cabec1 += Padl("Vlr.Final" , 11)
 Cabec1 += Padl("Frete" , 8)
 Cabec1 += Padl("Funrural" , 12)
-Cabec1 += Padl("Subs.Trib." , 12)
-Cabec1 += Padl("Fundese" , 10)
+//Cabec1 += Padl("Subs.Trib." , 12)
+//Cabec1 += Padl("Fundese" , 10)
 Cabec1 += Padl("Convenio" , 12)
 Cabec1 += Padl("Emprestimo" , 12)
 Cabec1 += Padl("Vlr.Liquido" , 14)
@@ -1505,6 +1507,8 @@ For nXa := 1 to Len(aItens)
 
 			//cLinha := Padr(SA2->A2_COD+" "+SA2->A2_LOJA , 12)        				//codigo+Loja
 			cLinha := Padr(LBB->(LBB_CODPRO) , 7)
+            cLinha += Padr(LBB->(LBB_CODFOR) , 7)
+            cLinha += Padr(LBB->(LBB_LOJA) , 5)
             cLinha += Padr(SA2->A2_NOME , 29) + " "									//Nome
 			cLinha += padl(Transform(aItens[nXa][2], "@E 999,999,999.99"), 15)		//Volume
 			cLinha += padl(Transform(aItens[nXa][3], "@E 9,999.9999"), 11)         //Combinado
@@ -1516,8 +1520,8 @@ For nXa := 1 to Len(aItens)
 			cLinha += padl(Transform((aItens[nXa][13][5]+aItens[nXa][13][2])/aItens[nXa][2], "@E 9,999.9999"), 11)      //Valor nota
 			cLinha += padl(Transform(aItens[nXa][13][4], "@E 999.99"), 8)      //Frete
 			cLinha += padl(Transform(aItens[nXa][13][6], "@E 999,999.99"), 12)      //Funrural
-			cLinha += padl(Transform(aItens[nXa][13][7], "@E 99,999.99"), 12)      //ST
-			cLinha += padl(Transform(aItens[nXa][13][8], "@E 99,999.99"), 10)      //Fundese
+			//cLinha += padl(Transform(aItens[nXa][13][7], "@E 99,999.99"), 12)      //ST
+			//cLinha += padl(Transform(aItens[nXa][13][8], "@E 99,999.99"), 10)      //Fundese
 
             cLinha += padl(Transform(nConvenio, "@E 9,999,999.99"), 12)               //Convenio
 			cLinha += padl(Transform(nAdto, "@E 9,999,999.99"), 12)
@@ -1557,8 +1561,9 @@ If lImprimiu
 	nLin++
 
 	cLinha := Padr("Totais" , 7)
-	cLinha += Padr("da Folha de pagamento leite" , 27)
-	cLinha += padl(Transform(aTots[1], "@E 999,999,999.99"), 18)
+	cLinha += Padr("da Folha de pagamento leite" , 27+12)
+
+    cLinha += padl(Transform(aTots[1], "@E 999,999,999.99"), 18)
 	cLinha += padl(Transform(aTots[2], "@E 9,999.9999"), 11)
 	cLinha += padl(Transform(aTots[3], "@E 9,999,999.99"), 14)
 	cLinha += padl(Transform(aTots[4], "@E 9,999.9999"), 11)
@@ -1568,8 +1573,8 @@ If lImprimiu
 	cLinha += padl(Transform(aTots[8], "@E 9,999.9999"), 11)
 	cLinha += padl(Transform(aTots[9], "@E 999.99"), 8)
 	cLinha += padl(Transform(aTots[10], "@E 999,999.99"), 12)
-	cLinha += padl(Transform(aTots[11], "@E 99,999.99"), 12)
-	cLinha += padl(Transform(aTots[12], "@E 99,999.99"), 10)
+	//cLinha += padl(Transform(aTots[11], "@E 99,999.99"), 12)
+	//cLinha += padl(Transform(aTots[12], "@E 99,999.99"), 12)
 	cLinha += padl(Transform(aTots[13], "@E 9,999,999.99"), 12)
 	cLinha += padl(Transform(aTots[14], "@E 9,999,999.99"), 12)
 	cLinha += padl(Transform(aTots[15], "@E 9,999,999.99"), 14)
