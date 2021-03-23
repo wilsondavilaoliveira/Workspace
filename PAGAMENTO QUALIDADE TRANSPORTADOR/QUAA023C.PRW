@@ -12,7 +12,7 @@
 User Function QUAA023C()
 
     Local oBrowse := FwLoadBrw("QUAA023C")
-
+    XDESCPBH()
     oBrowse:Activate()
 
 Return (NIL)
@@ -64,11 +64,12 @@ Regra de Negocio
 /*/
 Static Function ModelDef()
 
-    Local oModel 	:= MPFormModel():New("QAA023CM")
+    Local oModel 	:= MPFormModel():New("QAA023CM",/*<bPre >*/,/*<bPost >*/, /*<bCommit >*/,/* <bCancel >*/)
     Local oStruPBA 	:= FwFormStruct(1, "PBA")
     Local oStruPBD 	:= FwFormStruct(1, "PBD")
     Local oStruPBH 	:= FwFormStruct(1, "PBH")
     Local bPost  := { |oModelGrid, nLine,cAction, cField| LinOk(oModelGrid, nLine, cAction, cField) }
+
 
     oModel:AddFields("PBAMASTER", NIL, oStruPBA)
     oModel:AddGrid("PBDDETAIL","PBAMASTER",oStruPBD,,,,bPost,/*bLoad*/)
@@ -76,10 +77,10 @@ Static Function ModelDef()
     oModel:AddGrid("PBHDETAIL","PBDDETAIL",oStruPBH,,,,,)
 
     oModel:SetRelation("PBDDETAIL", {{"PBD_FILIAL", "xFilial('PBD')"}, {"PBD_CODTIP", "PBA_CODIGO"}}, PBD->(IndexKey( 1 )))
+
     oModel:SetRelation("PBHDETAIL", {{"PBH_FILIAL", "xFilial('PBH')"}, {"PBH_CODIGO", "PBD_CODTIP"},{"PBH_CODITE", "PBD_CODIGO"}}, PBH->(IndexKey( 1 )))
 
     oModel:SetPrimaryKey( { 'PBA_FILIAL','PBA_CODIGO'})
-
 
     oModel:SetDescription("Tp. Bonif. Transportador" )
 
@@ -147,6 +148,13 @@ Static Function ViewDef()
     //AddGrid([ cId ], [ cOwner ], [ oModelStruct ], [ bLinePre ], [ bLinePost ], [ bPre ], [ bPost ], [ bLoad ])
     oView:AddGrid("VIEW_PBD", oStruPBD, "PBDDETAIL",,,,)
     oView:AddGrid("VIEW_PBH", oStruPBH, "PBHDETAIL")
+    oView:AddUserButton( 'COPIAR RANGES', 'CLIPS', {|oView| CopyRange(oView,oModel) } )
+
+    cCSS := "QTableView { selection-background-color: #ade0ff; font-weight:bold;font-size:12px }"
+    cCSS += "QHeaderView::section { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343,  stop:1 #656565); color: white; padding-left: 4px; border: 1px solid #6c6c6c; }"
+
+    oView:SetViewProperty( "VIEW_PBD", "SETCSS", {cCSS} )
+    oView:SetViewProperty( "VIEW_PBH", "SETCSS", {cCSS} )
 
     oView:CreateHorizontalBox("SUPERIOR", 15)
     oView:CreateHorizontalBox("ITENS", 40)
@@ -254,7 +262,13 @@ Local cRet := ''
 //     ENDIF
 //NEXT nI
 
-cRet := StrZero(oModelPBD:Length(),3)
+
+If !PBA->PBA_CODIGO $ '03|04'
+    cRet := StrZero(oModelPBD:Length(),3)
+Else
+    cRet := '001'
+EndIf
+
 
 Return cRet
 
@@ -275,3 +289,120 @@ If POSICIONE("PBI",1,XFILIAL("PBI")+FWFLDGET("PBD_TIPDOC"),"PBI_TIPO")<>FWFLDGET
 EndIf
 
 Return lRet
+
+User Function XDESCPBH()
+
+Local cRet := ''
+Local oModel := FwModelActive()
+Local cCampo := oModel:GetModel("PBDDETAIL"):GetValue('PBD_TPAPOM')
+
+    If cCampo == 'A'
+        cRet := 'APONT. SIMPLES, CONFORME OU NAO CONFOME, O SISTEMA CONTA O % DE ITENS EM CONFORMIDADE E PAGA PELO %'
+    ElseIf cCampo == 'M'
+        cRet := 'APONT. MULTIPLO, O SISTEMA CONTA O NUMERO DE ITENS EM *NAO CONFORMIDADE* E PAGA P/NUMERO DE ITENS'
+    ELseIf cCampo == 'P'
+        cRet := 'APONT. PONTOS,CONFORME OU NAO CONFOME,O SISTEMA SOMA OS PONTOS P/PESO DIVIDE P/FREQUENCIA COLETA MES'
+    Else
+        cRet := 'DOCUMENTACAO, O SISTEMA CONTA CADA DOC. EM CONFORMIDADE C/ SEUS PESOS E PAGA PELA SOMA DE PONTUACAO'
+    EndIf
+
+Return cRet
+
+Static Function XDESCPBH()
+
+Local cRet := ''
+
+PBH->( dbGoTop() )
+
+While PBH->( !Eof())
+
+    aArea := GetArea()
+
+    PBD->(dbSetOrder(4))
+
+    If PBD->(dbSeek(PBH->(PBH_FILIAL)+PBH->(PBH_CODITE)+PBH->(PBH_CODIGO)))
+        If PBD->(PBD_TPAPOM) == 'A'
+            cRet := 'APONT. SIMPLES, CONFORME OU NAO CONFOME, O SISTEMA CONTA O % DE ITENS EM CONFORMIDADE E PAGA PELO %'
+        ElseIf PBD->(PBD_TPAPOM) == 'M'
+            cRet := 'APONT. MULTIPLO, O SISTEMA CONTA O NUMERO DE ITENS EM *NAO CONFORMIDADE* E PAGA P/NUMERO DE ITENS'
+        ELseIf PBD->(PBD_TPAPOM) == 'P'
+            cRet := 'APONT. PONTOS,CONFORME OU NAO CONFOME,O SISTEMA SOMA OS PONTOS P/PESO DIVIDE P/FREQUENCIA COLETA MES'
+        Else
+            cRet := 'DOCUMENTACAO, O SISTEMA CONTA CADA DOC. EM CONFORMIDADE C/ SEUS PESOS E PAGA PELA SOMA DE PONTUACAO'
+        EndIf
+
+        PBH->( RecLock("PBH",.F.) )
+            PBH->PBH_DESCRI := cRet
+        PBH->( MsUnlock() )
+    EndIf
+
+    PBH->( dbSkip() )
+
+EndDo
+
+Return cRet
+
+
+Static Function CopyRange(oView,oModel)
+
+FwFormCommit(oModel)
+
+If !PBA->PBA_CODIGO $ '03|04'
+    MsgStop(OemToAnsi("Ação não permitida para esse tipo de bonificação!"))
+    Return
+Else
+
+    If MsgYesNo("Deseja copiar os ranges da primeira linha para todas as bonificações")
+        TcSqlExec("DELETE " + RetSqlName("PBH") + " WHERE PBH_FILIAL='" + cFilAnt + "' AND PBH_CODITE<>'001' AND PBH_CODIGO='" + PBA->PBA_CODIGO+"'")
+
+        PBD->(dbSetOrder(1))
+        If PBD->( DbSeek(cFilAnt+PBA->PBA_CODIGO+'002') )
+
+            While PBD->(PBD_FILIAL+PBD_CODTIP) == cFilAnt+PBA->PBA_CODIGO
+                aAreaPDB := PBD->(GetArea())
+
+                PBH->(dbSetOrder(1))
+                    If PBH->( DbSeek(cFilAnt+PBA->PBA_CODIGO+'001'+'001' ) )
+
+                        While PBH->(PBH_FILIAL+PBH_CODIGO+PBH_CODITE) == cFilAnt+PBA->PBA_CODIGO+'001'
+                            VINIC    := PBH->(PBH_VINIC)
+                            VFINAL   := PBH->(PBH_VFINAL)
+                            VRESUL   := PBH->(PBH_VRESUL)
+                            ITEM     := PBH->(PBH_ITEM)
+                            DESCRI   := PBH->(PBH_DESCRI)
+
+                            aArea := PBH->(GetArea())
+                            RecLock("PBH",.T.)
+                                PBH->PBH_FILIAL := cFilAnt
+                                PBH->PBH_VINIC  := VINIC
+                                PBH->PBH_VFINAL := VFINAL
+                                PBH->PBH_VRESUL := VRESUL
+                                PBH->PBH_ITEM   := ITEM
+                                PBH->PBH_CODIGO := PBA->PBA_CODIGO
+                                PBH->PBH_CODITE := PBD->(PBD_CODIGO)
+                                PBH->PBH_DESCRI := DESCRI
+                            MsUnlock()
+
+                            PBH->(RestArea(aArea))
+
+                            PBH->( dbSkip() )
+                        EndDo
+                    EndIf
+                PBD->(RestArea(aAreaPDB))
+                PBD->( dbSkip())
+
+            EndDo
+        EndIf
+
+    MsgAlert("Copia efetuada!")
+
+    oModel:DeActivate()
+    oModel:Activate()
+    oView:Refresh('PBDDETAIL')
+    oView:Refresh('PBHDETAIL')
+
+    EndIf
+EndIf
+
+
+Return

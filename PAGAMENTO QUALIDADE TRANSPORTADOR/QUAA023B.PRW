@@ -11,9 +11,12 @@ TELA PARA LANÇAMENTO DE KMS POR TRANPORTADOR POR LINHA
 /*/
 User Function QUAA023B()
 
-    Local oBrowse := FwLoadBrw("QUAA023B")
+    Local oBrowse := ""
 
-    oBrowse:Activate()
+    If Pergunte("QUAA023B")
+        oBrowse := FwLoadBrw("QUAA023B")
+        oBrowse:Activate()
+    EndIf
 
 Return (NIL)
 
@@ -31,7 +34,7 @@ Static Function BrowseDef()
     INCLUI := .T.
     oBrowse:SetAlias("PB8")
     oBrowse:SetDescription("Cabecalho Fretes")
-    oBrowse:AddFilter("FILIAL","PB8_FILIAL=="+cFilAnt,.T.,.T.)
+    oBrowse:AddFilter("FILIAL","PB8_FILIAL=="+cFilAnt+" .AND. PB8_PERIOD=="+MV_PAR01,.T.,.T.)
     oBrowse:SetMenuDef("QUAA023B")
 
 Return (oBrowse)
@@ -116,6 +119,10 @@ Static Function ViewDef()
     oView:AddField("VIEW_AUX", oStruAUX, "PB8CALC")
     oView:AddGrid("VIEW_PB9", oStruPB9, "PB9DETAIL",,,,)
 
+    cCSS := "QTableView { selection-background-color: #ade0ff; font-weight:bold;font-size:12px }"
+    cCSS += "QHeaderView::section { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343,  stop:1 #656565); color: white; padding-left: 4px; border: 1px solid #6c6c6c; }"
+
+    oView:SetViewProperty( "VIEW_PB9", "SETCSS", {cCSS} )
 
     oView:CreateHorizontalBox("SUPERIOR", 10)
     oView:CreateHorizontalBox("AUXILIAR", 10)
@@ -129,7 +136,7 @@ Static Function ViewDef()
     oStruPB9:RemoveField('PB9_CODTRA' )
     oStruPB9:RemoveField('PB9_PERIOD' )
 
-    oModel:GetModel( 'PB9DETAIL' ):SetUniqueLine( { 'PB9_DATA','PB9_LINHA','PB9_CODTRA','PB9_PERIOD' })
+    //oModel:GetModel( 'PB9DETAIL' ):SetUniqueLine( { 'PB9_DATA','PB9_LINHA','PB9_CODTRA','PB9_PERIOD' })
 
 Return (oView)
 
@@ -348,8 +355,27 @@ User Function ExcelQA23()
     	oExcelApp := MsExcel():New()
     	oExcelApp:WorkBooks:Open(cArq)
     	oExcelApp:SetVisible(.T.)
-        oExcelApp:Destroy()
+        //oExcelApp:Destroy()
 
     EndIf
 
 Return
+
+User Function xPB8Per()
+
+Local lRet      := .T.
+Local dDataFech := GetMv("MV_XDTFCHT")
+
+    If ctod( cValToChar( LastDay( ctod( '01'+"/"+substr(M->PB8_PERIOD,1,2)+"/"+substr(M->PB8_PERIOD,3,4) ) )) +"/"+substr(M->PB8_PERIOD,1,2)+"/"+substr(M->PB8_PERIOD,3,4)) <= dDataFech
+        MsgStop(OemToAnsi("Data fechada, altere período!"))
+        lRet := .F.
+    EndIf
+
+    If lRet
+        If ! SubStr(M->PB8_PERIOD,1,2) $ '01|02|03|04|05|06|07|08|09|10|11|12' .OR. ! Val(SubStr(M->PB8_PERIOD,3,4)) >= 2020
+            MsgStop(OemToAnsi("Período inválido, altere período!"))
+            lRet := .F.
+        EndIf
+    EndIf
+
+Return lRet

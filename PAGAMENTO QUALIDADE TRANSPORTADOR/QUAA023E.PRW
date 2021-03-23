@@ -136,17 +136,24 @@ Static Function ViewDef()
     oView:AddGrid("VIEW_LBE", oStruLBE, "LBEDETAIL")
     oView:AddGrid("VIEW_PBL", oStruPBL, "PBLDETAIL")
 
+    cCSS := "QTableView { selection-background-color: #ade0ff; font-weight:bold;font-size:11px }"
+    cCSS += "QHeaderView::section { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343,  stop:1 #656565); color: white; padding-left: 4px; border: 1px solid #6c6c6c; }"
+
+    oView:SetViewProperty( "VIEW_PBC", "SETCSS", {cCSS} )
+    oView:SetViewProperty( "VIEW_PBG", "SETCSS", {cCSS} )
+    oView:SetViewProperty( "VIEW_LBE", "SETCSS", {cCSS} )
+    oView:SetViewProperty( "VIEW_PBL", "SETCSS", {cCSS} )
 
     oView:CreateHorizontalBox("SUPERIOR", 35)
-    oView:CreateHorizontalBox("BAIXO1"   , 30)
-    oView:CreateHorizontalBox("BAIXO2"   , 35)
+    oView:CreateHorizontalBox("BAIXO1"   , 35)
+    oView:CreateHorizontalBox("BAIXO2"   , 30)
 
     //oView:CreateVerticalBox("BAIXOESQ1", 50,'BAIXO1')
     //oView:CreateVerticalBox("BAIXODIR1", 50,'BAIXO1')
 
-    oView:CreateVerticalBox("BAIXOESQ2", 30,'BAIXO2')
-    oView:CreateVerticalBox("BAIXOCEN2", 30,'BAIXO2')
-    oView:CreateVerticalBox("BAIXODIR2", 40,'BAIXO2')
+    oView:CreateVerticalBox("BAIXOESQ2", 25,'BAIXO2')
+    oView:CreateVerticalBox("BAIXOCEN2", 50,'BAIXO2')
+    oView:CreateVerticalBox("BAIXODIR2", 25,'BAIXO2')
     //oView:CreateHorizontalBox("BONIFICACAO", 22)
 
     oView:SetOwnerView("VIEW_SA2", "SUPERIOR")

@@ -118,8 +118,13 @@ Static Function ViewDef()
     oView:AddField("VIEW_PBB", oStruPBB, "PBBMASTER")
     oView:AddGrid("VIEW_PBG", oStruPBG, "PBGDETAIL")
 
-    oView:CreateHorizontalBox("DADOS", 50)
-    oView:CreateHorizontalBox("DOCUMENTOS", 50)
+    cCSS := "QTableView { selection-background-color: #ade0ff; font-weight:bold;font-size:12px }"
+    cCSS += "QHeaderView::section { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343,  stop:1 #656565); color: white; padding-left: 4px; border: 1px solid #6c6c6c; }"
+
+    oView:SetViewProperty( "VIEW_PBG", "SETCSS", {cCSS} )
+
+    oView:CreateHorizontalBox("DADOS", 60)
+    oView:CreateHorizontalBox("DOCUMENTOS", 40)
     //oView:CreateHorizontalBox("KMS", 25)
     //oView:CreateHorizontalBox("BONIFICACAO", 22)
 
