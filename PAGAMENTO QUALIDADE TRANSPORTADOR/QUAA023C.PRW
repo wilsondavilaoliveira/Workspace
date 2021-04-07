@@ -139,6 +139,8 @@ Static Function ViewDef()
     Local oStruPBH 	:= FwFormStruct(2,"PBH")
 
     Local oModel 	:= FwLoadModel("QUAA023C")
+    Local bKeyF4    := SetKey( VK_F4 , Nil )
+    SetKey( VK_F4 , { || CopyRange(oView,oModel) } )
 
 
     oView:SetModel(oModel)

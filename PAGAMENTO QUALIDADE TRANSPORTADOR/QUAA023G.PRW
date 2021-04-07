@@ -119,7 +119,7 @@ Local cStatus   := ''
 
     If oTree:Nivel() == 2 .AND. PC5->(PC5_TPAPOM) $ 'A|P'
         If PC5->(PC5_STATUS) == 'N'
-            oTree:ChangePrompt(oTree:GetPrompt(.T.) +"-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
+            oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+"("+cValToChar(PC5->(PC5_ITAPON))+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
             oTree:ChangeBmp("CHECKED","CHECKED",,,oTree:GetCargo())
             PC5->( RecLock("PC5",.F.) )
                 PC5->PC5_DTAPON := dDataBase
@@ -127,7 +127,7 @@ Local cStatus   := ''
                 PC5->PC5_STATUS := 'C'
             PC5->( MsUnlock() )
         ElseIf PC5->(PC5_STATUS) == 'C'
-            oTree:ChangePrompt(AllTrim((cAlias)->(PBD_DESCR))+"("+cValToChar(PC5->(PC5_ITAPON))+")-NÃO CONFORME-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
+            oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+"("+cValToChar(PC5->(PC5_ITAPON))+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
             oTree:ChangeBmp("PCOFXCANCEL","PCOFXCANCEL",,,oTree:GetCargo())
             PC5->( RecLock("PC5",.F.) )
                 PC5->PC5_DTAPON := dDataBase
@@ -151,7 +151,7 @@ Local cStatus   := ''
 
             If PC5->(PC5_ITAPON) == 0 .AND. PC5->(PC5_STATUS) == 'A'
                 //PBD_CODTIP+'.'+PBD_CODIGO
-                oTree:ChangePrompt(AllTrim((cAlias)->(PBD_DESCR))+">("+cValToChar(PC5->(PC5_ITAPON)+1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
+                oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+">("+cValToChar(PC5->(PC5_ITAPON)+1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
                 oTree:ChangeBmp("PCOFXCANCEL","PCOFXCANCEL",,,oTree:GetCargo())
                 PC5->( RecLock("PC5",.F.) )
                     PC5->PC5_DTAPON := dDataBase
@@ -160,7 +160,7 @@ Local cStatus   := ''
                     PC5->PC5_ITAPON += 1
                 PC5->( MsUnlock() )
             Else
-                oTree:ChangePrompt(AllTrim((cAlias)->(PBD_DESCR))+">("+cValToChar(PC5->(PC5_ITAPON)+1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
+                oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+">("+cValToChar(PC5->(PC5_ITAPON)+1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
                 PC5->( RecLock("PC5",.F.) )
                     PC5->PC5_DTAPON := dDataBase
                     PC5->PC5_USRAPO := cNomeUsu
@@ -171,7 +171,7 @@ Local cStatus   := ''
         Else
             If PC5->(PC5_ITAPON) == 1
                 //PBD_CODTIP+'.'+PBD_CODIGO
-                oTree:ChangePrompt(AllTrim((cAlias)->(PBD_DESCR))+">(0)",oTree:GetCargo())
+                oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+">(0)",oTree:GetCargo())
                 oTree:ChangeBmp("BPMSTASK2","BPMSTASK2",,,oTree:GetCargo())
                 PC5->( RecLock("PC5",.F.) )
                     PC5->PC5_DTAPON := CTOD("  /  /    ")
@@ -180,7 +180,7 @@ Local cStatus   := ''
                     PC5->PC5_ITAPON := 0
                 PC5->( MsUnlock() )
             ElseiF PC5->(PC5_ITAPON) > 1
-                oTree:ChangePrompt(AllTrim((cAlias)->(PBD_DESCR))+">("+cValToChar(PC5->(PC5_ITAPON)-1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
+                oTree:ChangePrompt(AllTrim(IIF(PC5->(PC5_TIPO)=='T' .AND. PC5->(PC5_LINHA)<>'000000',PC5->(PC5_LINHA)+"-"+(cAlias)->(PBD_DESCR),(cAlias)->(PBD_DESCR)))+">("+cValToChar(PC5->(PC5_ITAPON)-1)+")-"+dToc(Ddatabase)+"-"+cNomeUsu,oTree:GetCargo())
                 PC5->( RecLock("PC5",.F.) )
                     PC5->PC5_DTAPON := dDataBase
                     PC5->PC5_USRAPO := cNomeUsu
@@ -252,7 +252,13 @@ ElseIf cTipo == 'T'
 
         SELECT PC5_CODTRA AS 'COD',PC5_DTAPON,PC5_USRAPO,PC5_STATUS,
         (SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE A2_COD=PC5_CODTRA AND SA2.%notDel%) AS 'DESC',
-        PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,PC5.R_E_C_N_O_ AS 'REG',PC5_ITAPON,PC5_TPAPOM
+        PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',
+        CASE WHEN PC5_LINHA='000000' THEN
+        PBD_DESCR
+        ELSE
+        PC5_LINHA+'-'+PBD_DESCR
+        END AS 'BONIF',
+        PBD_FREQUE,PC5.R_E_C_N_O_ AS 'REG',PC5_ITAPON,PC5_TPAPOM
         FROM %Table:PC5% PC5
         INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=%Exp:cFilAnt% AND PBD_TIPO=%Exp:cTipo% AND PBD.%notDel%
         AND PBD_CODTIP+'.'+PBD_CODIGO=PC5_CODBON
@@ -305,7 +311,7 @@ Local a         := 0
         %noparser%
 
             SELECT PBB_CODIGO AS 'CODM',PBB_NOME AS 'DESC','' AS 'CODV',PBC_CODTRA AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',
-            PBD_DESCR AS 'BONIF',PBD_FREQUE,'M' AS 'TIPO',PBD_TPAPOM,PBD_PESO
+            PBD_DESCR AS 'BONIF',PBD_FREQUE,'M' AS 'TIPO',PBD_TPAPOM,PBD_PESO,'000000' AS LBE_CODCAM
             FROM %Table:PBB%  PBB
             INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=PBB_FILIAL AND PBD_TIPO='M' AND PBD.%notDel%
             INNER JOIN %Table:PBC% PBC ON PBC_FILIAL=PBB_FILIAL AND PBC_CODMOT=PBB_CODIGO AND PBC.%notDel%
@@ -314,21 +320,35 @@ Local a         := 0
 
             SELECT DISTINCT '' AS 'CODM',LTRIM(RTRIM(PBJ_PLACA))+'-'+
             ISNULL((SELECT TOP 1 A2_NOME FROM %Table:SA2% SA2 WHERE SA2.%notDel%  AND  A2_COD = LBE_FORNEC),'') AS 'DESC',
-            PBJ_CODIGO AS 'CODV',LBE_FORNEC AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'V' AS 'TIPO',PBD_TPAPOM,PBD_PESO
+            PBJ_CODIGO AS 'CODV',LBE_FORNEC AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'V' AS 'TIPO',PBD_TPAPOM,PBD_PESO,'000000' AS LBE_CODCAM
             FROM %Table:PBJ% PBJ
             INNER JOIN %Table:LBE% LBE ON LBE_FILIAL=PBJ_FILIAL AND LBE_CODVEI=PBJ_CODIGO AND LBE.%notDel%
             INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=PBJ_FILIAL AND PBD_TIPO='V' AND PBD.%notDel%
             WHERE PBJ_STATUS='A' AND PBJ_FILIAL=%Exp:cFilAnt% AND PBJ.%notDel%
 
             UNION ALL
+
             SELECT DISTINCT '' AS 'CODM',A2_NOME 'DESC',
-            '' AS 'CODV',A2_COD AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'T' AS 'TIPO',PBD_TPAPOM,PBD_PESO
+            '' AS 'CODV',A2_COD AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'T' AS 'TIPO',PBD_TPAPOM,PBD_PESO,'000000' AS LBE_CODCAM
             FROM %Table:SA2% SA2
-            INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=%Exp:cFilAnt% AND PBD_TIPO='T' AND PBD.%notDel%
+            INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=%Exp:cFilAnt% AND PBD_TIPO='T' AND PBD.%notDel% AND PBD_CODTIP IN ('03','04')
             WHERE SA2.%notDel% AND A2_MSBLQL='2' AND A2_COD IN
             (SELECT DISTINCT A2_COD FROM %Table:SA2% SA21 WHERE SA21.%notDel%
             AND A2_COD IN (SELECT LBB_CODFOR FROM %Table:LBB% LBB WHERE LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notDel%))
+
+            UNION ALL
+
+            SELECT DISTINCT '' AS 'CODM',A2_NOME 'DESC',
+            '' AS 'CODV',A2_COD AS 'CODT',PBD_CODTIP+'.'+PBD_CODIGO AS 'CODBON',PBD_DESCR AS 'BONIF',PBD_FREQUE,'T' AS 'TIPO',PBD_TPAPOM,PBD_PESO,LBE_CODCAM
+            FROM %Table:SA2% SA2
+            INNER JOIN %Table:PBD% PBD ON PBD_FILIAL=%Exp:cFilAnt% AND PBD_TIPO='T' AND PBD.%notDel% AND PBD_CODTIP IN ('01','02')
+            INNER JOIN %Table:LBE% LBE ON LBE_FILIAL=PBD_FILIAL AND LBE_FORNEC=A2_COD AND LBE_STATUS='S' AND LBE.%notDel%
+            WHERE SA2.%notDel% AND A2_MSBLQL='2' AND A2_COD IN
+            (SELECT DISTINCT A2_COD FROM %Table:SA2% SA21 WHERE SA21.%notDel%
+            AND A2_COD IN (SELECT LBB_CODFOR FROM %Table:LBB% LBB WHERE LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notDel%))
+
             ORDER BY TIPO,CODM,CODV,CODT,CODBON
+
         EndSql
 
 
@@ -341,7 +361,7 @@ Local a         := 0
                 //PC5_FILIAL+PC5_PERIOD+PC5_TIPO+PC5_CODBON+PC5_CODMOT+PC5_CODVEI+PC5_CODTRA+PC5_ITAPON
 
                 If (cAlias)->(PBD_TPAPOM) <> 'M'
-                    IF !PC5->(dbSeek(cFilAnt + MV_PAR01 + (cAlias)->(TIPO) + (cAlias)->(CODBON) + (cAlias)->(CODM) + (cAlias)->(CODV) + (cAlias)->(CODT) + cValToChar(a) ))
+                    IF !PC5->(dbSeek(cFilAnt + MV_PAR01 + (cAlias)->(TIPO) + (cAlias)->(CODBON) + (cAlias)->(CODM) + (cAlias)->(CODV) + (cAlias)->(CODT) + Pad(cValToChar(a),TamSX3("PC5_ITAPON")[1]) + (cAlias)->(LBE_CODCAM) ))
                         RecLock("PC5",.T.)
                             PC5->PC5_FILIAL := cFilAnt
                             PC5->PC5_PERIOD := MV_PAR01
@@ -354,6 +374,7 @@ Local a         := 0
                             PC5->PC5_TIPO   := (cAlias)->(TIPO)
                             PC5->PC5_TPAPOM := (cAlias)->(PBD_TPAPOM)
                             PC5->PC5_PESO   := (cAlias)->(PBD_PESO)
+                            PC5->PC5_LINHA   := (cAlias)->(LBE_CODCAM)
                             If (cAlias)->(PBD_TPAPOM) $ 'D|M'
                                 PC5->PC5_STATUS := 'A'
                             Else
@@ -365,7 +386,7 @@ Local a         := 0
                         MsUnlock()
                     EndIf
                 Else
-                    IF !PC5->(dbSeek(cFilAnt + MV_PAR01 + (cAlias)->(TIPO) + (cAlias)->(CODBON) + (cAlias)->(CODM) + (cAlias)->(CODV) + (cAlias)->(CODT) ) )
+                    IF !PC5->(dbSeek(cFilAnt + MV_PAR01 + (cAlias)->(TIPO) + (cAlias)->(CODBON) + (cAlias)->(CODM) + (cAlias)->(CODV) + (cAlias)->(CODT)+Pad('0',TamSX3("PC5_ITAPON")[1])+(cAlias)->(LBE_CODCAM) ) )
                         RecLock("PC5",.T.)
                             PC5->PC5_FILIAL := cFilAnt
                             PC5->PC5_PERIOD := MV_PAR01
@@ -378,7 +399,7 @@ Local a         := 0
                             PC5->PC5_TIPO   := (cAlias)->(TIPO)
                             PC5->PC5_TPAPOM := (cAlias)->(PBD_TPAPOM)
                             PC5->PC5_PESO   := (cAlias)->(PBD_PESO)
-
+                            PC5->PC5_LINHA   := (cAlias)->(LBE_CODCAM)
                             If (cAlias)->(PBD_TPAPOM) $ 'D|M'
                                 PC5->PC5_STATUS := 'A'
                             Else
@@ -557,10 +578,10 @@ For i := 1 to Len(aTree)
         EndIf
 
         oTree1:AddTree(Padl(AllTrim(aTree[i][1])+"-"+AllTrim(aTree[i][2]),100),,"CLIENTE","MSGFORWD",,,"9"+StrZero(Val(aTree[i][1]),7))
-        oTree1:TreeSeek( AllTrim(aTree[i][1]) )
+        //oTree1:TreeSeek( AllTrim(aTree[i][1]) )
 
         oTree1:AddTreeItem(AllTrim(aTree[i][4])+AllTrim(aTree[i][5]),"BPMSTASK2",,StrZero(aTree[i][6],8))
-        oTree1:TreeSeek( StrZero(aTree[i][6],8) )
+        //oTree1:TreeSeek( StrZero(aTree[i][6],8) )
 
 
         If aTree[i][10] == 'C'
@@ -583,7 +604,7 @@ For i := 1 to Len(aTree)
         cCodMot := AllTrim(aTree[i][1])
     Else
         oTree1:AddTreeItem   (AllTrim(aTree[i][4])+AllTrim(aTree[i][5]),"BPMSTASK2",,StrZero(aTree[i][6],8))
-        oTree1:TreeSeek( StrZero(aTree[i][6],8) )
+        //oTree1:TreeSeek( StrZero(aTree[i][6],8) )
 
         If aTree[i][10] == 'C'
             oTree1:ChangePrompt(AllTrim(aTree[i][4])+AllTrim(aTree[i][5])+"-"+dtoc(stod(AllTrim(aTree[i][7])))+"-"+AllTrim(aTree[i][8]),StrZero(aTree[i][6],8))
@@ -606,7 +627,7 @@ For i := 1 to Len(aTree)
 
  Next i
 
-oTree1:TreeSeek(cCargo1)
+//oTree1:TreeSeek(cCargo1)
 oTree1:EndUpdate()
 oTree1:EndTree()
 
@@ -725,10 +746,10 @@ For i := 1 to Len(aTree)
             oTree3:EndTree()
         EndIf
         oTree3:AddTree       (AllTrim(aTree[i][1])+"-"+AllTrim(aTree[i][2]),,"PREDIO","S4WB014B",,,"9"+StrZero(Val(aTree[i][1]),7))
-        oTree3:TreeSeek( AllTrim(aTree[i][1]) )
+        //oTree3:TreeSeek( AllTrim(aTree[i][1]) )
 
         oTree3:AddTreeItem   (AllTrim(aTree[i][4])+AllTrim(aTree[i][5]),"BPMSTASK2",,StrZero(aTree[i][6],8))
-        oTree3:TreeSeek( StrZero(aTree[i][6],8) )
+        //oTree3:TreeSeek( StrZero(aTree[i][6],8) )
 
        If aTree[i][10] == 'C'
             oTree3:ChangePrompt(AllTrim(aTree[i][4])+AllTrim(aTree[i][5])+"-"+dtoc(stod(AllTrim(aTree[i][7])))+"-"+AllTrim(aTree[i][8]),StrZero(aTree[i][6],8))
@@ -751,7 +772,7 @@ For i := 1 to Len(aTree)
         cCodMot := AllTrim(aTree[i][1])
     Else
         oTree3:AddTreeItem   (AllTrim(aTree[i][4])+AllTrim(aTree[i][5]),"BPMSTASK2",,StrZero(aTree[i][6],8) )
-        oTree3:TreeSeek( StrZero(aTree[i][6],8) )
+        //oTree3:TreeSeek( StrZero(aTree[i][6],8) )
 
        If aTree[i][10] == 'C'
             oTree3:ChangePrompt(AllTrim(aTree[i][4])+AllTrim(aTree[i][5])+"-"+dtoc(stod(AllTrim(aTree[i][7])))+"-"+AllTrim(aTree[i][8]),StrZero(aTree[i][6],8))
@@ -774,7 +795,7 @@ For i := 1 to Len(aTree)
 
  Next i
 
-oTree3:TreeSeek(cCargo1)
+//oTree3:TreeSeek(cCargo1)
 oTree3:EndUpdate()
 oTree3:EndTree()
 

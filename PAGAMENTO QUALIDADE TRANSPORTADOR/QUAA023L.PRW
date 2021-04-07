@@ -1,4 +1,5 @@
 #Include "TOTVS.ch"
+
 #Include "FWMVCDEF.ch"
 /*/{Protheus.doc} QUAA023L()==============================================================================================================================
 CADASTRO TRANSPORTADORA
@@ -39,7 +40,8 @@ Static Function BrowseDef()
     oBrowse:SetMenuDef("QUAA023L")
     oBrowse:AddLegend( "PC6_STATUS=='A'", "BR_VERDE"		, "Aguardando")
     oBrowse:AddLegend( "PC6_STATUS=='S'", "BR_PINK"		    , "Simulacao")
-    oBrowse:AddLegend( "PC6_STATUS=='F'", "BR_VERMELHO"		, "Fechado")
+    oBrowse:AddLegend( "PC6_STATUS=='P'", "BR_VERMELHO"		, "Fechado pronto p/Gerar Nota")
+    oBrowse:AddLegend( "PC6_STATUS=='F'", "BR_AZUL"		, "Fechado Nota Gerada")
 
 Return (oBrowse)
 
@@ -56,16 +58,23 @@ Static Function MenuDef()
     Local aRotina := {} //FwMVCMenu("QUAA023L")
     Local cBnt1   := '' //iif(MV_PAR02==1,"SIMULAÇÃO","FECHAMENTO")
 
-    Pergunte("QUAA023L",.F.)
+    //Pergunte("QUAA023L",.F.)
 
-    cBnt1   := iif(MV_PAR02==1,"SIMULAÇÃO","FECHAMENTO")
+    cBnt1   := "SIMULAÇÃO/FECHAMENTO?"
 
     ADD OPTION aRotina TITLE cBnt1 ACTION 'U_QA023FCH()' OPERATION 2 ACCESS 0
     ADD OPTION aRotina TITLE 'Visualiza' ACTION 'VIEWDEF.QUAA023L' OPERATION 2 ACCESS 0
     ADD OPTION aRotina TITLE 'Relatorio Conferencia' ACTION 'U_xRelQA23L()' OPERATION 2 ACCESS 0
-    ADD OPTION aRotina TITLE 'Gerar Cte/Nfs' ACTION 'U_QUAA023M()' OPERATION 2 ACCESS 0
-
+    ADD OPTION aRotina TITLE 'Gerar Base Cte/Nfs' ACTION 'U_QUAA023M()' OPERATION 2 ACCESS 0
+    //ADD OPTION aRotina TITLE 'Gerar Cte/Nfs' ACTION 'U_EXEC103()' OPERATION 2 ACCESS 0
 Return (aRotina)
+
+
+User Function AX23L()
+
+AxCadastro("PC9")
+
+Return
 
 
 User Function xRelQA23L()
@@ -178,25 +187,41 @@ User Function QA023FCH()
 
     Local oModel := FwLoadModel("QUAA023L")
 
-    TcSqlExec("DELETE " + RetSqlName("PC6") + " WHERE PC6_PERIOD='" + MV_PAR01 + "'")
-    TcSqlExec("DELETE " + RetSqlName("PC7") + " WHERE PC7_PERIOD='" + MV_PAR01 + "'")
-    TcSqlExec("DELETE " + RetSqlName("PC8") + " WHERE PC8_PERIOD='" + MV_PAR01 + "'")
-    FWFormCommit(oModel)
-    oModel:DeActivate()
-    oModel:Activate()
 
-    MsAguarde({|| Processa()},"Executando Calculos...")
+    If PC6->PC6_STATUS $ 'P|F'
+        MsgStop("Periodo Fechado! Acao nao permitida.")
+    Else
+
+        If Pergunte("QUAA023L")
+            If MV_PAR02 == 1
+
+                TcSqlExec("DELETE " + RetSqlName("PC6") + " WHERE PC6_PERIOD='" + MV_PAR01 + "'")
+                TcSqlExec("DELETE " + RetSqlName("PC7") + " WHERE PC7_PERIOD='" + MV_PAR01 + "'")
+                TcSqlExec("DELETE " + RetSqlName("PC8") + " WHERE PC8_PERIOD='" + MV_PAR01 + "'")
+                FWFormCommit(oModel)
+                oModel:DeActivate()
+                oModel:Activate()
+
+                MsAguarde({|| Processa()},"Executando Calculos...")
+            Else
+                MsAguarde({|| Processa()},"Gerando base de Nfs para fechamento..")
+                FWFormCommit(oModel)
+                oModel:DeActivate()
+                oModel:Activate()
+            EndIf
+        End If
+
+    EndIf
+
 
 Return
 
 Static Function Processa()
 
 Local aLeituras := {}
-Local aResumo   := {}
-Local nResult   := 0
 Local i         := 0
 Local cCodTra   := ''
-Local cTexto    := ''
+Local cTpDoc    := ''
 Local nKm       := 0
 Local nResUnit  := 0
 Local nTotBon   := 0
@@ -208,73 +233,104 @@ Local nVrFrtL   := 0
 Local nVrFrtT   := 0
 Local nTotLit   := 0
 Local aSocorro  := {}
-Local cArray    := ''
-aLeituras := GeraBase()
+Local s         := 0
+Local a         := 0
+Local cAlias    := GetNextAlias()
+Local nTotFrt   := 0
+Local nTotLin   := 0
+Local nTotBonL  := 0
+Local nKmSoc    := 0
 
+Pergunte("QUAA023L",.F.)
 
-For i := 1 To Len(aLeituras)
-cArray += aLeituras[i][1] + " - " + aLeituras[i][2] + " - " + aLeituras[i][3] + " - " + cValToCHar(aLeituras[i][4]) + " - " + cValToCHar(aLeituras[i][5]) + " - " +;
-cValToCHar(aLeituras[i][6]) + " - " + cValToCHar(aLeituras[i][7]) + " - " + cValToCHar(aLeituras[i][8]) + " - " + cValToCHar(aLeituras[i][9]) + " - " + ;
-cValToCHar(aLeituras[i][10]) + " - " + aLeituras[i][11] + CRLF
-
-Next i
-
-MemoWrite("C:\HD\VERIFICA.TXT",cArray)
-
-For i := 1 To Len(aLeituras)
-    cCodTra := aLeituras[1][1]
-    nKm         := GetKM(aLeituras[i][1])
-    nResUnit    := aLeituras[i][8]//Calcula(aLeituras[i][2],aLeituras[i][7])
-
-    If aLeituras[i][11] == 'Q'
-        aLeituras[i][9] := (nResUnit * nKm)
-    Else
-        aLeituras[i][9] := nResUnit
-    EndIf
-    aLeituras[i][10] := nKm
-Next i
-
-//cTexto := "CODTRA;CODBON;DESCRICAO;CONFORME;NAO CONFORME;TOTAL;PERCENTUAL;RES.UNIT;RES.TOTAL;TOKM" + CRLF
-//For i := 1 To Len(aLeituras)
-//    cTexto += cValToChar(aLeituras[i][1])+";"+cValToChar(aLeituras[i][2])+";"+cValToChar(aLeituras[i][3])+";"+;
-//    cValToChar(aLeituras[i][4])+";"+cValToChar(aLeituras[i][5])+";"+cValToChar(aLeituras[i][6])+";"+;
-//    cValToChar(aLeituras[i][7])+";"+Transform(aLeituras[i][8],"@E 9,999.999")+";"+Transform(aLeituras[i][9],"@E 999,999.999")+";"+;
-//    Transform(aLeituras[i][10],"@E 999,999.999") + CRLF
-//Next i
-
-//MemoWrite("C:\HD\TESTE.CSV",cTexto)
-
-//MsgAlert("fim")
-PC6->( dbSetOrder(1))
-PC7->( dbSetOrder(1))
-PC8->( dbSetOrder(1))
-
-//(cAlias)->(PC5_CODTRA),;  [1]
-//(cAlias)->(PC5_CODBON),;  [2]
-//(cAlias)->(DESCBON),;     [3]
-//(cAlias)->(CONFORME),;    [4]
-//(cAlias)->(NAOCONF),;     [5]
-//(cAlias)->(TOTAL),;       [6]
-//(cAlias)->(PERCEN)        [7]
-// UNITARIO                 [8]
-// TOTAL                    [9]
-// TOTAO KM                 [10]
-lentrou := .F.
 If MV_PAR02 == 1
 
+    aLeituras := GeraBase()
+
     For i := 1 To Len(aLeituras)
-        //PC8_FILIAL+PC8_PERIOD+PC8_CODBON+PC8_CODTRA
-        //if aLeituras[i][2] == '000003'
-        //    lentrou := .T.
-        //    MSGALERT(aLeituras[i][1] + " - " + cCodTra)
-        //EndIf
+        cCodTra := aLeituras[1][1]
+
+        If aLeituras[i][12] == '000000'
+            nKm                 := GetKM (aLeituras[i][1])
+
+        Else
+            nKm := GetKML(aLeituras[i][1],aLeituras[i][12])
+        EndIf
+
+        nResUnit    := aLeituras[i][8]//Calcula(aLeituras[i][2],aLeituras[i][7])
+
+        If aLeituras[i][11] == 'Q'
+            aLeituras[i][9] := (nResUnit * nKm)
+        Else
+            aLeituras[i][9] := nResUnit
+        EndIf
+        aLeituras[i][13]    := GetKM (aLeituras[i][1])
+        aLeituras[i][10] := nKm
+
+    Next i
+
+    cTexto := ''
+
+    //(cAlias)->(PC5_CODTRA),;  [1]
+    //(cAlias)->(PC5_CODBON),;  [2]
+    //(cAlias)->(DESCBON),;     [3]
+    //(cAlias)->(CONFORME),;    [4]
+    //(cAlias)->(NAOCONF),;     [5]
+    //(cAlias)->(TOTAL),;       [6]
+    //(cAlias)->(PERCEN)        [7]
+    // UNITARIO                 [8]
+    // TOTAL                    [9]
+    // TOTAO KM OU LINHA        [10]
+    // TP BONIF                 [11]
+    // LINHA                    [12]
+    // KM TOTLA                 [13]
+
+    /*
+    For aa := 1 to Len(aLeituras)
+    cTexto +=   aLeituras[aa][1]+";";
+                +aLeituras[aa][1]+";";
+                +aLeituras[aa][3]+";";
+                +cValToChar(aLeituras[aa][4])+";";
+                +cValToChar(aLeituras[aa][5])+";";
+                +cValToChar(aLeituras[aa][6])+";";
+                +cValToChar(aLeituras[aa][7])+";";
+                +cValToChar(aLeituras[aa][8])+";";
+                +transform(aLeituras[aa][9],"@E 99,999.99")+";";
+                +cValToChar(aLeituras[aa][10])+";";
+                +aLeituras[aa][11]+";";
+                +aLeituras[aa][12]+";";
+                +cValToChar(aLeituras[aa][13])+CRLF
+    Next aa
+
+    MemoWrite("C:\HD\aLeituras.csv",cTexto)
+    */
+
+    PC6->( dbSetOrder(1))
+    PC7->( dbSetOrder(1))
+    PC8->( dbSetOrder(1))
+
+    //(cAlias)->(PC5_CODTRA),;  [1]
+    //(cAlias)->(PC5_CODBON),;  [2]
+    //(cAlias)->(DESCBON),;     [3]
+    //(cAlias)->(CONFORME),;    [4]
+    //(cAlias)->(NAOCONF),;     [5]
+    //(cAlias)->(TOTAL),;       [6]
+    //(cAlias)->(PERCEN)        [7]
+    // UNITARIO                 [8]
+    // TOTAL                    [9]
+    // TOTAO KM OU LINHA        [10]
+    // TP BONIF                 [11]
+    // LINHA                    [12]
+    // KM TOTLA                 [13]
+
+    For i := 1 To Len(aLeituras)
+
         If cCodTra == aLeituras[i][1]
-            nTotBon += aLeituras[i][9]
+
+            nTotBon += Iif(aLeituras[i][12]=='000000',aLeituras[i][9],0)
+            nTotLin += Iif(aLeituras[i][12]=='000000',0,aLeituras[i][9])
+
             If !PC8->( dbSeek(cFilAnt+MV_PAR01+aLeituras[i][2]+aLeituras[i][1]) )
-               // if aLeituras[i][2] == '000003'
-               //     lentrou := .T.
-               //     MSGALERT("nao seek")
-               // EndIf
                 RecLock("PC8",.T.)
                     PC8->PC8_FILIAL := cFilAnt
                     PC8->PC8_PERIOD := MV_PAR01
@@ -284,13 +340,8 @@ If MV_PAR02 == 1
                     PC8->PC8_CODTRA := aLeituras[i][1]
                 MsUnlock()
             Else
-                //if aLeituras[i][2] == '000003'
-                //    lentrou := .T.
-                //    MSGALERT("seek")
-                //EndIf
-
                 RecLock("PC8",.F.)
-                    PC8->PC8_TOTBON := aLeituras[i][9]
+                    PC8->PC8_TOTBON += aLeituras[i][9]
                 MsUnlock()
             EndIf
 
@@ -300,14 +351,15 @@ If MV_PAR02 == 1
 
             aLinhas     := GetLitros(aLeituras[i][1])
             aSocorro    := GetLinSoc(aLeituras[i][1])
-            nAdcImp := Posicione("SA2",1,xFilial("SA2")+aLeituras[i][1]+'0001',"A2_PERIMP")
+            nAdcImp     := Posicione("SA2",1,xFilial("SA2")+aLeituras[i][1]+'0001',"A2_PERIMP")
 
             For s := 1 To Len(aSocorro)
 
                 If aSocorro[s][2] > 0
 
                     nKmLin  := aSocorro[s][2]
-                    nBonLin := (nTotBon/aLeituras[i][10])*nKmLin
+                    nKmSoc  += aSocorro[s][2]
+                    nBonLin := 0 //(nTotBon/aLeituras[i][10])*nKmLin
                     nVrFrtL := nKmLin*Posicione("PBL",1,cFilAnt+aLeituras[i][1]+aLinhas[1][1],"PBL_VALOR")
                     nVrFrtT += nVrFrtL
                     nTotLit += 0
@@ -346,11 +398,32 @@ If MV_PAR02 == 1
             Next s
 
             For a := 1 To Len(aLinhas)
+
                 nKmLin  := GetKML(aLeituras[i][1],aLinhas[a][1])
-                nBonLin := (nTotBon/aLeituras[i][10])*nKmLin
-                nVrFrtL := nKmLin*Posicione("PBL",1,cFilAnt+aLeituras[i][1]+aLinhas[a][1],"PBL_VALOR")
-                nVrFrtT += nVrFrtL
-                nTotLit += aLinhas[a][2]
+
+                For j := 1 To Len(aLeituras)
+                    nTotBonL += iif(aLeituras[j][12]==aLinhas[a][1],aLeituras[j][9],0)
+                Next j
+
+            /*    iF cCodTra == '007487'
+
+                    MsgAlert("LINHA array- " + cvaltochar(i))
+                    MsgAlert("LINHA - " + cvaltochar(aLinhas[a][1]))
+
+                    MsgAlert("ntotbon - " + cvaltochar(nTotBon))
+                    MsgAlert("TotKm - " + cvaltochar(aLeituras[i][13]))
+                    MsgAlert("KmLinha - " + cvaltochar(nKmLin))
+                    MsgAlert("KmSocorro  - " + cvaltochar(nKmSoc))
+                    MsgAlert("ntotBon Linha - " + cvaltochar(nTotBonL))
+                    MsgAlert("nBonLinha - " + cvaltochar(( (nTotBon/aLeituras[i][13])*(nKmLin+(nKmSoc/Len(aLinhas)) )) + (nTotBonL)))
+
+                EndIf
+              */
+                nBonLin     := ( (nTotBon/aLeituras[i][13])*(nKmLin+(nKmSoc/Len(aLinhas)) )) + (nTotBonL)
+                nTotBonL    := 0
+                nVrFrtL     := nKmLin*Posicione("PBL",1,cFilAnt+aLeituras[i][1]+aLinhas[a][1],"PBL_VALOR")
+                nVrFrtT     += nVrFrtL
+                nTotLit     += aLinhas[a][2]
 
                 If PC7->( MsSeek(cFilAnt+MV_PAR01+aLeituras[i][1]+aLinhas[a][1]))
                     PC7->( Reclock("PC7",.F.))
@@ -366,18 +439,20 @@ If MV_PAR02 == 1
                 EndIf
             Next a
 
+            nKmSoc      := 0
+
             //PC6_VRTOT PC6_TOTLIT PC6_CUSTKM PC6_CUSTLT PC6_STATUS PC6_VRFRT PC6_VRBON PC6_VRIMP
             If PC6->( MsSeek( cFilAnt+aLeituras[i][1]+MV_PAR01 ) )
                 RecLock("PC6",.F.)
                     PC6->PC6_STATUS := 'S'
-                    PC6->PC6_VRBON  := nTotBon
+                    PC6->PC6_VRBON  := nTotBon+nTotLin
                     PC6->PC6_TOTKM  := aLeituras[i][10]
                     PC6->PC6_TOTLIT := nTotLit
                     PC6->PC6_VRFRT  := nVrFrtT
-                    PC6->PC6_VRIMP  := (((nTotBon+nVrFrtT)*nAdcImp)/100)
-                    PC6->PC6_CUSTKM := ((nTotBon+nVrFrtT) + (((nTotBon+nVrFrtT)*nAdcImp)/100) ) / aLeituras[i][10]
-                    PC6->PC6_CUSTLT := ((nTotBon+nVrFrtT) + (((nTotBon+nVrFrtT)*nAdcImp)/100) ) / nTotLit
-                    PC6->PC6_VRTOT  := ((nTotBon+nVrFrtT) + (((nTotBon+nVrFrtT)*nAdcImp)/100) )
+                    PC6->PC6_VRIMP  := (((nTotBon+nTotLin+nVrFrtT)*nAdcImp)/100)
+                    PC6->PC6_CUSTKM := ((nTotBon+nTotLin+nVrFrtT) + (((nTotBon+nTotLin+nVrFrtT)*nAdcImp)/100) ) / aLeituras[i][10]
+                    PC6->PC6_CUSTLT := ((nTotBon+nTotLin+nVrFrtT) + (((nTotBon+nTotLin+nVrFrtT)*nAdcImp)/100) ) / nTotLit
+                    PC6->PC6_VRTOT  := ((nTotBon+nTotLin+nVrFrtT) + (((nTotBon+nTotLin+nVrFrtT)*nAdcImp)/100) )
                 MsUnlock()
             EndIf
 
@@ -385,6 +460,7 @@ If MV_PAR02 == 1
             nVrFrtT := 0
             nTotLit := 0
             nTotBon := 0
+            nTotLin := 0
 
         EndIf
 
@@ -393,7 +469,120 @@ If MV_PAR02 == 1
     MsgAlert("Final de Processamento!")
 
 Else
-    Return
+
+    BeginSql alias cAlias
+
+        %noparser%
+
+        SELECT D1_COD,LBB_CODMUN,LBB_MUN,F1_VALBRUT,LBB_CODFOR+'-'+LBB_LOJA  AS  LBB_CODFOR,A2_INSCR,LBB_DESC,A2_CGC,
+
+        ROUND(
+
+        ((ISNULL((SELECT SUM(PC7_TOTGER) FROM %Table:PC7% PC7 WHERE PC7_FILIAL=D1_FILIAL AND PC7_PERIOD=%Exp:MV_PAR01%
+        AND PC7_TIPO='S' AND PC7_CODTRA=
+        (SELECT DISTINCT TOP 1 LBB_CODFOR FROM  %Table:LBB% LBB (NOLOCK) WHERE LBB_LINHA=F1_XLINHA AND LBB_FILIAL=%Exp:cFilAnt%
+        AND LBB_TIPREG='2' AND LBB.%notDel%)),0)
+        /
+        (SELECT SUM(D1_QUANT)
+        FROM %Table:SD1% D13 (NOLOCK)
+        INNER JOIN  %Table:SF1% SF1A (NOLOCK) ON SF1A.F1_FILIAL=D13.D1_FILIAL AND D13.D1_DOC=SF1A.F1_DOC AND D13.D1_SERIE=SF1A.F1_SERIE AND D13.D1_FORNECE=SF1A.F1_FORNECE
+        WHERE SF1A.F1_EMISSAO=SF1.F1_EMISSAO AND SF1A.F1_FILIAL=%Exp:cFilAnt% AND SF1A.F1_XLINHA IN (
+        SELECT LBB_LINHA FROM %Table:LBB% LB1 WHERE LBB_TIPREG='2' AND LB1.%notDel% AND LBB_CODFOR IN
+        (SELECT DISTINCT TOP 1 LBB_CODFOR FROM %Table:LBB% LBB (NOLOCK) WHERE LBB_LINHA=SF1.F1_XLINHA AND LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2'
+        AND LBB.%notDel%)))) * D1_QUANT) +
+
+
+        ((SELECT PC7_TOTGER FROM  %Table:PC7% PC7 WHERE PC7_PERIOD=%Exp:MV_PAR01% AND PC7_CODTRA=
+        (SELECT DISTINCT TOP 1 LBB_CODFOR FROM  %Table:LBB% LBB (NOLOCK) WHERE LBB_LINHA=F1_XLINHA AND LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notdel%)
+        AND PC7.%notdel% AND PC7_LINHA IN( SELECT LBB_LINHA FROM  %Table:LBB% LB1 (NOLOCK) WHERE LBB_FILIAL=%Exp:cFilAnt% AND LB1.LBB_LINHA=LBB.LBB_LINHA AND LBB.%notdel%
+        AND LBB_TIPREG='2')) /(SELECT SUM(D1_QUANT) FROM  %Table:SD1% D13 (NOLOCK) INNER JOIN %Table:SF1% SF1 (NOLOCK) ON F1_FILIAL=D1_FILIAL AND D1_DOC=F1_DOC
+        AND D1_SERIE=F1_SERIE AND D1_FORNECE=F1_FORNECE WHERE F1_EMISSAO=%Exp:DTOS(LastDay(Ctod("01/"+substr(MV_PAR01,1,2)+"/"+SubStr(MV_PAR01,3,4) ) ))%
+        AND F1_FILIAL=%Exp:cFilAnt% AND F1_XLINHA
+        IN( SELECT LBB_LINHA FROM  %Table:LBB% LB2 (NOLOCK) WHERE LBB_FILIAL=%Exp:cFilAnt% AND LB2.%notdel% AND LB2.LBB_CODPRO=LBB.LBB_CODPRO))*D1_QUANT),2)
+        AS  'FRETE',
+
+        (SELECT DISTINCT TOP 1 LBB_CODFOR FROM  %Table:LBB% LBB (NOLOCK) WHERE LBB_LINHA=F1_XLINHA AND LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notdel%)  AS  'CODFOR',
+        (SELECT DISTINCT TOP 1 LBB_NOMFOR FROM  %Table:LBB% LBB (NOLOCK) WHERE LBB_LINHA=F1_XLINHA AND LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notdel%)  AS  'TRANSP',
+
+        D1_QUANT,LBB_CODPRO,LBB_NOMFOR,LBB_LINHA,F1_EMISSAO,F1_DOC,F1_SERIE,F1_CHVNFE,
+
+        CASE WHEN LBB_CODMUN='71006' THEN 'NFS' ELSE 'CTE' END  AS  'TPDOC'
+        FROM  %Table:SF1% SF1 (NOLOCK)
+        INNER JOIN  %Table:SD1% SD1 (NOLOCK) ON F1_FILIAL=D1_FILIAL AND D1_DOC=F1_DOC AND D1_SERIE=F1_SERIE AND D1_FORNECE=F1_FORNECE AND D1_LOJA=F1_LOJA AND SD1.%notdel%
+        INNER JOIN  %Table:LBB% LBB (NOLOCK) ON LBB_FILIAL=F1_FILIAL AND LBB_CODFOR=F1_FORNECE AND LBB.%notdel%
+        INNER JOIN  %Table:SA2% SA2 (NOLOCK) ON A2_COD=LBB_CODFOR AND A2_LOJA=LBB_LOJA AND SA2.%notdel%
+        WHERE F1_FILIAL=%Exp:cFilAnt% AND SF1.%notdel% AND F1_EMISSAO=%Exp:DTOS( LastDay(Ctod("01/"+substr(MV_PAR01,1,2)+"/"+SubStr(MV_PAR01,3,4))))%
+        AND F1_XLINHA IN (SELECT LBB_LINHA FROM  %Table:LBB% LBB (NOLOCK) WHERE LBB_FILIAL=%Exp:cFilAnt% AND LBB_TIPREG='2' AND LBB.%notdel%)
+        ORDER BY F1_FORNECE,CASE WHEN LBB_CODMUN='71006' THEN 'NFS' ELSE 'CTE' END,F1_XLINHA,LBB_CODPRO
+
+    EndSql
+
+    aRet := GetLastQuery()
+    MemoWrite("C:\HD\QUERYS\QUAA023L_415.sql",aRet[2])
+
+
+    If (cAlias)->( Eof())
+        MsgStop("Não existem dados para geração de Nota, fechamento do Leite ainda nao foi finalizado")
+        Return
+    End If
+
+    cCodTra := (cAlias)->(CODFOR)
+    cTpDoc  := (cAlias)->(TPDOC)
+
+    Begin transaction
+
+    PC9->( dbSetOrder(1) )
+
+    While (cAlias)->( !Eof() )
+
+        //PC9_FILIAL+PC9_CODTRA+PC9_TIPDOC+PC9_PERIOD
+        If !PC9->( dbSeek(cFilAnt+(cAlias)->(CODFOR)+IIF((cAlias)->(TPDOC)=='NFS','1','2')+MV_PAR01) )
+            PC9->( RecLock("PC9",.T.))
+                PC9->PC9_FILIAL := cFilAnt
+                PC9->PC9_CODTRA := (cAlias)->(CODFOR)
+                PC9->PC9_TRANSP := (cAlias)->(TRANSP)
+                PC9->PC9_PERIOD := MV_PAR01
+                PC9->PC9_TIPDOC := IIF((cAlias)->(TPDOC)=='NFS','1','2')
+                PC9->PC9_VALOR  := (cAlias)->(FRETE)
+                PC9->PC9_STATUS := 'A'
+                PC9->PC9_NFORIG := (cAlias)->(F1_DOC)
+                PC9->PC9_SERORI := (cAlias)->(F1_SERIE)
+                PC9->PC9_CODPRO := (cAlias)->(LBB_CODPRO)
+                PC9->PC9_DESPRO := (cAlias)->(LBB_NOMFOR)
+                PC9->PC9_VLRORI := (cAlias)->(F1_VALBRUT)
+
+            PC9->( MsUnlock() )
+            nTotFrt += (cAlias)->(FRETE)
+        Else
+            PC9->( RecLock("PC9",.F.))
+
+                PC9->PC9_VALOR  += (cAlias)->(FRETE)
+
+                If (cAlias)->(F1_VALBRUT) > PC9->PC9_VLRORI
+                    PC9->PC9_NFORIG := (cAlias)->(F1_DOC)
+                    PC9->PC9_SERORI := (cAlias)->(F1_SERIE)
+                    PC9->PC9_CODPRO := (cAlias)->(LBB_CODPRO)
+                    PC9->PC9_DESPRO := (cAlias)->(LBB_NOMFOR)
+                    PC9->PC9_VLRORI := (cAlias)->(F1_VALBRUT)
+                End If
+
+            PC9->( MsUnlock() )
+            nTotFrt += (cAlias)->(FRETE)
+        EndIF
+
+
+        (cAlias)->( dbSkip() )
+    EndDo
+
+    cPer := MV_PAR01
+    xLancD3(MV_PAR01,nTotFrt)
+
+    TcSqlExec("UPDATE " + RetSqlName("PC6") + " SET PC6_STATUS='P' WHERE PC6_FILIAL='" + cFilAnt + "' AND PC6_PERIOD='" + cPer + "'")
+
+    End Transaction
+
+    MsgAlert("Base de Notas Geradas!")
+
 EndIf
 
 
@@ -409,14 +598,14 @@ description
 @return return_type, return_description
 /*/
 
-Static Function xLancD3(MV_PAR01)
+Static Function xLancD3(MV_PAR01,nValor)
 
 Local aLanc     := {}
 Local aEst      := {}
 Local cTMlan    := '004'
 Local cTMEst    := '504'
 Local cProd     := '200113'
-Local cCC       := '040501'
+Local cCC       := cFilAnt+'0501'
 Local cCCtb     := '113011'+cFilAnt
 Local cArm      := '04'
 Local cGrupo    := '200'
@@ -424,36 +613,26 @@ Local cNumDoc   := ''
 Local cMotLan   := 'Provisão de frete de compra de leite ' + SubStr(MV_PAR01,1,2)+"-"+SubStr(MV_PAR01,3,4)
 Local cMotEst   := 'Estorno Provisão de frete de compra de leite ' + SubStr(MV_PAR01,1,2)+"-"+SubStr(MV_PAR01,3,4)
 Local cObs      := 'FRP'
-Local cFilAtu   := cFilAnt
-Local nValor    := 0
-For i := 1 To 10
+Local aArea     := GetArea()
 
-cFilAnt := StrZero(i,2)
+
 
 If      cFilAnt == '02'
             cNumDoc := 'ME'
-            nValor := 23000.02
 ElseIf  cFilAnt == '03'
             cNumDoc := 'TS'
-            nValor := 23000.03
 ElseIf  cFilAnt == '04'
             cNumDoc := 'VZ'
-            nValor := 23000.04
 ElseIf  cFilAnt == '05'
             cNumDoc := 'DO'
-            nValor := 23000.05
 ElseIf  cFilAnt == '08'
             cNumDoc := 'CB'
-            nValor := 23000.08
 ElseIf  cFilAnt == '09'
             cNumDoc := 'IT'
-            nValor := 23000.09
 ElseIf  cFilAnt == '10'
             cNumDoc := 'BJ'
-            nValor := 23000.10
 Else
             cNumDoc := ''
-            nValor  := 0
 EndIf
 
     If nValor > 0
@@ -472,7 +651,7 @@ EndIf
     				{"D3_LOCAL"		,cArm       			                                                    ,NIL},;
     				{"D3_EMISSAO"	,LASTDAY(CTOD("01/"+SubStr(MV_PAR01,1,2)+"/"+SubStr(MV_PAR01,3,4)))      	,NIL},;
     				{"D3_NUMSEQ"	,ProxNum()				                                                    ,NIL},;
-    			    {"D3_DOC"	    ,cNumDoc+"FR"+SubStr(MV_PAR01,1,2)+SubStr(MV_PAR01,5,6)        		                                                    ,NIL},;
+    			    {"D3_DOC"	    ,cNumDoc+"FR"+SubStr(MV_PAR01,1,2)+SubStr(MV_PAR01,5,6)        		        ,NIL},;
                 	{"D3_CUSTO1"	,nValor				                                                        ,NIL},;
                     {"D3_CONTA" 	,cCCtb				                                                        ,NIL},;
                     {"D3_CC"     	,cCC				                                                        ,NIL},;
@@ -496,19 +675,19 @@ EndIf
     	DbSeek( xFilial("SB1")+cProd )
 
         aLanc :=  {	    {"D3_TM"		,cTMEst	,NIL},;
-            			{"D3_COD"		,SB1->B1_COD			                                                    ,NIL},;
-        				{"D3_UM"		,SB1->B1_UM				                                                    ,NIL},;
-        				{"D3_QUANT"		,0.01		                                                                ,".T."},;
-        				{"D3_LOCAL"		,cArm       			                                                    ,NIL},;
+            			{"D3_COD"		,SB1->B1_COD			                                                        ,NIL},;
+        				{"D3_UM"		,SB1->B1_UM				                                                        ,NIL},;
+        				{"D3_QUANT"		,0.01		                                                                    ,".T."},;
+        				{"D3_LOCAL"		,cArm       			                                                        ,NIL},;
         				{"D3_EMISSAO"	,CTOD("01/"+StrZero(val(SubStr(MV_PAR01,1,2))+1,2)+"/"+SubStr(MV_PAR01,3,4))	,NIL},;
-        				{"D3_NUMSEQ"	,ProxNum()				                                                    ,NIL},;
-        			    {"D3_DOC"	    ,cNumDoc+"EFR"+SubStr(MV_PAR01,1,2)+SubStr(MV_PAR01,5,6)                    ,NIL},;
-                    	{"D3_CUSTO1"	,nValor				                                                        ,NIL},;
-                        {"D3_CONTA" 	,cCCtb				                                                        ,NIL},;
-                        {"D3_CC"     	,cCC				                                                        ,NIL},;
-                        {"D3_MOTIVO"	,cMotEst			                                                        ,NIL},;
-                        {"D3_XOBS"  	,cObs	    		                                                        ,NIL},;
-                        {"D3_GRUPO"	    ,cGrupo                                                         		    ,NIL}}
+        				{"D3_NUMSEQ"	,ProxNum()				                                                        ,NIL},;
+        			    {"D3_DOC"	    ,cNumDoc+"EFR"+SubStr(MV_PAR01,1,2)+SubStr(MV_PAR01,5,6)                        ,NIL},;
+                    	{"D3_CUSTO1"	,nValor				                                                            ,NIL},;
+                        {"D3_CONTA" 	,cCCtb				                                                            ,NIL},;
+                        {"D3_CC"     	,cCC				                                                            ,NIL},;
+                        {"D3_MOTIVO"	,cMotEst			                                                            ,NIL},;
+                        {"D3_XOBS"  	,cObs	    		                                                            ,NIL},;
+                        {"D3_GRUPO"	    ,cGrupo                                                         		        ,NIL}}
 
         lMsErroAuto := .F.
 
@@ -523,9 +702,7 @@ EndIf
 
     End If
 
-Next i
-
-cFilAnt := cFilAtu
+RestArea(aArea)
 
 Return
 
@@ -585,28 +762,28 @@ Local i
 
        //APONTAMENTO MULTIPLO O SISTEMA CONTA O NUMERO DE INTENS NAO CONFORME E PAGA PELO NUMERO DE ITENS NAO CONFORME
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
         PC5_CODBON,
         (SELECT PBD_DESCR FROM %Table:PBD%  PBD WHERE PBD_FILIAL=%Exp:cFilAnt% AND PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3)
         AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2) AND PBD.%notDel%) AS 'DESCBON',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'M' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
         AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND PC5A.PC5_CODBON=PC5.PC5_CODBON  AND PC5_STATUS='A' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'M' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
         AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND PC5C.PC5_CODBON=PC5.PC5_CODBON AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND ((ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND (ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'M' AND PC5_FILIAL=%Exp:cFilAnt%
@@ -615,32 +792,34 @@ Local i
 
         //APONTAMENTO SIMPLES CONFORME OU NAO CONFORME SISTEMA CONTA O % DE ITENS EM CONFORMIDADE E PAGA PELO %
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
         PC5_CODBON,
         (SELECT PBD_DESCR FROM %Table:PBD% PBD WHERE PBD_FILIAL=%Exp:cFilAnt% AND PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3) AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2) AND PBD.%notDel%) AS 'DESCBON',
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'A' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
         AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND PC5A.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA) AS 'CONFORME',
 
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'A' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA) AS 'NAOCONFO',
 
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'A' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
         AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND PC5C.PC5_CODBON=PC5.PC5_CODBON AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA) AS 'TOTAL',
 
-        ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0) AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        AND ((ISNULL((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A'
+        AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0)),0)) >= PBH_VINIC
-        AND (ISNULL(((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        AND (ISNULL(((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A'
+        AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0))),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'A' AND PC5_FILIAL=%Exp:cFilAnt%
@@ -649,26 +828,41 @@ Local i
 
         //APONTAMENTO PONTOS CONFORME OU NAO CONFORME O SISTEMA SOMA OS PONTOS PELO PESO DIVIDE PELO NUMERO DE FREQUENCIA DE COLETAS MES
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
+
         '03.999' AS PC5_CODBON,'SEGURANCA TRAB.' AS 'DESCBON',
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
-        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'P' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'NAOCONFO',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
-        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'P' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'TOTAL',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)/2 AS 'RESULT',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)/2 AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/2,0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/2,0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
+        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%)/2,0)) >= PBH_VINIC
+        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%)/2,0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'P' AND PC5_FILIAL=%Exp:cFilAnt%
 
@@ -676,39 +870,120 @@ Local i
 
         //DOCUMENTACAO O SISTEMA CONTA CADA DOCUMENTO EM CONFORMIDADE COM SEUS PESOS E PAGA PELA SOMA DA PONTUACAO
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
-        (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
+        SELECT DISTINCT 'Q' AS TPBON, PC5_CODTRA,PC5_LINHA,
+        (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notdel% AND PC6_FILIAL=%Exp:cFilAnt%) AS 'TRANSP',
         '04.999' AS PC5_CODBON,'ASPECTOS LEGAIS' AS 'DESCBON',
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
-        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
-        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'RESULT',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'CONFORME',
 
-        ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'NAOCONFO',
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V' AND PC5C.PC5_LINHA=PC5.PC5_LINHA
+        AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'TOTAL',
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M' AND PC5A.PC5_LINHA=PC5.PC5_LINHA
+        AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'RESULT',
+
+        ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
+        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM PC5010 PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0)) >= PBH_VINIC
+
+        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM PC5010 PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0)) <= PBH_VFINAL )
+
+        AND PBH.%notdel% AND PBH.PBH_FILIAL=%Exp:cFilAnt%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'D' AND PC5_FILIAL=%Exp:cFilAnt%
 
         UNION ALL
 
-        SELECT 'F' AS TPBON,LBE_FORNEC AS PC5_CODTRA,LBE_MOTO AS 'TRANSP',LJW_CODBON AS PC5_CODBON,
+        SELECT 'F' AS TPBON,LBE_FORNEC AS PC5_CODTRA,'000000' AS PC5_LINHA,LBE_MOTO AS 'TRANSP',LJW_CODBON AS PC5_CODBON,
         LJS_DESC AS 'DESCBON',0 AS 'CONFORME',0 AS 'NAOCONFO',0 AS 'TOTAL',0 AS 'RESULT',LJW_VALOR AS 'VR_BON'
         FROM %Table:LJW% LJW
         INNER JOIN %Table:LJS% LJS ON LJS_CODBON=LJW_CODBON AND LJS_FILIAL=LJW_FILIAL AND LJS.%notDel%
         INNER JOIN %Table:LBE% LBE ON LBE_FILIAL=LJW_FILIAL AND LBE_CODCAM=LJW_CODCAR AND LBE_STATUS='S' AND LBE.%notDel%
         WHERE LJW.%notDel% AND LJW_PERIOD=%Exp:MV_PAR01% AND LJW_FILIAL=%Exp:cFilAnt%
-
-
 
         ORDER BY PC5_CODTRA,PC5_CODBON
 
@@ -722,7 +997,7 @@ Local i
                     (cAlias)->(NAOCONFO),;
                     (cAlias)->(TOTAL),;
                     (cAlias)->(RESULT),;
-                    (cAlias)->(VR_BON),0,0,(cAlias)->(TPBON)})
+                    (cAlias)->(VR_BON),0,0,(cAlias)->(TPBON),(cAlias)->(PC5_LINHA),0})
         (cAlias)->( dbSkip() )
     EndDo
 
@@ -971,9 +1246,11 @@ cXml += '</Style>' + CRLF
 cXml += '<Style ss:ID="s63" ss:Parent="s16">' + CRLF
 cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' + CRLF
 cXml += '</Style>' + CRLF
+
 cXml += '<Style ss:ID="s66" ss:Parent="s16">' + CRLF
 cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' + CRLF
-cXml += '<NumberFormat ss:Format="_-* #,##0.000_-;\-* #,##0.000_-;_-* &quot;-&quot;??_-;_-@_-"/>' + CRLF
+cXml += '<NumberFormat ss:Format="_-* #,####0.0000_-;\-* #,####0.0000_-;_-* &quot;-&quot;??_-;_-@_-"/>' + CRLF
+
 cXml += '</Style>' + CRLF
 cXml += '<Style ss:ID="s68" ss:Parent="s16">' + CRLF
 cXml += '<Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#000000"/>' + CRLF
@@ -1007,7 +1284,7 @@ cXml += '</Style>' + CRLF
 cXml += '</Styles>' + CRLF
 
 cXml += '<Worksheet ss:Name="RESUMO">' + CRLF
-cXml += '<Table ss:ExpandedColumnCount="10" x:FullColumns="1"' + CRLF
+cXml += '<Table x:FullColumns="1"' + CRLF
 cXml += 'x:FullRows="1" ss:DefaultRowHeight="15">' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="46.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="266.25"/>' + CRLF
@@ -1016,7 +1293,8 @@ cXml += '<Row ss:AutoFitHeight="0" ss:Height="16.5">' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.TRA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">TRANSPORTADORA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">FRETE</Data></Cell>' + CRLF
-cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIFICACAO</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIF. TOT. R$</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIF. R$/KM</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">ADC.IMPOSTO</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">TOTAL RECEBER</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">TOTAL KM</Data></Cell>' + CRLF
@@ -1043,6 +1321,7 @@ While (cAlias)->( !Eof() )
     cXml += '<Cell><Data ss:Type="String">' + AllTrim((cAlias)->(PC6_TRANSP)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_VRFRT)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_VRBON)) + '</Data></Cell>' + CRLF
+    cXml += '<Cell ss:StyleID="s66"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_VRBON)/(cAlias)->(PC6_TOTKM)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_VRIMP)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_VRTOT)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s66"><Data ss:Type="Number">' + cValToCHar((cAlias)->(PC6_TOTKM)) + '</Data></Cell>' + CRLF
@@ -1110,7 +1389,7 @@ cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.LIN</Data></Cell>' + 
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">LINHA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">TIPO</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">FRETE</Data></Cell>' + CRLF
-cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIFICAÇÃO</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIF. TOT. R$</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">ADC.IMPOSTO</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">TOTAL RECEBER</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">TOTAL KM</Data></Cell>' + CRLF
@@ -1283,12 +1562,14 @@ cXml += '</WorksheetOptions>' + CRLF
 cXml += '</Worksheet>' + CRLF
 
 cXml += '<Worksheet ss:Name="BONIF.DETALHE">' + CRLF
-cXml += '<Table ss:ExpandedColumnCount="9" x:FullColumns="1"' + CRLF
+cXml += '<Table x:FullColumns="1"' + CRLF
 cXml += 'x:FullRows="1" ss:DefaultRowHeight="15">' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="46.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="266.25"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="46.5"/>' + CRLF
+cXml += '<Column ss:StyleID="s62" ss:Width="46.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="182.25"/>' + CRLF
+
 cXml += '<Column ss:Width="59.25"/>' + CRLF
 cXml += '<Column ss:Width="58.5"/>' + CRLF
 cXml += '<Column ss:AutoFitWidth="0" ss:Width="49.5"/>' + CRLF
@@ -1298,6 +1579,7 @@ cXml += '<Column ss:Width="52.5"/>' + CRLF
 cXml += '<Row ss:AutoFitHeight="0" ss:Height="16.5">' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.TRA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">TRANSPORTADORA</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.LINHA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s76"><Data ss:Type="String">CODBON</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s76"><Data ss:Type="String">DESCBON</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">CONFORME</Data></Cell>' + CRLF
@@ -1316,28 +1598,28 @@ fWrite(nHdlimp,cXml)
 
         //APONTAMENTO MULTIPLO O SISTEMA CONTA O NUMERO DE INTENS NAO CONFORME E PAGA PELO NUMERO DE ITENS NAO CONFORME
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
         PC5_CODBON,
         (SELECT PBD_DESCR FROM %Table:PBD%  PBD WHERE PBD_FILIAL=%Exp:cFilAnt% AND PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3)
         AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2) AND PBD.%notDel%) AS 'DESCBON',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'M' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
         AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND PC5A.PC5_CODBON=PC5.PC5_CODBON  AND PC5_STATUS='A' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'M' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
         AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND PC5C.PC5_CODBON=PC5.PC5_CODBON AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
 
-        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND ((ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND (ISNULL((SELECT SUM(PC5_ITAPON) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'M' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'M' AND PC5_FILIAL=%Exp:cFilAnt%
@@ -1346,32 +1628,35 @@ fWrite(nHdlimp,cXml)
 
         //APONTAMENTO SIMPLES CONFORME OU NAO CONFORME SISTEMA CONTA O % DE ITENS EM CONFORMIDADE E PAGA PELO %
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
         PC5_CODBON,
         (SELECT PBD_DESCR FROM %Table:PBD% PBD WHERE PBD_FILIAL=%Exp:cFilAnt% AND PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3) AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2) AND PBD.%notDel%) AS 'DESCBON',
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'A' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
         AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND PC5A.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA) AS 'CONFORME',
 
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'A' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
         AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND PC5B.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA) AS 'NAOCONFO',
 
-        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        (SELECT COUNT(PC5_STATUS) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'A' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
         AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND PC5C.PC5_CODBON=PC5.PC5_CODBON AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA) AS 'TOTAL',
 
-        ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A'
+        AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0) AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        AND ((ISNULL((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A'
+        AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0)),0)) >= PBH_VINIC
-        AND (ISNULL(((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
+        AND (ISNULL(((ROUND(((SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5D WHERE PC5_TPAPOM = 'A'
+        AND PC5D.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5D.%notDel%
         AND PC5D.PC5_FILIAL=PC5.PC5_FILIAL AND PC5D.PC5_CODBON=PC5.PC5_CODBON AND PC5_STATUS='C' AND PC5D.PC5_CODTRA=PC5.PC5_CODTRA)/
-        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
+        (SELECT CAST(COUNT(PC5_STATUS) AS float) FROM %Table:PC5% PC5E WHERE PC5_TPAPOM = 'A' AND PC5E.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5E.%notDel%
         AND PC5E.PC5_FILIAL=PC5.PC5_FILIAL AND PC5E.PC5_CODBON=PC5.PC5_CODBON AND PC5E.PC5_CODTRA=PC5.PC5_CODTRA))*100,0))),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'A' AND PC5_FILIAL=%Exp:cFilAnt%
@@ -1380,59 +1665,192 @@ fWrite(nHdlimp,cXml)
 
         //APONTAMENTO PONTOS CONFORME OU NAO CONFORME O SISTEMA SOMA OS PONTOS PELO PESO DIVIDE PELO NUMERO DE FREQUENCIA DE COLETAS MES
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
+        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,PC5_LINHA,
         (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
-        '03.999' AS PC5_CODBON,'SEGURANCA TRAB.' AS 'DESCBON',
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
-        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
+        '03.000' AS PC5_CODBON,'SEGURANCA TRAB. --> TOTAL' AS 'DESCBON',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'P' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
+        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'CONFORME',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
-        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='N' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'NAOCONFO',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)/2 AS 'RESULT',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'P' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
+        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'TOTAL',
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)/2 AS 'RESULT',
 
         ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/2,0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/2,0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
+        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%)/2,0)) >= PBH_VINIC
+        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'P' AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
+        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'P' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notDel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='C' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%)/2,0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'P' AND PC5_FILIAL=%Exp:cFilAnt%
 
         UNION ALL
 
+        SELECT 'Q' AS 'TPBON',PC5_CODTRA,PC5_LINHA,(SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notdel%) AS 'TRANSP',
+        PC5_CODBON,LTRIM(RTRIM((SELECT PBD_DESCR FROM %Table:PBD% PBD WHERE PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3) AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2)
+        AND PBD.%notdel%)))+' ('+CAST(PC5_ITAPON AS varchar)+')' AS 'DESCBON',
+        CASE WHEN PC5_STATUS='C'  THEN PC5_PESO ELSE 0 END AS 'CONFORME',
+        CASE WHEN PC5_STATUS<>'C' THEN PC5_PESO ELSE 0 END AS 'NAOCONFO',
+        PC5_PESO AS TOTAL,CASE WHEN PC5_STATUS='C' THEN PC5_PESO ELSE 0 END AS 'RESULT',0 AS 'VR_BON'
+        FROM %Table:PC5% PC5
+        WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5_CODBON LIKE '03%' AND PC5.%notdel%
+
+        UNION ALL
+
         //DOCUMENTACAO O SISTEMA CONTA CADA DOCUMENTO EM CONFORMIDADE COM SEUS PESOS E PAGA PELA SOMA DA PONTUACAO
 
-        SELECT DISTINCT 'Q' AS TPBON,PC5_CODTRA,
-        (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%) AS 'TRANSP',
-        '04.999' AS PC5_CODBON,'ASPECTOS LEGAIS' AS 'DESCBON',
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notDel%
-        AND PC5A.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'CONFORME',
+        SELECT DISTINCT 'Q' AS TPBON, PC5_CODTRA,PC5_LINHA,
+        (SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notdel% AND PC6_FILIAL=%Exp:cFilAnt%) AS 'TRANSP',
+        '04.000' AS PC5_CODBON,'ASPECTOS LEGAIS --> TOTAL' AS 'DESCBON',
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'NAOCONFO',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notDel%
-        AND PC5C.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'TOTAL',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
 
-        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0) AS 'RESULT',
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T' AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'CONFORME',
 
-        ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_FILIAL=%Exp:cFilAnt% AND PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
-        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) >= PBH_VINIC
-        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notDel%
-        AND PC5B.PC5_FILIAL=PC5.PC5_FILIAL AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA),0)) <= PBH_VFINAL ) AND PBH.%notDel%),0) AS 'VR_BON'
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5B WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5B.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5B.%notdel%
+        AND SUBSTRING(PC5B.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS IN ('S','V') AND PC5B.PC5_CODTRA=PC5.PC5_CODTRA AND PC5B.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'NAOCONFO',
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V' AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5C WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5C.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5C.%notdel%
+        AND SUBSTRING(PC5C.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5C.PC5_CODTRA=PC5.PC5_CODTRA AND PC5C.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'TOTAL',
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0) AS 'RESULT',
+
+        ISNULL((SELECT PBH_VRESUL FROM %Table:PBH% PBH WHERE PBH_CODIGO=SUBSTRING(PC5_CODBON,1,2) AND PBH_CODITE=SUBSTRING(PC5_CODBON,4,3)
+        AND ((ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM PC5010 PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0)) >= PBH_VINIC
+
+        AND (ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)
+        /(SELECT COUNT(DISTINCT PC5_CODMOT) FROM %Table:PC5% PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='M'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%)/
+        (SELECT COUNT(DISTINCT PC5_CODVEI) FROM PC5010 PC5F WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='V'
+        AND PC5F.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5F.%notdel%
+        AND SUBSTRING(PC5F.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5F.PC5_CODTRA=PC5.PC5_CODTRA AND PC5F.PC5_FILIAL=%Exp:cFilAnt%),0)+
+
+        ISNULL((SELECT SUM(PC5_PESO) FROM %Table:PC5% PC5A WHERE PC5_TPAPOM = 'D' AND PC5_TIPO='T'
+        AND PC5A.PC5_LINHA=PC5.PC5_LINHA AND PC5_PERIOD=%Exp:MV_PAR01% AND PC5A.%notdel%
+        AND SUBSTRING(PC5A.PC5_CODBON,1,2)=SUBSTRING(PC5.PC5_CODBON,1,2) AND PC5_STATUS='O' AND PC5A.PC5_CODTRA=PC5.PC5_CODTRA AND PC5A.PC5_FILIAL=%Exp:cFilAnt%),0)) <= PBH_VFINAL )
+
+        AND PBH.%notdel% AND PBH.PBH_FILIAL=%Exp:cFilAnt%),0) AS 'VR_BON'
 
         FROM %Table:PC5% PC5 WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5.%notDel% AND PC5_TPAPOM = 'D' AND PC5_FILIAL=%Exp:cFilAnt%
 
         UNION ALL
 
-        SELECT 'F' AS TPBON,LBE_FORNEC AS PC5_CODTRA,LBE_MOTO AS 'TRANSP',LJW_CODBON AS PC5_CODBON,
+        SELECT 'Q' AS 'TPBON',PC5_CODTRA,PC5_LINHA,(SELECT PC6_TRANSP FROM %Table:PC6% PC6 WHERE PC6_CODTRA=PC5_CODTRA AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notdel%) AS 'TRANSP',
+        PC5_CODBON,LTRIM(RTRIM((SELECT PBD_DESCR FROM %Table:PBD% PBD WHERE PBD_CODIGO=SUBSTRING(PC5_CODBON,4,3) AND PBD_CODTIP = SUBSTRING(PC5_CODBON,1,2)
+        AND PBD.%notdel%)))+' ('+CAST(PC5_ITAPON AS varchar)+')' AS 'DESCBON',
+        CASE WHEN PC5_STATUS='O'  THEN PC5_PESO ELSE 0 END AS 'CONFORME',
+        CASE WHEN PC5_STATUS<>'O' THEN PC5_PESO ELSE 0 END AS 'NAOCONFO',
+        PC5_PESO AS TOTAL,CASE WHEN PC5_STATUS='O' THEN PC5_PESO ELSE 0 END AS 'RESULT',0 AS 'VR_BON'
+        FROM %Table:PC5% PC5
+        WHERE PC5_PERIOD=%Exp:MV_PAR01% AND PC5_CODBON LIKE '04%' AND PC5.%notdel%
+
+        UNION ALL
+
+        SELECT 'F' AS TPBON,LBE_FORNEC AS PC5_CODTRA,'000000' AS PC5_LINHA,LBE_MOTO AS 'TRANSP',LJW_CODBON AS PC5_CODBON,
         LJS_DESC AS 'DESCBON',0 AS 'CONFORME',0 AS 'NAOCONFO',0 AS 'TOTAL',0 AS 'RESULT',LJW_VALOR AS 'VR_BON'
         FROM %Table:LJW% LJW
         INNER JOIN %Table:LJS% LJS ON LJS_CODBON=LJW_CODBON AND LJS_FILIAL=LJW_FILIAL AND LJS.%notDel%
@@ -1448,6 +1866,7 @@ While (cAlias)->( !Eof() )
     cXml := '<Row>' + CRLF
     cXml += '<Cell><Data ss:Type="String">' + (cAlias)->(PC5_CODTRA) + '</Data></Cell>' + CRLF
     cXml += '<Cell><Data ss:Type="String">' + AllTrim((cAlias)->(TRANSP)) + '</Data></Cell>' + CRLF
+    cXml += '<Cell ss:StyleID="s77"><Data ss:Type="String">' + (cAlias)->(PC5_LINHA) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s77"><Data ss:Type="String">' + (cAlias)->(PC5_CODBON) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s77"><Data ss:Type="String">' + AllTrim((cAlias)->(DESCBON)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s68"><Data ss:Type="Number">' + cValtoChar((cAlias)->(CONFORME)) + '</Data></Cell>' + CRLF
