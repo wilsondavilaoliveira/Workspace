@@ -474,7 +474,7 @@ Else
 
         %noparser%
 
-        SELECT D1_COD,LBB_CODMUN,LBB_MUN,F1_VALBRUT,LBB_CODFOR+'-'+LBB_LOJA  AS  LBB_CODFOR,A2_INSCR,LBB_DESC,A2_CGC,
+        SELECT D1_COD,LBB_CODMUN,LBB_MUN,F1_VALBRUT,LBB_CODFOR,LBB_LOJA,A2_INSCR,LBB_DESC,A2_CGC,
 
         ROUND(
 
@@ -547,7 +547,8 @@ Else
                 PC9->PC9_STATUS := 'A'
                 PC9->PC9_NFORIG := (cAlias)->(F1_DOC)
                 PC9->PC9_SERORI := (cAlias)->(F1_SERIE)
-                PC9->PC9_CODPRO := (cAlias)->(LBB_CODPRO)
+                PC9->PC9_CODPRO := (cAlias)->(LBB_CODFOR)
+                PC9->PC9_LOJA   := (cAlias)->(LBB_LOJA)
                 PC9->PC9_DESPRO := (cAlias)->(LBB_NOMFOR)
                 PC9->PC9_VLRORI := (cAlias)->(F1_VALBRUT)
 
@@ -561,7 +562,8 @@ Else
                 If (cAlias)->(F1_VALBRUT) > PC9->PC9_VLRORI
                     PC9->PC9_NFORIG := (cAlias)->(F1_DOC)
                     PC9->PC9_SERORI := (cAlias)->(F1_SERIE)
-                    PC9->PC9_CODPRO := (cAlias)->(LBB_CODPRO)
+                    PC9->PC9_CODPRO := (cAlias)->(LBB_CODFOR)
+                    PC9->PC9_LOJA   := (cAlias)->(LBB_LOJA)
                     PC9->PC9_DESPRO := (cAlias)->(LBB_NOMFOR)
                     PC9->PC9_VLRORI := (cAlias)->(F1_VALBRUT)
                 End If

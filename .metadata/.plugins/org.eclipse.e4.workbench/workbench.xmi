@@ -609,7 +609,7 @@
           <tags>removeOnHide</tags>
         </children>
         <children xsi:type="basic:Part" xmi:id="_KRyfYHp3Eeqoz9OMMIzduA" elementId="org.eclipse.e4.ui.compatibility.editor" contributionURI="bundleclass://org.eclipse.ui.workbench/org.eclipse.ui.internal.e4.compatibility.CompatibilityEditor" label="QUAA040W.PRW" closeable="true">
-          <persistedState key="memento" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>&#xD;&#xA;&lt;editor id=&quot;br.com.totvs.tds.sdk.advpl.ui.editor.AdvplEditor&quot; name=&quot;QUAA040W.PRW&quot; partName=&quot;QUAA040W.PRW&quot; title=&quot;QUAA040W.PRW&quot; tooltip=&quot;projeto_quata/Projeto - Quata - Vers&#xe3;o 12/03 - Especificos/03.09 - Financeiro/03.09.01 - Gest&#xe3;o de Contratos Venda/Cadastros/QUAA040W.PRW&quot;>&#xD;&#xA;&lt;input factoryID=&quot;org.eclipse.ui.part.FileEditorInputFactory&quot; path=&quot;/projeto_quata/Projeto - Quata - Vers&#xe3;o 12/03 - Especificos/03.09 - Financeiro/03.09.01 - Gest&#xe3;o de Contratos Venda/Cadastros/QUAA040W.PRW&quot;/>&#xD;&#xA;&lt;editorState selectionHorizontalPixel=&quot;0&quot; selectionLength=&quot;0&quot; selectionOffset=&quot;93059&quot; selectionTopPixel=&quot;45584&quot;/>&#xD;&#xA;&lt;/editor>"/>
+          <persistedState key="memento" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>&#xD;&#xA;&lt;editor id=&quot;br.com.totvs.tds.sdk.advpl.ui.editor.AdvplEditor&quot; name=&quot;QUAA040W.PRW&quot; partName=&quot;QUAA040W.PRW&quot; title=&quot;QUAA040W.PRW&quot; tooltip=&quot;projeto_quata/Projeto - Quata - Vers&#xe3;o 12/03 - Especificos/03.09 - Financeiro/03.09.01 - Gest&#xe3;o de Contratos Venda/Cadastros/QUAA040W.PRW&quot;>&#xD;&#xA;&lt;input factoryID=&quot;org.eclipse.ui.part.FileEditorInputFactory&quot; path=&quot;/projeto_quata/Projeto - Quata - Vers&#xe3;o 12/03 - Especificos/03.09 - Financeiro/03.09.01 - Gest&#xe3;o de Contratos Venda/Cadastros/QUAA040W.PRW&quot;/>&#xD;&#xA;&lt;editorState selectionHorizontalPixel=&quot;0&quot; selectionLength=&quot;0&quot; selectionOffset=&quot;93059&quot; selectionTopPixel=&quot;0&quot;/>&#xD;&#xA;&lt;/editor>"/>
           <tags>Editor</tags>
           <tags>br.com.totvs.tds.sdk.advpl.ui.editor.AdvplEditor</tags>
           <tags>removeOnHide</tags>
@@ -1331,7 +1331,7 @@
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_kILWc15XEeqeGJA40X5MKQ" elementId="org.eclipse.ui.workbench.file">
         <tags>Draggable</tags>
-        <children xsi:type="menu:HandledToolItem" xmi:id="_BWogVa9_Eeq6XvLlmIS4gg" elementId="print" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/print_edit.png" tooltip="Imprimir" enabled="false" command="_kILdS15XEeqeGJA40X5MKQ"/>
+        <children xsi:type="menu:HandledToolItem" xmi:id="_6QVKwJgXEeudBsHZnnK17w" elementId="print" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/print_edit.png" tooltip="Imprimir" enabled="false" command="_kILdS15XEeqeGJA40X5MKQ"/>
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_kILWgV5XEeqeGJA40X5MKQ" elementId="additions" toBeRendered="false">
         <tags>toolbarSeparator</tags>
@@ -1352,7 +1352,7 @@
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_kILWr15XEeqeGJA40X5MKQ" elementId="org.eclipse.ui.workbench.navigate">
         <tags>Draggable</tags>
-        <children xsi:type="menu:HandledToolItem" xmi:id="_BXTOsq9_Eeq6XvLlmIS4gg" elementId="org.eclipse.ui.window.pinEditor" visible="false" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/pin_editor.png" tooltip="Reter Editor" type="Check" command="_kILc6F5XEeqeGJA40X5MKQ"/>
+        <children xsi:type="menu:HandledToolItem" xmi:id="_6Q2IIJgXEeudBsHZnnK17w" elementId="org.eclipse.ui.window.pinEditor" visible="false" iconURI="platform:/plugin/org.eclipse.ui/icons/full/etool16/pin_editor.png" tooltip="Reter Editor" type="Check" command="_kILc6F5XEeqeGJA40X5MKQ"/>
       </children>
       <children xsi:type="menu:ToolBar" xmi:id="_kILWvF5XEeqeGJA40X5MKQ" elementId="group.editor" toBeRendered="false">
         <tags>toolbarSeparator</tags>

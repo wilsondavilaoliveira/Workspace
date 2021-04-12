@@ -5,9 +5,8 @@
 #INCLUDE "PRCONST.CH"
 #INCLUDE "FONT.CH"
 #include "TBICONN.CH"
-
-
-#include "fwmvcdef.ch"
+#INCLUDE 'FWMVCDEF.CH'
+#include "TOTVS.CH"
 
 #define MVC_TITLE "Geracao de Cte/Nfs"
 #define MVC_ALIAS "PC9"
@@ -97,8 +96,26 @@ oStrGrid := FWFormStruct(1, MVC_ALIAS)
 oModel := MPFormModel():New("MIDMAIN")
 
 oModel:addFields("CABID", /*cOwner*/, oStrField, /*bPre*/, /*bPost*/, {|oMdl| loadHidFld()})
+oStrGrid:AddField( ;
+                        AllTrim('') , ; 			// [01] C Titulo do campo
+                        AllTrim('') , ; 			// [02] C ToolTip do campo
+                        'PC9_LEGEND' , ;               // [03] C identificador (ID) do Field
+                        'C' , ;                     // [04] C Tipo do campo
+                        50 , ;                      // [05] N Tamanho do campo
+                        0 , ;                       // [06] N Decimal do campo
+                        NIL , ;                     // [07] B Code-block de validação do campo
+                        NIL , ;                     // [08] B Code-block de validação When do campo
+                        NIL , ;                     // [09] A Lista de valores permitido do campo
+                        NIL , ;                     // [10] L Indica se o campo tem preenchimento obrigatório
+                        { || Iif(PC9->PC9_STATUS=='A', "BR_AMARELO",IIF(PC9->PC9_STATUS=='E',"BR_VERMELHO","BR_VERDE")) } , ;  		// [11] B Code-block de inicializacao do campo
+                        NIL , ;                     // [12] L Indica se trata de um campo chave
+                        NIL , ;                     // [13] L Indica se o campo pode receber valor em uma operação de update.
+                        .T. )                       // [14] L Indica se o campo é virtual
+
 
 oModel:addGrid("GRIDID", "CABID", oStrGrid, /*bLinePre*/, /*bLinePost*/, /*bPre*/, /*bPost*/, {|oMdl| loadGrid(oMdl)})
+
+//{ || Iif(PC9->PC9_STATUS<>'A', "BR_VERMELHO","BR_VERDE") }
 
 oModel:setDescription(MVC_TITLE)
 
@@ -211,20 +228,52 @@ oModel := FWLoadModel("QUAA023M")
 oView := FwFormView():New()
 
 oView:setModel(oModel)
+
+oStrGrid:AddField( ;            		// Ord. Tipo Desc.
+	'PC9_LEGEND'                   	, ;   	// [01]  C   Nome do Campo
+	"00"                         	, ;     // [02]  C   Ordem
+	AllTrim( ''    )         , ;     // [03]  C   Titulo do campo
+	AllTrim( '' )       , ;     // [04]  C   Descricao do campo
+	{ 'Legenda' } 		, ;     // [05]  A   Array com Help
+	'C'                             , ;     // [06]  C   Tipo do campo
+	'@BMP'                , ;     // [07]  C   Picture
+	NIL                             , ;     // [08]  B   Bloco de Picture Var
+	''                              , ;     // [09]  C   Consulta F3
+	.T.                             , ;     // [10]  L   Indica se o campo é alteravel
+	NIL                             , ;     // [11]  C   Pasta do campo
+	NIL                             , ;     // [12]  C   Agrupamento do campo
+	NIL				               	, ;     // [13]  A   Lista de valores permitido do campo (Combo)
+	NIL                             , ;     // [14]  N   Tamanho maximo da maior opção do combo
+	NIL                             , ;     // [15]  C   Inicializador de Browse
+	.T.                             , ;     // [16]  L   Indica se o campo é virtual
+	NIL                             , ;     // [17]  C   Picture Variavel
+	NIL                             )       // [18]  L   Indica pulo de linha após o campo
+
+
 oView:addField("CAB", oStrCab, "CABID")
 oView:addGrid("GRID", oStrGrid, "GRIDID")
+
+
+
+
+
+
 oView:SetNoDeleteLine("GRID")
 oView:SetNoInsertLine("GRID")
 
 //FWFORMVIEW():SetFieldAction(<cIDField >, <bAction >)
-oView:SetFieldAction( 'PC9_CHVNFE', { |oView, cIDView, cField, xValue| gLine( oView, cIDView, cField, xValue,oModel ) } )
-
-
+//oView:SetFieldAction( 'PC9_CHVNFE', { |oView, cIDView, cField, xValue| gLine( oView, cIDView, cField, xValue,oModel ) } )
 
 cCSS := "QTableView { selection-background-color: #ade0ff; font-weight:bold;font-size:11px }"
 cCSS += "QHeaderView::section { background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #616161, stop: 0.5 #505050, stop: 0.6 #434343,  stop:1 #656565); color: white; padding-left: 4px; border: 1px solid #6c6c6c; }"
 
 oView:SetViewProperty( "GRID", "SETCSS", {cCSS} )
+oView:SetViewProperty("GRID", "GRIDDOUBLECLICK", {{|oFormulario,cFieldName,nLineGrid,nLineModel| Iif(Alltrim(cFieldName) == "PC9_LEGEND",TT002(),.f.)}})
+
+
+bBlocoNotas := {|oView| Process := MsNewProcess():New({|lEnd| GeraNotas(@oProcess, @lEnd) },"Gerancao Notas Cte/Nfs Transportadoras","Gerando Notas....",.T.)}
+
+oView:AddUserButton("GERAR NOTAS CTE/NFS","MAGIC_BMP",bBlocoNotas,"Gerar Notas Cte/Nfs")
 
 oView:createHorizontalBox("TOHIDE", 0 )
 oView:createHorizontalBox("TOSHOW", 100 )
@@ -235,26 +284,125 @@ oView:setDescription( MVC_TITLE )
 
 return oView
 
-Static Function gLine( oView, cIDView, cField, xValue ,oModel)
 
-Local oModelPC9 := oModel:GetModel('GRIDID')
+*===============================================================================================================================
+*===============================================================================================================================
+*===============================================================================================================================
+*===============================================================================================================================
+*===============================================================================================================================
+Static Function TT002()
 
-//MsgAlert(cValToCHar(oModelPC9:GetLine() ))
- //oModelPC9:GoLine(oModelPC9:GetLine()+1)
-oModelPC9:GoLine(oModelPC9:GetLine()+1)
-oView:Refresh('GRIDID')
+// Cria a legenda que identifica a estrutura
+oLegend := FWLegend():New()
+
+// Adiciona descrição para cada legenda
+oLegend:Add( { || }, 'BR_AMARELO' , 'AGUARDANDO' ) // 'Baixado'
+oLegend:Add( { || }, 'BR_VERDE'   , 'DOCUMENTO GERADO' ) // 'Em Aberto'
+oLegend:Add( { || }, 'BR_VERMELHO' , 'ERRO NA GERACAO' ) // 'Baixado'
+
+// Ativa a Legenda
+oLegend:Activate()
+
+// Exibe a Tela de Legendas
+oLegend:View()
+
+Return Nil
+
+
+
+
+Static Function GeraNotas(oProcess,lEnd)
+
+Local cAliPC9   := GetNextAlias()
+Local nReg      := 1
+Local lGerou    := .T.
+
+oProcess:Activate
+
+BeginSql Alias cAliPC9
+
+    SELECT PC9_CODTRA,PC9_TIPDOC,PC9_VALOR,PC9_NUMDOC,PC9_SERDOC,PC9_CHVNFE,PC9_NFORIG,PC9_SERORI,PC9_CODPRO,PC9_LOJA,R_E_C_N_O_ AS RECNO,
+    (SELECT COUNT(*) FROM %Table:PC9% PC91 WHERE PC91.%notDel% AND PC9_FILIAL=%Exp:cFilAnt% AND PC9_PERIOD=%Exp:MV_PAR01% AND PC9_STATUS='A') AS REG
+    FROM %Table:PC9% PC9 WHERE PC9.%notDel% AND PC9_FILIAL=%Exp:cFilAnt% AND PC9_PERIOD=%Exp:MV_PAR01% AND PC9_STATUS='A'
+    ORDER BY PC9_CODTRA,PC9_TIPDOC
+
+EndSql
+
+    aSql := GetLastQuery()
+
+    MemoWrite("C:\HD\QUERYS\GERANOTAS.SQL",aSql[2])
+
+
+If (cAliPC9)->(!Eof())
+
+    nReg := (cAliPC9)->(REG)
+    oProcess:SetRegua1(nReg)
+
+    While (cAliPC9)->(!Eof())
+        oProcess:SetRegua2(1)
+        oProcess:IncRegua1("Nota -> " + (cAliPC9)->(PC9_NUMDOC)+"-"+(cAliPC9)->(PC9_SERDOC) )
+
+        If (cAliPC9)->(PC9_TIPDOC) == '1' //NFS
+
+            lGerou :=  EXEC103(STRZERO(VAL((cAliPC9)->(PC9_NUMDOC)),9),STRZERO(VAL((cAliPC9)->(PC9_SERDOC)),3),(cAliPC9)->(PC9_CODTRA),(cAliPC9)->(PC9_VALOR),(cAliPC9)->(PC9_NFORIG),;
+            (cAliPC9)->(PC9_SERORI),(cAliPC9)->(PC9_CODTRA),(cAliPC9)->(PC9_LOJA))
+
+            PC9->( DbGoto((cAliPC9)->(RECNO)))
+            If lGerou
+                PC9->( RecLock("PC9",.F.))
+                    PC9->PC9_STATUS := 'G'
+                    PC9->PC9_DTEMIS := DDATABASE
+                PC9->( MsUnlock() )
+
+            Else
+                PC9->( RecLock("PC9",.F.))
+                    PC9->PC9_STATUS := 'E'
+                PC9->( MsUnlock() )
+            EndIf
+
+            lGerou := .T.
+
+        Else //2=CTE
+
+            lGerou :=  RMATA116(STRZERO(VAL((cAliPC9)->(PC9_NUMDOC)),9),STRZERO(VAL((cAliPC9)->(PC9_SERDOC)),3),(cAliPC9)->(PC9_CODTRA),(cAliPC9)->(PC9_VALOR),(cAliPC9)->(PC9_NFORIG),;
+            (cAliPC9)->(PC9_SERORI),(cAliPC9)->(PC9_CODTRA),(cAliPC9)->(PC9_LOJA),(cAliPC9)->(PC9_CHVNFE))
+
+            PC9->( DbGoto((cAliPC9)->(RECNO)))
+            If lGerou
+                PC9->( RecLock("PC9",.F.))
+                    PC9->PC9_STATUS := 'G'
+                    PC9->PC9_DTEMIS := DDATABASE
+                PC9->( MsUnlock() )
+
+            Else
+                PC9->( RecLock("PC9",.F.))
+                    PC9->PC9_STATUS := 'E'
+                PC9->( MsUnlock() )
+            EndIf
+
+            lGerou := .T.
+
+        EndIf
+
+        oProcess:IncRegua2("Transportadora-> " + (cAliPC9)->(PC9_CODTRA)+"-"+Posicione("SA2",1,xFilial("SA2")+(cAliPC9)->(PC9_CODTRA),"A2_NOME"))
+
+        (cAliPC9)->( dbSkip() )
+
+    EndDo
+
+    MsgAlert("Notas Geradas")
+
+Else
+
+MsgStop("Nao ha notas para gerar")
+
+EndIf
 
 Return
-*===============================================================================================================================
-*===============================================================================================================================
-*===============================================================================================================================
-*===============================================================================================================================
-*===============================================================================================================================
-
 
 //DOCUMENTO TIPO COMPLEMENTO
 
-User Function EXEC103()
+Static Function EXEC103(cNum,cSerie,cForTrans,nValNf,cNfOri,cSerOri,cForOri,cLojaOri)
 
 Local aCab := {}
 Local aItem := {}
@@ -263,32 +411,29 @@ Local nOpc := 3
 Local cNum := ""
 Local nI := 0
 Local nX := 0
-
-//Conout("Inicio: " + Time())
+Local cCond := '134'
+Local cTes  := "426"
+Local lGerou := .T.
 
 Private lMsErroAuto := .F.
 Private lMsHelpAuto := .T.
 
-//PREPARE ENVIRONMENT EMPRESA "01" FILIAL "04" MODULO "COM"
 
-cNum := '000020213'
-
+SA2->( dbSetOrder(1))
+SA2->( dbSeek(xFilial("SA2")+cForTrans+'0001') )
 //Cabeçalho
 aadd(aCab,{"F1_TIPO" ,"C" ,NIL})
 aadd(aCab,{"F1_TPCOMPL" ,"3" ,NIL})
 aadd(aCab,{"F1_DOC" ,cNum ,NIL})
-aadd(aCab,{"F1_SERIE" ,"001" ,NIL})
-aadd(aCab,{"F1_FORNECE" ,"022581" ,NIL})
+aadd(aCab,{"F1_SERIE" ,cSerie ,NIL})
+aadd(aCab,{"F1_FORNECE" ,cForTrans ,NIL})
 aadd(aCab,{"F1_LOJA" ,"0001" ,NIL})
 aadd(aCab,{"F1_EMISSAO" ,DDATABASE ,NIL})
 aadd(aCab,{"F1_DTDIGIT" ,DDATABASE ,NIL})
 aadd(aCab,{"F1_FORMUL" ,"N" ,NIL})
 aadd(aCab,{"F1_ESPECIE" ,"NFS" ,NIL})
-aadd(aCab,{"F1_COND" ,"134" ,NIL})
-//aadd(aCab,{"F1_MODAL" ,"01" ,NIL})
-//aadd(aCab,{"F1_TPFRETE" ,"C" ,NIL})
-//aadd(aCab,{"F1_TPCTE" ,"N" ,NIL})
-aadd(aCab,{"F1_EST" ,"MG" ,NIL})
+aadd(aCab,{"F1_COND" ,cCond ,NIL})
+aadd(aCab,{"F1_EST" ,SA2->(A2_EST) ,NIL})
 aadd(aCab,{"F1_DESCONT" , 0 , Nil})
 aadd(aCab,{"F1_SEGURO" , 0 , Nil})
 aadd(aCab,{"F1_FRETE" , 0 , Nil})
@@ -304,11 +449,11 @@ aadd(aItem,{"D1_ITEM" ,'0001' ,NIL})
 aadd(aItem,{"D1_COD" ,'200113' ,NIL})
 aadd(aItem,{"D1_UM" ,"L" ,NIL})
 aadd(aItem,{"D1_LOCAL" ,"04" ,NIL})
-aadd(aItem,{"D1_VUNIT" ,21515.72 ,NIL})
-aadd(aItem,{"D1_TOTAL" ,21515.72 ,NIL})
-aadd(aItem,{"D1_TES" ,"426" ,NIL})
-aadd(aItem,{"D1_NFORI" ,"000056620" ,NIL})
-aadd(aItem,{"D1_SERIORI" ,"002" ,NIL})
+aadd(aItem,{"D1_VUNIT" ,nValNf ,NIL})
+aadd(aItem,{"D1_TOTAL" ,nValNf ,NIL})
+aadd(aItem,{"D1_TES" ,cTes ,NIL})
+aadd(aItem,{"D1_NFORI" ,cNfOri ,NIL})
+aadd(aItem,{"D1_SERIORI" ,cSerOri ,NIL})
 aadd(aItem,{"D1_ITEMORI" ,"0001" ,NIL})
 aadd(aItem,{"D1_CC" ,"040501" ,NIL})
 aadd(aItem,{"D1_BASEISS" ,0 ,NIL})
@@ -318,41 +463,26 @@ aadd(aItem,{"D1_VALISS" ,0 ,NIL})
 aAdd(aItens,aItem)
 Next nX
 
-
-//Impostos (Informar a referência do imposto, que consta no valid do campo)
-
-//Para impostos de cabeçalho informar: referência, valor
 aAutoImp := { {"NF_ISS" ,  0}}//,;
-//                         {"NF_VALIPI",  15},;
- //                        {"NF_VALICM",7}}
-
-//Para impostos de Itens informar: referência, valor, número da linha
 aAdd(aAutoImp, {'IT_BASEISS', 0, 1}) //Base
 aAdd(aAutoImp, {'IT_VALISS', 0,     1}) //Valor imposto
-//aAdd(aAutoImp, {'IT_ALIQICM',12,    1}) //Porcentagem Imposto
-
-
 
 //3-Inclusão / 4-Classificação / 5-Exclusão
 MSExecAuto({|x,y,z| MATA103(x,y,z)},aCab,aItens,nOpc)
 
 If !lMsErroAuto
-ConOut(" Incluido NF: " + cNum)
+    //ConOut(" Incluido NF: " + cNum)
 Else
-MostraErro()
-ConOut("Erro na inclusao!")
+    MostraErro()
+    lGerou := .F.
 EndIf
 
-ConOut("Fim: " + Time())
-
-//RESET ENVIRONMENT
-
-Return
+Return lGerou
 
 
 //CTE COMPLEMENTO FRETE/
 
-User Function rmata116()
+User Function RMATA116(cNum,cSerie,cForTrans,nValNf,cNfOri,cSerOri,cForOri,cLojaOri,cChvNfe)
 
 Local aCabec        := {}
 Local aItens        := {}
@@ -362,31 +492,33 @@ Local nX            := 0
 Local nY            := 0
 Local nTamFilial       := 0
 Local lOk           := .T.
-Local cFilSF1       := "04"
-Local cDoc          := '000056620'
-Local cSerie        := '002'
-Local cForn         := '023482'
-Local cLoja         := '0001'
+Local cFilSF1       := cFilAnt
 Local cTipo         := 'N'
+Local lGerou        := .T.
+Local cTes          := "293"
+Local cCond         := "134"
 Private lMsErroAuto := .F.
 Private lMsHelpAuto := .T.
 
     //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
     //| Carrega ate 3 documentos de origem - Fornecedor 000001       |
     //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
-    dDataBase := CTOD("01/03/2021")
+    //dDataBase := CTOD("01/03/2021")
     dbSelectArea("SF1")
     dbSetOrder(1)
 
-    MsSeek(cFilSF1+cDoc+cSerie+cForn+cLoja+cTipo)
+    MsSeek(cFilSF1+cNfOri+cSerOri+cForOri+cLojaOri+cTipo)
 
-    While !EOF() .AND. ( F1_FILIAL+F1_DOC+F1_SERIE+F1_FORNECE+F1_LOJA+F1_TIPO == cFilSF1+cDoc+cSerie+cForn+cLoja+cTipo )
+    While !EOF() .AND. ( F1_FILIAL+F1_DOC+F1_SERIE+F1_FORNECE+F1_LOJA+F1_TIPO == cFilSF1+cNfOri+cSerOri+cForOri+cLojaOri+cTipo )
 
                 nTamFilial  := Len(cFilSF1)
                 aadd(aItens,{{"PRIMARYKEY",AllTrim(SubStr(&(IndexKey()),nTamFilial + 1))}}) //Tratamento para Gestao Empresas
                 nX ++
        dbskip()
     EndDo
+
+    SA2->( dbSetOrder(1))
+    SA2->( dbSeek(xFilial("SA2")+cForTrans+'0001') )
 
     IF nX >0
 
@@ -396,42 +528,39 @@ Private lMsHelpAuto := .T.
         aadd(aCabec,{"",dDataBase-300})       //Data Inicial
         aadd(aCabec,{"",dDataBase})          //Data Final
         aadd(aCabec,{"",2})                  //2-Inclusao;1=Exclusao
-        aadd(aCabec,{"",cForn})           //Fornecedor do documento de Origem
-        aadd(aCabec,{"",cLoja})               //Loja de origem
+        aadd(aCabec,{"",cForOri})           //Fornecedor do documento de Origem
+        aadd(aCabec,{"",cLojaOri})               //Loja de origem
         aadd(aCabec,{"",1})                  //Tipo da nota de origem: 1=Normal;2=Devol/Benef
         aadd(aCabec,{"",2})                  //1=Aglutina;2=Nao aglutina
-        aadd(aCabec,{"F1_EST","MG"})
-        aadd(aCabec,{"",9872.44})               //Valor do conhecimento
+        aadd(aCabec,{"F1_EST",SA2->(A2_EST)})
+        aadd(aCabec,{"",nValNf})               //Valor do conhecimento
         aadd(aCabec,{"F1_FORMUL",1})
-        aadd(aCabec,{"F1_DOC","000000057"})    //..Numero da NF de Conhecimento de Frete
-        aadd(aCabec,{"F1_SERIE",""})
-        aadd(aCabec,{"F1_FORNECE","022581"})
+        aadd(aCabec,{"F1_DOC",cNum})    //..Numero da NF de Conhecimento de Frete
+        aadd(aCabec,{"F1_SERIE",cSerie})
+        aadd(aCabec,{"F1_FORNECE",cForTrans})
         aadd(aCabec,{"F1_LOJA","0001"})
-        aadd(aCabec,{"","293"})              //TES
+        aadd(aCabec,{"",cTes})              //TES
         aadd(aCabec,{"F1_BASERET",0})
         aadd(aCabec,{"F1_ICMRET",0})
-        aadd(aCabec,{"F1_COND","134"})
+        aadd(aCabec,{"F1_COND",cCond})
         aadd(aCabec,{"F1_EMISSAO",dDataBase})
         aadd(aCabec,{"F1_ESPECIE","CTE"})
-        aadd(aCabec,{"F1_CHVNFE","31200924496907000151570010000000551038000008"})
+        aadd(aCabec,{"F1_CHVNFE",cChvNfe})
         aadd(aCabec,{"F1_TPCTE","N"})
         aadd(aCabec,{"E2_NATUREZ","FORNECEDOR"})
         aadd(aCabec,{"E2_CCD","040501"})
 
         If Len(aItens)>0
-                        //item da nota    //Item do Rateio , Perc. Rate ,Cent.de Cus,,,, Alias,Linha Deletada,   Item 02 do Rateio.
-            //aRatcc := {{"0001"        ,{{'01'              ,50          ,"000000000",,,,"SDE",,,,.F.            },{'02',50,"000001",,,,"SDE",,,,.F.}}}}
             MATA116(aCabec,aItens,,,)
         EndIf
             If lMsErroAuto
                 MostraErro()
-                Alert("Erro!")
+                lGerou := .F.
             Else
                 RecLock("SD1",.F.)
                     SD1->D1_CC := '040501'
                 MsUnlock()
-                Alert("Ok!")
             Endif
     EndIf
 
-Return(.T.)
+Return lGerou
