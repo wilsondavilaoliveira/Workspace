@@ -69,52 +69,20 @@ nPrintType 	:= 6
 //Say ( < nRow>, < nCol>, < cText>, [ oFont], [ nWidth], [ nClrText], [ nAngle] )
 
 //FONTES USADAS
-    /*
-    Beginsql Alias cAlias1
 
-	    %NOPARSER%
+Beginsql Alias cAlias
 
-        SELECT LJX_CODBON,LJX_PADRAO,LJX_DESRED FROM LJX010 WHERE LJX_FILIAL=%exp:cFilAnt% AND LJX_RELATO='S' ORDER BY LJX_ORDEM
+	%NOPARSER%
 
-    EndSql
+    SELECT PC6_CODTRA,PC6_TRANSP,A2_MUN,A2_EST,A2_END,A2_INSCR,A2_CGC
+    FROM %Table:PC6% PC6
+    INNER JOIN %Table:SA2% SA2 ON A2_COD=PC6.PC6_CODTRA AND A2_LOJA='0001' AND SA2.%notDel%
+    WHERE PC6_FILIAL=%Exp:cFilAnt% AND PC6_PERIOD=%Exp:MV_PAR01% AND PC6.%notDel%
+    AND PC6_CODTRA BETWEEN %Exp:MV_PAR02% AND %Exp:MV_PAR03%
+    ORDER BY PC6_CODTRA
 
+EndSql
 
-	Beginsql Alias cAlias
-
-    	%NOPARSER%
-
-        SELECT MONTH(LJZ_DATCLQ) AS MES,LJZ_CODPRO,LBB_NOMFOR,LJX_PADRAO,LJX_METCLA,LBB_CODLAB,LBB_CODFOR,A2_INSCR,LTRIM(RTRIM(LBB_MUN))+'-'+LBB_EST AS CIDADE,A2_CGC,
-        LTRIM(RTRIM(LBB_END)) AS LBB_END,LJX_CODBON,LJX_DESRED,ROUND(LJZ_QTDMES,2) AS LJZ_QTDMES,ROUND(LJZ_QTDLEI,2) AS LJZ_QTDLEI,
-        ISNULL((SELECT SUM(PC1_QTDLIT)
-        FROM PC1010 PC1 (NOLOCK)
-        INNER JOIN PC0010 PC0 (NOLOCK) ON PC0_TPENTR='1' AND PC0_FILIAL=PC1_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1_CODPRO=LJZ_CODPRO
-        AND MONTH(PC0_DTENTR) = MONTH(LJZ_DATCLQ) AND YEAR(PC0_DTENTR)=YEAR(LJZ_DATCLQ) AND PC0.D_E_L_E_T_=''
-        AND PC1_FILIAL=%EXP:cFilAnt% AND PC1.D_E_L_E_T_=''
-        ),0) AS PC1_QTDLIT,
-        ISNULL((SELECT SUM(PC1_QTDLIT)
-        FROM PC1010 PC1 (NOLOCK)
-        INNER JOIN PC0010 PC0 (NOLOCK) ON PC0_TPENTR='1' AND PC0_FILIAL=PC1_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1_CODPRO=LJZ_CODPRO
-        AND MONTH(PC0_DTENTR) = MONTH(LJZ_DATCLQ) AND YEAR(PC0_DTENTR)=YEAR(LJZ_DATCLQ) AND PC0.D_E_L_E_T_=''
-        AND PC1_FILIAL=%EXP:cFilAnt% AND PC1.D_E_L_E_T_=''
-        ),0)/30 AS MED_LIT
-        FROM LJZ010 LJZ (NOLOCK)
-        INNER JOIN LJX010 LJX (NOLOCK) ON LJX_FILIAL=LJZ_FILIAL AND LJX_CODBON=LJZ_CODBON AND LJX_RELATO='S' AND LJX.D_E_L_E_T_=''
-        INNER JOIN LBB010 LBB (NOLOCK) ON LBB_FILIAL=LJZ_FILIAL AND LJZ_CODPRO=LBB_CODPRO AND LBB.D_E_L_E_T_=''
-        INNER JOIN SA2010 SA2 (NOLOCK) ON LBB_CODFOR=A2_COD AND LBB_LOJA=A2_LOJA AND SA2.D_E_L_E_T_=''
-        AND LBB_LINHA BETWEEN %EXP:MV_PAR02% AND %EXP:MV_PAR03%
-        WHERE
-        LJZ.D_E_L_E_T_='' AND LJZ_CODPRO BETWEEN %EXP:MV_PAR04% AND %EXP:MV_PAR05% AND
-        YEAR(LJZ_DATCLQ)=%exp:SubStr(MV_PAR01,3,4)% AND LJZ_FILIAL=%EXP:cFilAnt%
-        AND LJZ_FILIAL+LJZ_CODPRO IN (
-        SELECT DISTINCT PC1_FILIAL+PC1_CODPRO
-        FROM PC1010 PC1 (NOLOCK)
-        INNER JOIN PC0010 PC0 (NOLOCK) ON PC0_TPENTR='1' AND PC0_FILIAL=PC1_FILIAL AND PC1_NUMSEQ=PC0_NUMSEQ AND PC1_CODPRO=LJZ_CODPRO
-        AND MONTH(PC0_DTENTR) = %exp:Val(SubStr(MV_PAR01,1,2))% AND YEAR(PC0_DTENTR)=YEAR(LJZ_DATCLQ) AND PC0.D_E_L_E_T_=''
-        WHERE PC1_FILIAL=%EXP:cFilAnt% AND PC1.D_E_L_E_T_='')
-        ORDER BY LJZ_CODPRO,LJZ_DATCLQ,LJX_ORDEM
-
-    EndSql
-    */
 
 oFont25	 := TFont():New("ARIAL",10,25,,.T.,,,,,.F.,.F.) ///Fonte 10 Normal
 oFont20a := TFont():New("ARIAL",10,15,,.T.,,,,,.F.,.F.) ///Fonte 10 Normal
@@ -145,7 +113,7 @@ oPrinter:cPathPDF := "c:\spool\"
 
 ProcRegua(3000)
 
-//While (cAlias)->( !Eof() )
+While (cAlias)->( !Eof() )
 //    _cCodFor := (cAlias)->(LBB_CODFOR)
 //    _cCodPro := (cAlias)->(LJZ_CODPRO)
     oPrinter:StartPage()
@@ -167,23 +135,25 @@ ProcRegua(3000)
     //oPrinter:Line( 133-35, 010, 133-35, 579,10, "-1")
 
     //===============PRIMEIRA LINHA CABEC =============================================================================
-    oPrinter:Say( 090-35,015,OemToAnsi("Linha/Rota:000007"),oFont10N,,CLR_BLACK)
+    //oPrinter:Say( 090-35,015,OemToAnsi("Linha/Rota:000007"),oFont10N,,CLR_BLACK)
     //oPrinter:Say( 090-35,070,OemToAnsi((cAlias)->(LBB_CODFOR)+"-"+(cAlias)->(LJZ_CODPRO)+"-"+(cAlias)->(LBB_NOMFOR)),oFont10,,CLR_BLACK)
 
-    oPrinter:Say( 090-35,365,OemToAnsi("Municipio.: VAZANTE - MG"),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 090-35,365,   OemToAnsi("Municipio.: "),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 090-35,365+60,OemToAnsi(Alltrim((cAlias)->(A2_MUN))+" - "+(cAlias)->(A2_EST)),oFont10N,,CLR_BLACK)
 
     //================= SEGUNDA LINHA CABEC
-    oPrinter:Say( 102-35,015,OemToAnsi("Transportadora:022521-0001-STANES TRANSPORTES LTDA"),oFont10N,,CLR_BLACK)
-    //oPrinter:Say( 102-35,070,OemToAnsi((cAlias)->(LBB_END)),oFont10,,CLR_BLACK)
+    oPrinter:Say( 090-35,015,   OemToAnsi("Transportadora: "),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 090-35,015+73,OemToAnsi((cAlias)->(PC6_CODTRA)+'/00001-'+AllTrim((cAlias)->(PC6_TRANSP))),oFont10N,,CLR_BLACK)
 
-    oPrinter:Say( 102-35,365,OemToAnsi("I.Estadual: 001148665.00-23"),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 102-35,365,   OemToAnsi("I.Estadual: "),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 102-35,365+60,OemToAnsi(Transform(StrTran(StrTran((cAlias)->(A2_INSCR),".",""),"-",""),"@R 999999999.99-99")),oFont10N,,CLR_BLACK)
 
     //TERCEIRA LINHA CABEC
-    oPrinter:Say( 114-35,015,OemToAnsi("Endereço: AV. PRES. TANCREDO DE ALMEIDA NEVES, 1600"),oFont10N,,CLR_BLACK)
-    //oPrinter:Say( 114-35,070,OemToAnsi((cAlias)->(CIDADE)),oFont10,,CLR_BLACK)
+    oPrinter:Say( 102-35,015,   OemToAnsi("Endereço: "),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 102-35,015+45,OemToAnsi(Alltrim((cAlias)->(A2_END))),oFont10N,,CLR_BLACK)
 
-    oPrinter:Say( 114-35,365,OemToAnsi("Cpf/Cnpj..: 01.570.012/0001-14"),oFont10N,,CLR_BLACK)
-
+    oPrinter:Say( 114-35,365,   OemToAnsi("Cpf/Cnpj..: "),oFont10N,,CLR_BLACK)
+    oPrinter:Say( 114-35,365+60,OemToAnsi(Transform((cAlias)->(A2_CGC),"@R 99.999.999/9999-99")),oFont10N,,CLR_BLACK)
 
     //================================================================================================================
 
@@ -205,6 +175,19 @@ ProcRegua(3000)
     oPrinter:Line( 161-35-13, 420, nLinfin-18, 420,10, "-1")
     oPrinter:Line( 161-35-13, 500, nLinfin-18, 500,10, "-1")
 
+
+    cAlias1 := "KM_SOC"
+
+    BeginSql alias cAlias1
+        %NOPARSER%
+
+        SELECT PC7_TIPO,SUM(PC7_TOTKM) AS PC7_TOTKM,SUM(PC7_TOTFRT)/SUM(PC7_TOTKM+0.0001) AS 'VUNIT',SUM(PC7_TOTFRT) AS PC7_TOTFRT
+        FROM %Table:PC7% PC7
+        WHERE PC7.%notDel% AND PC7_PERIOD=%Exp:MV_PAR01% AND PC7_CODTRA=%Exp:(cAlias)->(PC6_CODTRA)%
+        GROUP BY PC7_TIPO
+
+    EndSql
+
     oPrinter:Say( 161-35,011,OemToAnsi(" TOPICO"),oFont10N,,CLR_BLACK)
     oPrinter:Say( 161-35,081,OemToAnsi(" DESCRIÇÃO"),oFont10N,,CLR_BLACK)
     oPrinter:Say( 161-35,261,OemToAnsi(" REALIZADO"),oFont10N,,CLR_BLACK)
@@ -212,20 +195,31 @@ ProcRegua(3000)
     oPrinter:Say( 161-35,421,OemToAnsi(" TOT CREDITOS"),oFont10N,,CLR_BLACK)
     oPrinter:Say( 161-35,501,OemToAnsi(" TOT DEBITO"),oFont10N,,CLR_BLACK)
 
-    oPrinter:Say( 161-35+18,011,OemToAnsi(" KM RODADOS"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18,081,OemToAnsi("             "),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18,261,OemToAnsi("       6.500,00"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18,341,OemToAnsi("           3,35"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18,421,OemToAnsi("   R$ 21.999,00"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18,501,OemToAnsi(""),oFont10,,CLR_BLACK)
+    If (cAlias1)->( !Eof())
 
+        oPrinter:Say( 161-35+18,011,OemToAnsi(" KM RODADOS"),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18,081,OemToAnsi("             "),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18,267,OemToAnsi(Transform((cAlias1)->(PC7_TOTKM),"@E 99,999.999")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18,351,OemToAnsi(Transform((cAlias1)->(VUNIT),"@E 999.999")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18,441,OemToAnsi(Transform((cAlias1)->(PC7_TOTFRT),"@E 999,999.99")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18,501,OemToAnsi(""),oFont10,,CLR_BLACK)
 
-    oPrinter:Say( 161-35+18+18,011,OemToAnsi(" SOCORRO"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18+18,081,OemToAnsi("             "),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18+18,261,OemToAnsi("         500,00"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18+18,341,OemToAnsi("           2,35"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18+18,421,OemToAnsi("      R$ 999,00"),oFont10,,CLR_BLACK)
-    oPrinter:Say( 161-35+18+18,501,OemToAnsi(""),oFont10,,CLR_BLACK)
+    EndIf
+
+    (cAlias1)->( dbskip() )
+
+    If (cAlias1)->( !Eof())
+
+        oPrinter:Say( 161-35+18+18,011,OemToAnsi(" SOCORRO"),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18+18,081,OemToAnsi("             "),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18+18,267,OemToAnsi(Transform((cAlias1)->(PC7_TOTKM),"@E 99,999.999")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18+18,351,OemToAnsi(Transform((cAlias1)->(VUNIT),"@E 999.999")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18+18,441,OemToAnsi(Transform((cAlias1)->(PC7_TOTFRT),"@E 999,999.99")),oFont10,,CLR_BLACK)
+        oPrinter:Say( 161-35+18+18,501,OemToAnsi(""),oFont10,,CLR_BLACK)
+
+    EndIf
+
+    (cAlias1)->( dbCLoseArea() )
 
 
     nLinIni += 20
@@ -1184,9 +1178,9 @@ ProcRegua(3000)
     */
 
     oPrinter:EndPage()
+    (cAlias)->( dbskip() )
 
-
-//EndDo
+EndDo
 
 
 oPrinter:Preview()
