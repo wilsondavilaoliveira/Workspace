@@ -41,7 +41,7 @@ Static Function BrowseDef()
     oBrowse:AddLegend( "PC6_STATUS=='A'", "BR_VERDE"		, "Aguardando")
     oBrowse:AddLegend( "PC6_STATUS=='S'", "BR_PINK"		    , "Simulacao")
     oBrowse:AddLegend( "PC6_STATUS=='P'", "BR_VERMELHO"		, "Fechado pronto p/Gerar Nota")
-    oBrowse:AddLegend( "PC6_STATUS=='F'", "BR_AZUL"		, "Fechado Nota Gerada")
+    oBrowse:AddLegend( "PC6_STATUS=='F'", "BR_AZUL"		    , "Fechado Nota Gerada")
 
 Return (oBrowse)
 
@@ -251,8 +251,7 @@ If MV_PAR02 == 1
         cCodTra := aLeituras[1][1]
 
         If aLeituras[i][12] == '000000'
-            nKm                 := GetKM (aLeituras[i][1])
-
+            nKm := GetKM (aLeituras[i][1])
         Else
             nKm := GetKML(aLeituras[i][1],aLeituras[i][12])
         EndIf
@@ -264,7 +263,7 @@ If MV_PAR02 == 1
         Else
             aLeituras[i][9] := nResUnit
         EndIf
-        aLeituras[i][13]    := GetKM (aLeituras[i][1])
+        aLeituras[i][13] := GetKM (aLeituras[i][1])
         aLeituras[i][10] := nKm
 
     Next i
@@ -359,7 +358,7 @@ If MV_PAR02 == 1
 
                     nKmLin  := aSocorro[s][2]
                     nKmSoc  += aSocorro[s][2]
-                    nBonLin := 0 //(nTotBon/aLeituras[i][10])*nKmLin
+                    nBonLin := (nTotBon/aLeituras[i][10])*nKmLin
                     nVrFrtL := nKmLin*Posicione("PBL",1,cFilAnt+aLeituras[i][1]+aLinhas[1][1],"PBL_VALOR")
                     nVrFrtT += nVrFrtL
                     nTotLit += 0
@@ -371,6 +370,7 @@ If MV_PAR02 == 1
                             PC7->PC7_PERIOD := MV_PAR01
                             PC7->PC7_CODTRA := aLeituras[i][1]
                             PC7->PC7_LINHA  := aSocorro[s][1]
+                            PC7->PC7_LINSOC := aSocorro[s][3]
                             PC7->PC7_TIPO   := 'S'
                             PC7->PC7_TOTBON := nBonLin
                             PC7->PC7_TOTFRT := nVrFrtL
@@ -399,27 +399,14 @@ If MV_PAR02 == 1
 
             For a := 1 To Len(aLinhas)
 
-                nKmLin  := GetKML(aLeituras[i][1],aLinhas[a][1])
+                nKmLin  := GetKML(aLeituras[i][1],aLinhas[a][1],.F.)
 
                 For j := 1 To Len(aLeituras)
                     nTotBonL += iif(aLeituras[j][12]==aLinhas[a][1],aLeituras[j][9],0)
                 Next j
 
-            /*    iF cCodTra == '007487'
-
-                    MsgAlert("LINHA array- " + cvaltochar(i))
-                    MsgAlert("LINHA - " + cvaltochar(aLinhas[a][1]))
-
-                    MsgAlert("ntotbon - " + cvaltochar(nTotBon))
-                    MsgAlert("TotKm - " + cvaltochar(aLeituras[i][13]))
-                    MsgAlert("KmLinha - " + cvaltochar(nKmLin))
-                    MsgAlert("KmSocorro  - " + cvaltochar(nKmSoc))
-                    MsgAlert("ntotBon Linha - " + cvaltochar(nTotBonL))
-                    MsgAlert("nBonLinha - " + cvaltochar(( (nTotBon/aLeituras[i][13])*(nKmLin+(nKmSoc/Len(aLinhas)) )) + (nTotBonL)))
-
-                EndIf
-              */
-                nBonLin     := ( (nTotBon/aLeituras[i][13])*(nKmLin+(nKmSoc/Len(aLinhas)) )) + (nTotBonL)
+                //nBonLin     := ( (nTotBon/aLeituras[i][13])*(nKmLin+(nKmSoc/Len(aLinhas)) )) + (nTotBonL)
+                nBonLin     := ( (nTotBon/aLeituras[i][13])*(nKmLin) ) + (nTotBonL)
                 nTotBonL    := 0
                 nVrFrtL     := nKmLin*Posicione("PBL",1,cFilAnt+aLeituras[i][1]+aLinhas[a][1],"PBL_VALOR")
                 nVrFrtT     += nVrFrtL
@@ -1091,17 +1078,27 @@ description
 @param cCodLin, character, param_description
 @return return_type, return_description
 /*/
-Static Function GetKML(cCodTra,cCodLin)
+Static Function GetKML(cCodTra,cCodLin,lSocorro)
 
 Local nKm       := 0
 Local cAlias    := "TOTKM"
 
+DEFAULT lSocorro := .T.
 
-BeginSql alias cAlias
-    %noparser%
-    SELECT SUM(PB9_TOTKM) AS TOTKM FROM %Table:PB9% PB9 WHERE PB9_PERIOD=%Exp:MV_PAR01%  AND PB9_CODTRA=%Exp:cCodTra%
-    AND PB9_LINHA=%Exp:cCodLin% AND PB9.%notdel%
-EndSql
+If lSocorro
+    BeginSql alias cAlias
+        %noparser%
+        SELECT SUM(PB9_TOTKM) AS TOTKM FROM %Table:PB9% PB9 WHERE PB9_PERIOD=%Exp:MV_PAR01%  AND PB9_CODTRA=%Exp:cCodTra%
+        AND (PB9_LINHA=%Exp:cCodLin% OR PB9_LINSOC=%Exp:cCodLin%) AND PB9.%notdel%
+    EndSql
+Else
+    BeginSql alias cAlias
+        %noparser%
+        SELECT SUM(PB9_TOTKM) AS TOTKM FROM %Table:PB9% PB9 WHERE PB9_PERIOD=%Exp:MV_PAR01%  AND PB9_CODTRA=%Exp:cCodTra%
+        AND PB9_LINHA=%Exp:cCodLin% AND PB9.%notdel%
+    EndSql
+EndIf
+
 
 If (cAlias)->( !Eof())
     nKM := (cAlias)->(TOTKM)
@@ -1169,18 +1166,18 @@ Local cAlias    := 'LINSOC'
 BeginSql alias cAlias
     %noparser%
 
-    SELECT PB9_LINHA,SUM(PB9_TOTKM) AS 'TOTKM' FROM %Table:PB9% PB9 WHERE PB9_PERIOD=%Exp:MV_PAR01%
+    SELECT PB9_LINHA,PB9_LINSOC,SUM(PB9_TOTKM) AS 'TOTKM' FROM %Table:PB9% PB9 WHERE PB9_PERIOD=%Exp:MV_PAR01%
     AND PB9_CODTRA=%Exp:cCodTra% AND PB9_TIPO='S' AND PB9.%notDel%
-    GROUP BY PB9_LINHA
+    GROUP BY PB9_LINHA,PB9_LINSOC
 
 EndSql
 
 If (cAlias)->( Eof())
-    AADD(aSocorro,{'000000',0})
+    AADD(aSocorro,{'000000',0,'000000'})
 EndIf
 
 While (cAlias)->( !Eof())
-    AADD(aSocorro,{(cAlias)->(PB9_LINHA),(cAlias)->(TOTKM)})
+    AADD(aSocorro,{(cAlias)->(PB9_LINHA),(cAlias)->(TOTKM),(cAlias)->(PB9_LINSOC)})
     (cAlias)->( dbSkip() )
 EndDo
 
@@ -1375,12 +1372,14 @@ cXml += '</WorksheetOptions>' + CRLF
 cXml += '</Worksheet>' + CRLF
 
 cXml += '<Worksheet ss:Name="LINHAS">' + CRLF
-cXml += '<Table ss:ExpandedColumnCount="13" x:FullColumns="1"' + CRLF
+cXml += '<Table ss:ExpandedColumnCount="14" x:FullColumns="1"' + CRLF
 cXml += 'x:FullRows="1" ss:DefaultRowHeight="15">' + CRLF
+
 cXml += '<Column ss:StyleID="s62" ss:Width="46.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="266.25"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="43.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="210"/>' + CRLF
+cXml += '<Column ss:StyleID="s62" ss:Width="43.5"/>' + CRLF
 cXml += '<Column ss:StyleID="s62" ss:Width="51"/>' + CRLF
 cXml += '<Column ss:AutoFitWidth="0" ss:Width="77.25" ss:Span="7"/>' + CRLF
 
@@ -1388,7 +1387,8 @@ cXml += '<Row ss:AutoFitHeight="0" ss:Height="16.5">' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.TRA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">TRANSPORTADORA</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">COD.LIN</Data></Cell>' + CRLF
-cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">LINHA</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">LINHA COLETADA</Data></Cell>' + CRLF
+cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">LIN.ORI</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s73"><Data ss:Type="String">TIPO</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">FRETE</Data></Cell>' + CRLF
 cXml += '<Cell ss:StyleID="s74"><Data ss:Type="String">BONIF. TOT. R$</Data></Cell>' + CRLF
@@ -1405,7 +1405,7 @@ fWrite(nHdlimp,cXml)
 BeginSql alias cAlias
     %noparser%
 
-    SELECT PC7_CODTRA,PC6_TRANSP,PC7_LINHA,PA7_DESC,
+    SELECT PC7_CODTRA,PC6_TRANSP,PC7_LINHA,PA7_DESC,PC7_LINSOC,
     CASE WHEN PC7_TIPO='S' THEN 'SOCORRO' ELSE 'NORMAL' END AS TIPO,
     PC7_TOTFRT,PC7_TOTBON,PC7_ENCARG,PC7_TOTGER,PC7_TOTKM,PC7_TOTLIT,PC7_FRETKM,PC7_CUSLIT
     FROM %Table:PC7% PC7
@@ -1423,6 +1423,7 @@ While (cAlias)->( !Eof() )
     cXml += '<Cell><Data ss:Type="String">' + AllTrim((cAlias)->(PC6_TRANSP)) + '</Data></Cell>' + CRLF
     cXml += '<Cell><Data ss:Type="String">' + (cAlias)->(PC7_LINHA) + '</Data></Cell>' + CRLF
     cXml += '<Cell><Data ss:Type="String">' + AllTrim((cAlias)->(PA7_DESC)) + '</Data></Cell>' + CRLF
+    cXml += '<Cell><Data ss:Type="String">' + (cAlias)->(PC7_LINSOC) + '</Data></Cell>' + CRLF
     cXml += '<Cell><Data ss:Type="String">' + AllTrim((cAlias)->(TIPO)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToChar((cAlias)->(PC7_TOTFRT)) + '</Data></Cell>' + CRLF
     cXml += '<Cell ss:StyleID="s63"><Data ss:Type="Number">' + cValToChar((cAlias)->(PC7_TOTBON)) + '</Data></Cell>' + CRLF
